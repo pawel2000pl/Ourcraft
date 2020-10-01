@@ -1,6 +1,8 @@
 #!/bin/bash
 echo Starting…
 date
+mkdir "bin" 2> "/dev/null"
+mkdir "compiled-resources" 2> "/dev/null"
 echo Compiler info:
 fpc -iD -iV -iSO -iSP -iTO -iTP 
 
