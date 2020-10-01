@@ -1,0 +1,24 @@
+object MainForm: TMainForm
+  Left = 238
+  Height = 320
+  Top = 139
+  Width = 480
+  Caption = 'OurCraft'
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnKeyPress = FormKeyPress
+  LCLVersion = '2.0.6.0'
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    left = 10
+    top = 10
+  end
+  object Timer2: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = Timer2Timer
+    left = 64
+    top = 10
+  end
+end
