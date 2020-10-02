@@ -24,7 +24,7 @@ unit Sorts;
 interface
 
 uses
-  Classes, SysUtils, Math, fgl;
+  Classes, SysUtils, Math;
 
 type
 

@@ -30,7 +30,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="16">
+    <Units Count="18">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -109,6 +109,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="WorldGenerator"/>
       </Unit15>
+      <Unit16>
+        <Filename Value="../randomgenerator.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="RandomGenerator"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="../simplecache.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SimpleCache"/>
+      </Unit17>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

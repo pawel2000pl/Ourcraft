@@ -10,15 +10,9 @@ uses
   {$ENDIF}
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms,
-  lazopenglcontext,
-  SingleModeUnit,
-  OurData,
-  OurUtils,
-  ProcessUtils,
-  Sorts,
-  GlCamera,
-  Models, Freerer, Queues, Locker, Chain, WorldGenerator;
+  Forms, lazopenglcontext, SingleModeUnit, OurData, OurUtils, ProcessUtils,
+  Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
+  RandomGenerator, SimpleCache;
 
 {$R *.res}
 
