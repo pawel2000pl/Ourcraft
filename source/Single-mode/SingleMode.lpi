@@ -30,7 +30,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="15">
+    <Units Count="16">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -104,6 +104,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="MemGuard"/>
       </Unit14>
+      <Unit15>
+        <Filename Value="../worldgenerator.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="WorldGenerator"/>
+      </Unit15>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

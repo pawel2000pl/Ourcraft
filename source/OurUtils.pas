@@ -72,6 +72,17 @@ type
   TOurChunk = class;
   TOurWorld = class;
   TCustomCreator = class;
+                         
+  { TAbstractGenerator }
+
+  TAbstractGenerator = class
+  private
+    FDestroyWithWorld : boolean;
+  public
+    property DestroyWithWorld : Boolean read FDestroyWithWorld write FDestroyWithWorld;
+    procedure Generate(const Chunk : TOurChunk); virtual; abstract;
+    constructor Create(const _DestroyWithWorld : Boolean = true);
+  end;
 
   TAbstractGame = class
   public
@@ -79,6 +90,7 @@ type
     function GetID(const Name : ansistring) : integer; virtual; abstract;
     function GetIDCount : integer; virtual; abstract;
   end;
+
 
   { TEntity }
 
@@ -283,10 +295,10 @@ type
     property Lighted : boolean read fLighted;
     property AutoLightUpdate : boolean read fAutoLightUpdate write fAutoLightUpdate;
 
-    procedure AddRenderKey(Area : TRenderArea);
-    function RemoveRenderKey(Area : TRenderArea) : boolean;
-    function GetRenderAreaCount : integer;
-    function HasRenderArea(Area : TRenderArea) : boolean;
+    procedure AddRenderKey(Area : TRenderArea); inline;
+    function RemoveRenderKey(Area : TRenderArea) : boolean; inline;
+    function GetRenderAreaCount : integer; inline;
+    function HasRenderArea(Area : TRenderArea) : boolean; inline;
 
     procedure UpdateNeightborLight;
 
@@ -434,6 +446,9 @@ type
 
     TickLocker : TLocker;
     UpdateRenderAreaLocker : TLocker;
+
+    fGenerator : TAbstractGenerator;
+
     procedure UpdateRenderArea(Area : TRenderArea);  //todo
   public
     property TickDelay : Qword read fTickDelay write fTickDelay;
@@ -458,7 +473,9 @@ type
     procedure RandomTickAuto;
     procedure RandomTick(const Count : integer);
 
-    constructor Create(defaultBlock : TBlockCreator; Game : TAbstractGame);
+    property Generator : TAbstractGenerator read fGenerator;
+
+    constructor Create(defaultBlock : TBlockCreator; Game : TAbstractGame; WorldGenerator : TAbstractGenerator);
     destructor Destroy; override;
 
   end;
@@ -502,6 +519,13 @@ begin
           EntityShape.Size[a] - EntityShape.Center[a];
       Result.Corners[side][i] := c * v;
     end;
+end;
+
+{ TAbstractGenerator }
+
+constructor TAbstractGenerator.Create(const _DestroyWithWorld: Boolean);
+begin
+   FDestroyWithWorld:=_DestroyWithWorld;
 end;
 
 { TRenderAreaSearcher }
@@ -974,13 +998,15 @@ begin
           fChunks[x, y, z].Table[i].RandomTick(Count);
 end;
 
-constructor TOurWorld.Create(defaultBlock : TBlockCreator; Game : TAbstractGame);
+constructor TOurWorld.Create(defaultBlock: TBlockCreator; Game: TAbstractGame;
+  WorldGenerator: TAbstractGenerator);
 var
   x, y, z : integer;
 begin
   TickLocker := TLocker.Create;
   UpdateRenderAreaLocker := TLocker.Create;
   fFreeThread := TFree.Create;
+  fGenerator := WorldGenerator;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
@@ -1012,6 +1038,9 @@ begin
   TickLocker.Free;
   fQueues.Free;
   UpdateRenderAreaLocker.Free;
+
+  if fGenerator.FDestroyWithWorld then
+     fGenerator.Free;
 
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
@@ -1104,35 +1133,15 @@ begin
 end;
 
 procedure TOurChunk.Generate;
-var
-  x, y, z : integer;
-  stone, glow : TCustomCreator; //TODO: Remove
 begin
   if fGenerated or Finishing then
     exit;
-
-  AutoLightUpdate := False;
-
-  if (Position[axisY] < 1) or ((Position[axisY] = 1) and
-    ((Position[axisX] + Position[axisZ]) and 1 = 0)) then
+  if not World.Generator.ClassNameIs(TAbstractGenerator.ClassName) then
   begin
-    Stone := World.OurGame.GetCreator(World.OurGame.GetID('stone'));
-    glow := World.OurGame.GetCreator(World.OurGame.GetID('glowstone'));
-    for x := 0 to ChunkSize - 1 do
-      for y := 0 to ChunkSize shr 1 do
-        for z := 0 to ChunkSize - 1 do
-          SetBlockDirect(x, y, z, stone.CreateNew(0) as TBlock);
-
-    SetBlockDirect(0, ChunkSize div 2, 0, glow.CreateNew(0) as TBlock);
+    AutoLightUpdate := False;
+    World.Generator.Generate(Self);
+    AutoLightUpdate := True;
   end;
-
-  if (Position[axisX] = 2) and (Position[axisY] = 0) and (Position[axisZ] = 2) then
-    for x := 0 to ChunkSize - 1 do
-      for z := 0 to ChunkSize - 1 do
-        SetBlockDirect(x, ChunkSize div 2 + 4, z, glow.CreateNew(0) as TBlock);
-
-  AutoLightUpdate := True;
-
   fGenerated := True;
   RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
 end;
@@ -1151,7 +1160,7 @@ end;
 
 procedure TOurChunk.AddRenderKey(Area : TRenderArea);
 begin
-  if TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount - 1) >= 0 then
+  if HasRenderArea(Area) then
     exit;
   Inc(RenderAreaCount);
   setlength(RenderAreas, RenderAreaCount);
@@ -1180,7 +1189,7 @@ end;
 
 function TOurChunk.HasRenderArea(Area : TRenderArea) : boolean;
 begin
-  Result := TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount) >= 0;
+  Result := (RenderAreaCount > 0) and (TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount) >= 0);
 end;
 
 procedure TOurChunk.UpdateNeightborLight;

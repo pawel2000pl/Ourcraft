@@ -18,7 +18,7 @@ uses
   ProcessUtils,
   Sorts,
   GlCamera,
-  Models, Freerer, Queues, Locker, Chain;
+  Models, Freerer, Queues, Locker, Chain, WorldGenerator;
 
 {$R *.res}
 

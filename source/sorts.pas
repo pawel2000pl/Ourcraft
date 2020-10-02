@@ -1,6 +1,5 @@
-{ <description>
-
-  Copyright (C) 2020 Paweł Bielecki pawelek24@op.pl
+{
+  Copyright (C) 2020 Paweł Bielecki pawelek24@op.pl / pbielecki2000@gmail.com
 
   This source is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free
