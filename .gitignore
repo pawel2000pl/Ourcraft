@@ -1,0 +1,13 @@
+*.ppu
+*.o
+*.or
+*.compiled
+*.png
+*.mcmeta
+..gitignore.swp
+.directory
+*.txt
+bin/
+source/Single-mode/SingleMode
+*backup*
+source/Single-mode/ppas.sh

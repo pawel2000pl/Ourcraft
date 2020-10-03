@@ -9,6 +9,8 @@ uses
 
 type
 
+  { In case of collision, older file will be removed }
+
   { TSimpleCache }
 
   generic TSimpleCache<TKey, TValue> = class

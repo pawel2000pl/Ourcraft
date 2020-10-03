@@ -68,7 +68,7 @@ begin
   if Game = nil then
   begin
     Game := TOurGame.Create;
-    World := TOurWorld.Create(Game.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(true));
+    World := TOurWorld.Create(Game.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 8);
     Camera := TGlCamera.Create;
