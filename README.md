@@ -9,3 +9,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 2. Levels (as in SAO) instead of other worlds (as Nether or End)
 3. More 3D GUI (during the game)
 
+It's not playable yet. But you can:
+Fly: WASD, Space and X
+Move camera: IJKL
+Edit blocks: N and M (but only in constant, determined distance)
