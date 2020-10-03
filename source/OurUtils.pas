@@ -1189,7 +1189,7 @@ end;
 
 function TOurChunk.HasRenderArea(Area : TRenderArea) : boolean;
 begin
-  Result := (RenderAreaCount > 0) and (TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount) >= 0);
+  Result := (TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount-1) >= 0);
 end;
 
 procedure TOurChunk.UpdateNeightborLight;

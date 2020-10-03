@@ -5,21 +5,49 @@ unit WorldGenerator;
 interface
 
 uses
-  Classes, SysUtils, OurUtils, CalcUtils, RandomGenerator;
+  Classes, SysUtils, math, OurUtils, CalcUtils, DeterminedRandomGenerator;
+
+type
+
+  TWorldGeneratorSettings = record
+    WorldScale : TVector3;
+  end;
+
+const
+  DefaultWorldGenratorSettings : TWorldGeneratorSettings = (WorldScale : (1/64, 1/256, 1/64));
 
 type
 
   { TWorldGenerator }
 
   TWorldGenerator = class(TAbstractGenerator)
+  private
+    FRandomGenerator : TRandomGenerator;
+    FSettings : TWorldGeneratorSettings;
   public
+    property RandomGenerator : TRandomGenerator read FRandomGenerator;
+    property Settings : TWorldGeneratorSettings read FSettings write FSettings;
+
+    function GetRandom(const x, z : Integer; const MiddleLevel : Double) : Double; //0..1
     procedure Generate(const Chunk: TOurChunk); override;
-    constructor Create(const _DestroyWithWorld: Boolean=true);
+    constructor Create(const Seed : QWord; const _DestroyWithWorld: Boolean=true);
+    destructor Destroy; override;
   end;
 
 implementation
 
+{$RangeChecks off}
+
 { TWorldGenerator }
+
+function TWorldGenerator.GetRandom(const x, z: Integer; const MiddleLevel: Double): Double;
+var
+  hr, ha : Double;
+begin
+  hr := RandomGenerator.LinearRandom([x*Settings.WorldScale[axisX], z*Settings.WorldScale[axisZ]], ExampleSeedOffset[1]+floor64(MiddleLevel*ExampleSeedOffset[5]))*2-1;
+  ha := RandomGenerator.RandomAngle(x*Settings.WorldScale[axisX], ExampleSeedOffset[2]+floor64(MiddleLevel*ExampleSeedOffset[4])) + RandomGenerator.RandomAngle(z*Settings.WorldScale[axisZ], ExampleSeedOffset[3]+floor64(MiddleLevel*ExampleSeedOffset[4]));
+  Result := RandomGenerator.LinearRandom([x*Settings.WorldScale[axisX]+hr*cos(ha), MiddleLevel, z*Settings.WorldScale[axisZ]+hr*sin(ha)], ExampleSeedOffset[3])*2-1;
+end;
 
 procedure TWorldGenerator.Generate(const Chunk: TOurChunk);   
 var
@@ -48,10 +76,18 @@ begin
   end;
 end;
 
-constructor TWorldGenerator.Create(const _DestroyWithWorld: Boolean);
+constructor TWorldGenerator.Create(const Seed: QWord;
+  const _DestroyWithWorld: Boolean);
 begin
-  inherited;
+  inherited Create(_DestroyWithWorld);
+  FRandomGenerator := TRandomGenerator.Create(Seed);
+  Settings := DefaultWorldGenratorSettings;
+end;
 
+destructor TWorldGenerator.Destroy;
+begin
+  FRandomGenerator.Free;
+  inherited Destroy;
 end;
 
 end.
