@@ -1,0 +1,66 @@
+YOU ARE OBLIGED CORRECTLY UNDERSTAND THIS LICENSE.
+IF YOU DON NOT KNOW LANGUAGE OF THIS LICENSE, YOU ARE OBLIGED TO TRANSLATE THIS LICENSE TO YOUR NATIVE LANGUAGE.
+
+Data wejścia w życie licencji: 03 października 2020
+Data ważności (jeśli wydano nową): 31 sierpnia 2020
+Aktualna licencja: https://github.com/pawel2000pl/Ourcraft
+
+1. Słownik:
+    Projekt - wszystkie pliki, katalogi i podkatalogi związane z programem znajdujące się w tym katalogu, co ta licencja
+    Plik binarny - plik projektu, wykrywany jako binarny zgodnie z autowykrywaniem oprogramowania "git"
+    Plik tekstowy - plik projektu, wykrywany jako tekstowy zgodnie z autowykrywaniem oprogramowania "git"
+    Oprogramowanie - kod źródłowy, pliki binarne i zasoby niezbędne do kompilacji, oraz prawidłowego uruchomienia oprogramowania w całości, lub części
+    Zasoby - pliki binarne, niezbędne do działania programu, które jednak nie są niezbędne podczas kompilacji całości lub części programu, oraz można je podmienić na inne bez upośledzania (lub zmieniania algorytmu) działania programu.
+    Umowa - akceptacja niniejszej licencji
+    Użytkownik - osoba ["Ty"] korzystająca w jakikolwiek sposób z plików objętych tą licencją (pliki binarne, pliki tekstowe, w tym szczególnie kody źródłowe).
+    Autor - Paweł Bielecki  Polska, woj. Świętokrzyskie, Góry 39    email:  pawelek24@op.pl / pbielecki2000@gmail.com
+    
+    Wielkość liter użyta w nazwach definicji słownika nie ma znaczenia i definicje nie powinny być uznawane za różne, jeśli w licencji występują pisane inną wielkością liter.
+
+2. Nienaruszalność licencji
+    Nikomu poza autorem nie wolno przenosić tej licencji do innych katalogów, zmieniać w niej czegokolwiek lub podmieniać/zmieniać ją na inną (w tej, lub dalszych dystrybucjach). Zabronione jest dodawanie lub używanie licencji, które by mogły zmniejszać moc prawną tej licencji, lub ją unieważniać. Zabronione jest także zmienianie lub podmienianie innych licencji zawartych w projekcie, chyba że szczególnie pozwalają inaczej. Można dodawać licencje wyłącznie własne (autorskie) pliki, jednak muszą być one zgodne z tą licencją i nie mogą naruszać licencji innych plików. 
+    
+3. Niniejsza licencja obejmuje wszystkie pliki projektu, oraz ich modyfikacje, za wyjątkiem:
+    Kodów źródłowych, w których w pierwszych 64 bajtach znajduje się / rozpoczyna się tekst licencji według której dany pojedynczy plik źródłowy jest rozpowszechniany. Tej samej licencji (co znajduje się w nagłówku) dotyczą także inne pliki, które są niezbędne do działania/używania (kompilacji zakończonej powodzeniem), jak np.: biblioteki/moduły, pliki typu include (*.inc), chyba że zostały one oznaczone, że nie podlegają podanej licencji.
+    Plików i podkatalogów w katalogach, w których znajduje się inna licencja, chyba że ta inna licencja wyłącza ze swojego sprawowania (wszystkie, lub niektóre) podkatalogi (lub pliki), lub dotyczy tylko konkretnych plików i katalogów (co musi być zaznaczone w niej lub w jej nazwie). Przykłady: "LICENSE", "LICENSE_OF_MY_FILE", "VERY_USEFUL_UTIL_-_LICENSE".
+    
+4. Ważność i aktualizacja
+    Licencja jest licencją czasową, tzn. trzeba ją aktualizować zgodnie z datami obowiązującymi na początku:
+    "Data wejścia w życie licencji" jest datą, od której licencja zaczyna obowiązywać.
+    "Data ważności" jest datą, do której najpóźniej trzeba pobrać nową licencję. Jeśli nie zaktualizowano licencji (tzn. nie można odnaleźć licencji, której ograniczenie czasowe by obowiązywało), nie zaktualizowano strony z której można ją pobrać, lub podana strona nie istnieje, niniejsza licencja obowiązuje nadal przez 10 lat. Po upłynięciu daty ważności, użytkownik zobowiązuje się do sprawdzania przez cały okres obowiązywania umowy minimum co miesiąc, czy licencja nie została zaktualizowana. Jeśli upłynie okres obowiązywania, niniejsza licencja przestaje obowiązywać, a wszystkie pliki projektu nią objęte przechodzą na licencję GNU General Public License (GPL) v2 lub dowolną nowszą jej wersję.
+    
+    Niniejsza licencja przestaje obowiazywać użytkownika, gdy zostanie spełniony co najmniej jeden z poniższych warunków:
+        Użytkownik wyzbędzie się wszystkich plików objętych tą licencją i przestanie w jakikolwiek sposób ich (fragmentów, lub całości) używać (potocznie: usunie program), oraz wyzbędzie się (lub przepisze je na autora) wszelkich korzyści majątkowych, jakie uzyskał w wyniku posiadania projektu.
+        Upłynie 10 lat od upłynięcia "daty ważności" i nie zostanie wydana żadna aktualizacja tej licencji - wtedy obowiązuje wspomniana wcześniej w takim przypadku licencja.
+        Upłynęła data ważności niniejszej licencji i została wydana aktualizacja - wtedy zaczyna obowiązywać ta aktualizacja.
+        
+    Aktualna wersja licencji, którą użytkownik musi pobrać, jest dostępna pod adresem podanym na początku licencji ("Aktualna licencja").
+    Jeśli daty ważności kilku licencji się pokrywają, użytkownik może stosować się do dowolnej z nich.
+    
+5. Uznaje się za zabronione jakiekolwiek działanie związane z plikami objętymi tą licencją, które w niniejszej licencji nie jest jednoznacznie podane jako dozwolone.
+    Jeśli jednak takie działania zostaną wcześniej uzgodnione i zaakceptowane przez autora (kontakt przez mail podany na początku), mogą na drodze wyjątku być uznane za dozwolone.
+    Nakazuje się, we wszelkich materiałach (modyfikacjach, filmach, artykułach itp) na temat tego projektu wskazywać kto jest autorem.
+
+6. Zezwala się na:
+    Używanie i analizowanie kodów źródłowych, ich kompilację i korzystanie z programów z nich powstałych.
+    Modyfikacje plików źródłowych do celów własnych. Rozpowszechnianie tych modyfikacji dozwolone jest wyłącznie za zgodą autora (kontakt przez mail podany na początku).
+    Zezwala się na pisanie modyfikacji, które nie powodują zmian w plikach objętych tą licencją, innych niż zmiany automatyczne wykonywane w procesie prekompilacji przez skrypty. Zezwala się na rozpowszechnianie tych modyfikacji pod warunkiem, że będą one rozpowszechniane bez obciążania jakimikolwiek opłatami użytkowników tych modyfikacji. Modyfikacje mogą zostać włączone do oficjalnej wersji projektu po kontakcie z autorem.
+    Nagrywanie i/lub transmisję filmów i/lub audio z użyciem tego oprogramowania i jego kodów źródłowych objętych tą licencją, oraz zezwala się na rozpowszechnianie tych filmów i/lub audio na własnej licencji.
+    Tworzenie artykułów na temat tego projektu.
+    Darmowe rozpowszechnianie/udostępnianie tego projektu w formie niezmienionej, tak długo, jak jego licencja na to pozwala i jest on dostępny za darmo.
+    
+7. Zakazuje się:
+    Tworzenia szkodliwych modyfikacji, tzn. takich, które zawiera (lub stanowi) niechciane oprogramowanie, jak np.: wirusy komputerowe.
+    Płatnej dystrybucji tego projektu w części, lub całości, bez wcześniejszego uzgodnienia z autorem zezwolenia i/lub zasad. 
+    
+8. Ograniczenia
+    Ponieważ program jest licencjonowany bezpłatnie, nie jest objęty gwarancją w zakresie dozwolonym przez obowiązujące przepisy. O ile na piśmie nie stanowi się inaczej, posiadacze praw autorskich i/lub inne strony zapewniają program w stanie, w jakim jest ("jak widać") bez jakiejkolwiek gwarancji, ani wyraźnej, ani domyślnej, w tym między innymi domyślnych gwarancji co do przydatności handlowej i przydatności do określonych zastosowań. Całość ryzyka w zakresie jakości i skuteczności działania programu ponosisz sam. W razie gdyby program okazał się wadliwy, ponosisz koszt całego niezbędnego serwisu, naprawy i korygowania.
+
+    O ile obowiązujące prawo nie stanowi inaczej albo czegoś innego nie uzgodniono w formie pisemnej, żaden posiadacz praw autorskich ani inna strona modyfikująca i/lub redystrybująca program zgodnie z powyższymi zezwoleniami, w żadnym wypadku nie jest odpowiedzialna wobec ciebie za szkody, w tym szkody ogólne, specjalne, uboczne lub skutkowe, wynikłe z użycia bądź niemożliwości użycia programu (w tym, między innymi, za utratę danych lub powstanie danych niedokładnych, albo za straty poniesione przez ciebie lub strony trzecie, jak też niedziałanie programu z innymi programami), nawet jeśli dany posiadacz bądź inna strona zostali powiadomieni o możliwości powstania takich szkód. 
+    
+9. Postanowienia końcowe
+    Nie musisz akceptować niniejszej Licencji, jeżeli jej nie podpisałeś. Niemniej jednak, nic innego nie zapewni ci zezwolenia na jakiekolwiek działania związane z użytkowaniem projektu. Działania takie są prawnie zabronione, jeżeli nie przyjmujesz niniejszej licencji. Dlatego też, poprzez użytkowanie (a nawet samo posiadanie) projektu (lub pracy na nim opartej) dajesz wyraz swojej akceptacji dla niniejszej licencji i wszelkich jej postanowień i warunków dotyczących kopiowania, rozprowadzania, używania i modyfikowania programu lub opartych na nim prac. 
+    
+    
+    
+    
