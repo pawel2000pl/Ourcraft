@@ -6,8 +6,9 @@ unit OurUtils;
 interface
 
 uses
-  SysUtils, Classes, Math, OurData, Models, CalcUtils, Sorts, Freerer,
-  Queues, Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Chain, gstack;
+  SysUtils, Classes, Math, OurData, Models, CalcUtils, Sorts, Freerer, Queues,
+  Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Chain, Collections,
+  gstack;
 
 const
   ChunkSizeLog2 = 4;
@@ -240,6 +241,7 @@ type
   end;
 
   TLightFunctionKind = (lfkBlock, lfkSun);
+  TRenderAreaCollection = specialize TCustomSet<TRenderArea>;
 
   { TOurChunk }
 
@@ -272,8 +274,7 @@ type
     fUnsolidModel : TVertexModel;
     fAnimationModels : TVertexModel;
 
-    RenderAreas : array of TRenderArea;
-    RenderAreaCount : integer;
+    fRenderAreaCollection : TRenderAreaCollection;
 
     LightFunctions : array[TLightFunctionKind] of TLightFunctions;
 
@@ -289,16 +290,12 @@ type
   protected
     procedure Finalize(const DelayTime : QWord); override;
   public
+    property RenderAreaCollection : TRenderAreaCollection read fRenderAreaCollection;
 
     property Loaded : boolean read fLoaded;
     property Generated : boolean read fGenerated;
     property Lighted : boolean read fLighted;
     property AutoLightUpdate : boolean read fAutoLightUpdate write fAutoLightUpdate;
-
-    procedure AddRenderKey(Area : TRenderArea); inline;
-    function RemoveRenderKey(Area : TRenderArea) : boolean; inline;
-    function GetRenderAreaCount : integer; inline;
-    function HasRenderArea(Area : TRenderArea) : boolean; inline;
 
     procedure UpdateNeightborLight;
 
@@ -757,7 +754,7 @@ begin
         v := GetCoordPriorityByDistance(i);
         if GetCoordPriorityByDistanceLength(i) <= Area.Ray then
           LoadChunk(v[axisX] + Area.X, v[axisY] + Area.Y, v[axisZ] +
-            Area.Z).AddRenderKey(Area)
+            Area.Z).RenderAreaCollection.Add(Area)
         else
           break;
       end;
@@ -773,7 +770,7 @@ begin
               exit;
             c := fChunks[x, y, z].Table[i];
             if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) >
-              Area.Ray + 1)) and c.RemoveRenderKey(Area) and (c.RenderAreaCount = 0) then
+              Area.Ray + 1)) and c.RenderAreaCollection.RemoveItem(Area) and (c.RenderAreaCollection.GetCount = 0) then
             begin
               UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
                 fChunks[x, y, z].Table[i].Position[axisY],
@@ -808,7 +805,7 @@ begin
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
         for i := fChunks[x, y, z].Count - 1 downto 0 do
-          if fChunks[x, y, z].Table[i].RenderAreaCount = 0 then
+          if fChunks[x, y, z].Table[i].RenderAreaCollection.GetCount = 0 then
           begin
             UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
               fChunks[x, y, z].Table[i].Position[axisY],
@@ -1155,41 +1152,6 @@ begin
   for side := low(TTextureMode) to High(TTextureMode) do
     if fNeightbors[side] <> nil then
       fNeightbors[side].RemoveNeightbor(OppositeSide[side]);
-end;
-
-
-procedure TOurChunk.AddRenderKey(Area : TRenderArea);
-begin
-  if HasRenderArea(Area) then
-    exit;
-  Inc(RenderAreaCount);
-  setlength(RenderAreas, RenderAreaCount);
-  RenderAreas[RenderAreaCount - 1] := Area;
-  TRenderAreaSort.Insert(RenderAreas, 0, RenderAreaCount);
-end;
-
-function TOurChunk.RemoveRenderKey(Area : TRenderArea) : boolean;
-var
-  i : integer;
-begin
-  i := TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount - 1);
-  if i < 0 then
-    exit(False);
-  Dec(RenderAreaCount);
-  RenderAreas[i] := RenderAreas[RenderAreaCount];
-  setlength(RenderAreas, RenderAreaCount);
-  TRenderAreaSort.Insert(RenderAreas, 0, RenderAreaCount);
-  Result := True;
-end;
-
-function TOurChunk.GetRenderAreaCount : integer;
-begin
-  Result := RenderAreaCount;
-end;
-
-function TOurChunk.HasRenderArea(Area : TRenderArea) : boolean;
-begin
-  Result := (TRenderAreaSearcher.BSearch(RenderAreas, Area, 0, RenderAreaCount-1) >= 0);
 end;
 
 procedure TOurChunk.UpdateNeightborLight;
@@ -1914,6 +1876,8 @@ begin
   UnSolid := TBlockList.Create;
   Animated := TBlockList.Create;
 
+  fRenderAreaCollection := TRenderAreaCollection.Create;
+
   for side := low(TTextureMode) to High(TTextureMode) do
     fModels[side] := TVertexModel.Create;
 
@@ -1944,7 +1908,6 @@ begin
   fUnsolidModel := TVertexModel.Create;
   fAnimationModels := TVertexModel.Create;
 
-  RenderAreaCount := 0;
 end;
 
 destructor TOurChunk.Destroy;
@@ -1957,8 +1920,7 @@ begin
 
   World.Queues.DequeueObject(self);
 
-  RenderAreaCount := 0;
-  setlength(RenderAreas, 0);
+  fRenderAreaCollection.Free;
 
   for x := 0 to ChunkSize - 1 do
     for y := 0 to ChunkSize - 1 do

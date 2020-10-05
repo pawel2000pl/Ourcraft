@@ -12,7 +12,7 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms, lazopenglcontext, SingleModeUnit, OurData, OurUtils, ProcessUtils,
   Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
-  RandomGenerator, SimpleCache;
+  RandomGenerator, SimpleCache, ArrayOfNumber, Collections;
 
 {$R *.res}
 

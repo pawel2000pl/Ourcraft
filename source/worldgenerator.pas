@@ -5,7 +5,7 @@ unit WorldGenerator;
 interface
 
 uses
-  Classes, SysUtils, Math, OurUtils, CalcUtils, DeterminedRandomGenerator;
+  Classes, SysUtils, Math, OurUtils, CalcUtils, DeterminedRandomGenerator, ArrayOfNumber;
 
 type
 
@@ -19,8 +19,9 @@ const
 
 type
 
-  TBiomeTemperature = int8;
-  TBiomeHeight = int16;
+  TBiomeTemperature = -16..15;    //temperatura
+  TBiomeHeight = -16384..16383;   //wysokość
+  TBiomeHumidity = 0..15;    //wilgotność
 
   TWorldLevel = class;
 
@@ -30,16 +31,24 @@ type
     function GetHeight(const x, z : integer) : integer; virtual; abstract;
   end;
 
+  TBiomeTemplate = record
+    Biome : TBiome;
+    Temperature : TBiomeTemperature;
+    Height : TBiomeHeight;
+    Humidity : TBiomeHumidity;
+  end;
+
   { TWorldLevel }
 
   TWorldLevel = class
   private
-    BiomesTab : array[TBiomeTemperature, TBiomeHeight] of TBiome;
+    BiomesTab : array[TBiomeTemperature, TBiomeHeight, TBiomeHumidity] of TBiome;
     BiomesList : array of TBiome;
+    BiomeTemplates : array of TBiomeTemplate;
     procedure ProcessBiomes;
   public
     procedure RegsterBiome(Biome : TBiome; const Temperature : TBiomeTemperature;
-      const Height : TBiomeHeight);
+      const Height : TBiomeHeight; const Humidity : TBiomeHumidity);
     function GetMiddleHeight : integer;
     function GetLevelHeight : Integer;
   end;
@@ -66,48 +75,80 @@ implementation
 { TWorldLevel }
 
 procedure TWorldLevel.ProcessBiomes;
-const
-  Directions : array[0..3, 0..1] of Integer = ((1, 0), (0, 1), (-1, 0), (0, -1));
 var
-  i, j, k : integer;
-  changes : boolean;
+  i, j, k, m, n : integer;
+  cl, ct : Integer;
+  area : Integer;
+  len : Double;
+  Tab : array[TBiomeTemperature, TBiomeHeight, TBiomeHumidity] of TArrayOfDouble;
 begin
   for i := Low(BiomesTab) to High(BiomesTab) do
     for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
-      BiomesTab[i, j] := nil;
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+        BiomesTab[i, j, k] := nil;
+
   for i := Low(BiomesList) to High(BiomesList) do
     if (BiomesList[i] <> nil) and Assigned(BiomesList[i]) then
       BiomesList[i].Register(Self);
 
-  repeat
-    changes := False;
-    for i := Low(BiomesTab) to High(BiomesTab) do
-      for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
-        if BiomesTab[i, j] = nil then
-          for k := 0 to 3 do
-          if (i+Directions[k, 0] <= High(BiomesTab)) and (j+Directions[k, 1] <= High(BiomesTab[i])) and (BiomesTab[i+Directions[k, 0], j+Directions[k, 1]] <> nil) then
-          begin
-            BiomesTab[i, j] := BiomesTab[i+Directions[k, 0], j+Directions[k, 1]];
-            Changes := True;
-            break;
-          end;
+  cl := length(BiomesList);
+  ct := length(BiomeTemplates);
+  for i := Low(BiomesTab) to High(BiomesTab) do
+    for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+      begin
+         Tab[i, j, k] := TArrayOfDouble.Create(cl);
+         Area := 0;
+         Len := 0;
+         for m := 0 to cl-1 do
+         begin
+           for n := 0 to ct-1 do
+           if BiomesList[m] = BiomeTemplates[n].Biome then
+           begin
+             Inc(Area);
+             Len += hypot3(i-BiomeTemplates[n].Temperature, j-BiomeTemplates[n].Height, k-BiomeTemplates[n].Humidity);
+           end;
+           if Area = 0 then
+             len := Infinity
+             else
+             len /= Area;
+           Tab[i, j, k][m] := len;
+         end;
+      end;
 
-  until not changes;
+  for i := Low(BiomesTab) to High(BiomesTab) do
+    for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+      begin
+          BiomesTab[i, j, k] := BiomesList[Tab[i, j, k].GetMinIndex];
+          Tab[i, j, k].Free;
+      end;
 end;
 
-procedure TWorldLevel.RegsterBiome(Biome : TBiome; const Temperature : TBiomeTemperature;
-  const Height : TBiomeHeight);
+procedure TWorldLevel.RegsterBiome(Biome: TBiome;
+  const Temperature: TBiomeTemperature; const Height: TBiomeHeight;
+  const Humidity: TBiomeHumidity);
+var
+  h : Integer;
 begin
-   BiomesTab[Temperature, Height] := Biome;
+   BiomesTab[Temperature, Height, Humidity] := Biome;
+   h := length(BiomeTemplates);
+   setlength(BiomeTemplates, h+1);
+   BiomeTemplates[h].Biome:=Biome;
+   BiomeTemplates[h].Temperature:=Temperature;
+   BiomeTemplates[h].Height:=Height;
+   BiomeTemplates[h].Humidity:=Humidity;
 end;
 
 function TWorldLevel.GetMiddleHeight : integer;
 begin
+  Result := 0;
   //todo
 end;
 
 function TWorldLevel.GetLevelHeight: Integer;
 begin
+  Result := 0;
   //todo
 end;
 

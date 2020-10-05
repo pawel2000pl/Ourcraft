@@ -4,6 +4,7 @@
 *.compiled
 *.png
 *.mcmeta
+*.lps
 ..gitignore.swp
 .directory
 *.txt
