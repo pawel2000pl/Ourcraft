@@ -79,6 +79,20 @@ type
       overload;
   end;
 
+  { TMemorySorter }
+
+  generic TMemorySorter<TValue> = class(specialize TSort<TValue>)
+  public
+    class function Compare(const a, b: TValue): integer; override;
+  end;
+
+  { TMemoryBSearch }
+
+  generic TMemoryBSearch<TValue> = class(specialize TBSearch<TValue, TValue>)
+  public
+    class function Compare(const a: TValue; const b: TKey): integer; override;
+  end;
+
   { TIntegerSort }
 
   TIntegerSort = class(specialize TSort<integer>)
@@ -88,6 +102,20 @@ type
   end;
 
 implementation
+
+{ TMemoryBSearch }
+
+class function TMemoryBSearch.Compare(const a: TValue; const b: TKey): integer;
+begin
+  Result := CompareMemRange(@a, @b, SizeOf(TValue));
+end;
+
+{ TMemorySorter }
+
+class function TMemorySorter.Compare(const a, b: TValue): integer;
+begin
+  Result := CompareMemRange(@a, @b, SizeOf(TValue));
+end;
 
 { TIntegerSort }
 

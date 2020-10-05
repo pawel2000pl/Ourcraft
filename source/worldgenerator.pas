@@ -5,7 +5,7 @@ unit WorldGenerator;
 interface
 
 uses
-  Classes, SysUtils, math, OurUtils, CalcUtils, DeterminedRandomGenerator;
+  Classes, SysUtils, Math, OurUtils, CalcUtils, DeterminedRandomGenerator, ArrayOfNumber;
 
 type
 
@@ -14,9 +14,45 @@ type
   end;
 
 const
-  DefaultWorldGenratorSettings : TWorldGeneratorSettings = (WorldScale : (1/64, 1/256, 1/64));
+  DefaultWorldGenratorSettings : TWorldGeneratorSettings =
+    (WorldScale : (1 / 64, 1 / 256, 1 / 64));
 
 type
+
+  TBiomeTemperature = -16..15;    //temperatura
+  TBiomeHeight = -16384..16383;   //wysokość
+  TBiomeHumidity = 0..15;    //wilgotność
+
+  TWorldLevel = class;
+
+  TBiome = class
+  public
+    procedure Register(Level : TWorldLevel); virtual; abstract;
+    function GetHeight(const x, z : integer) : integer; virtual; abstract;
+  end;
+
+  TBiomeTemplate = record
+    Biome : TBiome;
+    Temperature : TBiomeTemperature;
+    Height : TBiomeHeight;
+    Humidity : TBiomeHumidity;
+  end;
+
+  { TWorldLevel }
+
+  TWorldLevel = class
+  private
+    BiomesTab : array[TBiomeTemperature, TBiomeHeight, TBiomeHumidity] of TBiome;
+    BiomesList : array of TBiome;
+    BiomeTemplates : array of TBiomeTemplate;
+    procedure ProcessBiomes;
+  public
+    procedure RegsterBiome(Biome : TBiome; const Temperature : TBiomeTemperature;
+      const Height : TBiomeHeight; const Humidity : TBiomeHumidity);
+    function GetMiddleHeight : integer;
+    function GetLevelHeight : Integer;
+  end;
+
 
   { TWorldGenerator }
 
@@ -28,28 +64,115 @@ type
     property RandomGenerator : TRandomGenerator read FRandomGenerator;
     property Settings : TWorldGeneratorSettings read FSettings write FSettings;
 
-    function GetRandom(const x, z : Integer; const MiddleLevel : Double) : Double; //0..1
-    procedure Generate(const Chunk: TOurChunk); override;
-    constructor Create(const Seed : QWord; const _DestroyWithWorld: Boolean=true);
+    function GetRandom(const x, z : integer; const MiddleLevel : double) : double; //0..1
+    procedure Generate(const Chunk : TOurChunk); override;
+    constructor Create(const Seed : QWord; const _DestroyWithWorld : boolean = True);
     destructor Destroy; override;
   end;
 
 implementation
 
+{ TWorldLevel }
+
+procedure TWorldLevel.ProcessBiomes;
+var
+  i, j, k, m, n : integer;
+  cl, ct : Integer;
+  area : Integer;
+  len : Double;
+  Tab : array[TBiomeTemperature, TBiomeHeight, TBiomeHumidity] of TArrayOfDouble;
+begin
+  for i := Low(BiomesTab) to High(BiomesTab) do
+    for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+        BiomesTab[i, j, k] := nil;
+
+  for i := Low(BiomesList) to High(BiomesList) do
+    if (BiomesList[i] <> nil) and Assigned(BiomesList[i]) then
+      BiomesList[i].Register(Self);
+
+  cl := length(BiomesList);
+  ct := length(BiomeTemplates);
+  for i := Low(BiomesTab) to High(BiomesTab) do
+    for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+      begin
+         Tab[i, j, k] := TArrayOfDouble.Create(cl);
+         Area := 0;
+         Len := 0;
+         for m := 0 to cl-1 do
+         begin
+           for n := 0 to ct-1 do
+           if BiomesList[m] = BiomeTemplates[n].Biome then
+           begin
+             Inc(Area);
+             Len += hypot3(i-BiomeTemplates[n].Temperature, j-BiomeTemplates[n].Height, k-BiomeTemplates[n].Humidity);
+           end;
+           if Area = 0 then
+             len := Infinity
+             else
+             len /= Area;
+           Tab[i, j, k][m] := len;
+         end;
+      end;
+
+  for i := Low(BiomesTab) to High(BiomesTab) do
+    for j := Low(BiomesTab[i]) to High(BiomesTab[i]) do
+      for k := low(BiomesTab[i, j]) to High(BiomesTab[i, j]) do
+      begin
+          BiomesTab[i, j, k] := BiomesList[Tab[i, j, k].GetMinIndex];
+          Tab[i, j, k].Free;
+      end;
+end;
+
+procedure TWorldLevel.RegsterBiome(Biome: TBiome;
+  const Temperature: TBiomeTemperature; const Height: TBiomeHeight;
+  const Humidity: TBiomeHumidity);
+var
+  h : Integer;
+begin
+   BiomesTab[Temperature, Height, Humidity] := Biome;
+   h := length(BiomeTemplates);
+   setlength(BiomeTemplates, h+1);
+   BiomeTemplates[h].Biome:=Biome;
+   BiomeTemplates[h].Temperature:=Temperature;
+   BiomeTemplates[h].Height:=Height;
+   BiomeTemplates[h].Humidity:=Humidity;
+end;
+
+function TWorldLevel.GetMiddleHeight : integer;
+begin
+  Result := 0;
+  //todo
+end;
+
+function TWorldLevel.GetLevelHeight: Integer;
+begin
+  Result := 0;
+  //todo
+end;
+
 {$RangeChecks off}
 
 { TWorldGenerator }
 
-function TWorldGenerator.GetRandom(const x, z: Integer; const MiddleLevel: Double): Double;
+function TWorldGenerator.GetRandom(const x, z : integer;
+  const MiddleLevel : double) : double;
 var
-  hr, ha : Double;
+  hr, ha : double;
 begin
-  hr := RandomGenerator.LinearRandom([x*Settings.WorldScale[axisX], z*Settings.WorldScale[axisZ]], ExampleSeedOffset[1]+floor64(MiddleLevel*ExampleSeedOffset[5]))*2-1;
-  ha := RandomGenerator.RandomAngle(x*Settings.WorldScale[axisX], ExampleSeedOffset[2]+floor64(MiddleLevel*ExampleSeedOffset[4])) + RandomGenerator.RandomAngle(z*Settings.WorldScale[axisZ], ExampleSeedOffset[3]+floor64(MiddleLevel*ExampleSeedOffset[4]));
-  Result := RandomGenerator.LinearRandom([x*Settings.WorldScale[axisX]+hr*cos(ha), MiddleLevel, z*Settings.WorldScale[axisZ]+hr*sin(ha)], ExampleSeedOffset[3])*2-1;
+  hr := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX],
+    z * Settings.WorldScale[axisZ]], ExampleSeedOffset[1] + floor64(
+    MiddleLevel * ExampleSeedOffset[5])) * 2 - 1;
+  ha := RandomGenerator.RandomAngle(x * Settings.WorldScale[axisX],
+    ExampleSeedOffset[2] + floor64(MiddleLevel * ExampleSeedOffset[4])) +
+    RandomGenerator.RandomAngle(z * Settings.WorldScale[axisZ],
+    ExampleSeedOffset[3] + floor64(MiddleLevel * ExampleSeedOffset[4]));
+  Result := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX] + hr * cos(ha),
+    MiddleLevel, z * Settings.WorldScale[axisZ] + hr * sin(ha)], ExampleSeedOffset[3]) * 2 - 1;
 end;
 
-procedure TWorldGenerator.Generate(const Chunk: TOurChunk);   
+procedure TWorldGenerator.Generate(const Chunk : TOurChunk);
 var
   x, y, z : integer;
   stone, glow : TCustomCreator; //TODO: Remove
@@ -76,8 +199,7 @@ begin
   end;
 end;
 
-constructor TWorldGenerator.Create(const Seed: QWord;
-  const _DestroyWithWorld: Boolean);
+constructor TWorldGenerator.Create(const Seed : QWord; const _DestroyWithWorld : boolean);
 begin
   inherited Create(_DestroyWithWorld);
   FRandomGenerator := TRandomGenerator.Create(Seed);
@@ -91,4 +213,3 @@ begin
 end;
 
 end.
-
