@@ -9,7 +9,7 @@ uses
 
 type
 
-  { In case of collision, older file will be removed }
+  { In case of collision, older keys will be removed }
 
   { TSimpleCache }
 
@@ -25,9 +25,10 @@ type
     fData : array of TRecord;
     function CreateRecord(const Key : TKey; const Value : TValue) : TRecord; inline;
   protected
-    function GetHash(const Key : TKey) : integer; virtual;
+    function GetHash(const Key : TKey) : UInt32; virtual;
     function SameKeys(const a, b : TKey) : Boolean; virtual;
   public
+    function GetIndex(const Key : TKey) : PtrUInt; inline;
     procedure AddItem(const Key : TKey; const Value : TValue);
     function GetItem(const Key : TKey; var Value : TValue) : boolean;
     constructor Create(const Size : integer = 93179);
@@ -45,7 +46,7 @@ begin
   Result.Exists := True;
 end;
 
-function TSimpleCache.GetHash(const Key : TKey) : integer;
+function TSimpleCache.GetHash(const Key: TKey): UInt32;
 begin
   Result := crc32(613, @Key, SizeOf(TKey));
 end;
@@ -55,16 +56,21 @@ begin
   Result := CompareMem(@a, @b, SizeOf(TKey));
 end;
 
+function TSimpleCache.GetIndex(const Key: TKey): PtrUInt;
+begin
+  Result := GetHash(Key) mod Count;
+end;
+
 procedure TSimpleCache.AddItem(const Key : TKey; const Value : TValue);
 begin
-  fData[GetHash(Key) mod Count] := CreateRecord(Key, Value);
+  fData[GetIndex(Key)] := CreateRecord(Key, Value);
 end;
 
 function TSimpleCache.GetItem(const Key : TKey; var Value : TValue) : boolean;
 var
   Index : integer;
 begin
-  Index := GetHash(Key) mod Count;
+  Index := GetIndex(Key);
   Result := (fData[Index].Exists and SameKeys(fData[Index].Key, Key));
   if Result then
      Value := fData[Index].Value;
@@ -72,6 +78,7 @@ end;
 
 constructor TSimpleCache.Create(const Size : integer);
 begin
+  inherited Create;
   Count := Size;
   setlength(fData, Count);
 end;
