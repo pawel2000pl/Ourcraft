@@ -428,13 +428,14 @@ type
 
   TOurWorld = class
   private       //TODO: everything
-    fChunks : array[0..WorldSize - 1, 0..WorldSize - 1, 0..WorldSize - 1] of
-    TOurChunkTable;
+    fChunks : array[0..WorldSize - 1, 0..WorldSize - 1, 0..WorldSize - 1] of TOurChunkTable;
     fDefaultBlock : TBlockCreator;
     fOurGame : TAbstractGame;
 
     fFreeThread : TFree;
     fQueues : TQueueManager2;
+
+    //todo: change this
     fRenderAreaCount : integer;
     fRenderArea : array of TRenderArea;
 
@@ -703,7 +704,6 @@ begin
     if (GetCoordPriorityByDistanceLength(i) > Ray) or (session <> fRepaintingID) then
       Break;
     v := GetCoordPriorityByDistance(i);
-
     c := World.GetChunk(v[axisX] + fx, v[axisY] + fy, v[axisZ] + fz);
     if c = nil then
       Continue;
@@ -821,8 +821,8 @@ begin
   x := ChunkX and WorldSizeMask;
   y := ChunkY and WorldSizeMask;
   z := ChunkZ and WorldSizeMask;
-  fChunks[x, y, z].Locker.Lock;
-  try
+  try                      
+    fChunks[x, y, z].Locker.Lock;
     for i := 0 to fChunks[x, y, z].Count - 1 do
       if (fChunks[x, y, z].Table[i].Position[axisX] = ChunkX) and
         (fChunks[x, y, z].Table[i].Position[axisY] = ChunkY) and
@@ -1349,7 +1349,7 @@ end;
 
 function TOurChunk.GetLightLevel(const x, y, z : integer) : integer;
 begin
-  Result := max(GetSunLightLevel(x, y, z), GetBlockLightLevel(x, y, z));
+  Result := max(GetSunLightLevel(x, y, z) div 4, GetBlockLightLevel(x, y, z));
 end;
 
 function TOurChunk.GetSunLightLevel(const x, y, z : integer) : integer;
@@ -1637,8 +1637,9 @@ var
   d, b : TBlock;
   BlockFunction : function(const x, y, z : integer) : TBlock of object;
 begin
-  if (NeedModelSolidUpdate = []) or Finishing then
+  if (NeedModelSolidUpdate = []) or Finishing or (not Loaded) then
     exit;
+
   for side in NeedModelSolidUpdate do
   begin
     try
@@ -1651,7 +1652,7 @@ begin
           for z := 0 to ChunkSize - 1 do
           begin
             d := GetBlockDirect(x, y, z);
-            if d.NeedDraw then
+            if (d.NeedDraw) then
             begin
               if (x = 0) or (x = ChunkSize - 1) or (y = 0) or
                 (y = ChunkSize - 1) or (z = 0) or (z = ChunkSize - 1) then

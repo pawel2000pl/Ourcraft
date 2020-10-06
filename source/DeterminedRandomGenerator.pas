@@ -157,7 +157,7 @@ end;
 constructor TRandomGenerator.Create(const InitSeed : QWord);
 begin
   fSeed := InitSeed;
-  Cache := TGeneratorCache.Create();
+  Cache := TGeneratorCache.Create(2053);
 end;
 
 destructor TRandomGenerator.Destroy;

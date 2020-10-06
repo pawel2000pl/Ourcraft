@@ -33,7 +33,7 @@ type
   generic TCustomCollection<TItem> = class
   public
     function Get(const i : Integer) : TItem; virtual; abstract;
-    procedure Add(Item : TItem); virtual; abstract;
+    procedure Add(const Item : TItem); virtual; abstract;
     function GetCount : Integer; virtual; abstract;
     procedure Remove(const i : Integer); virtual; abstract;
     function IndexOf(const Item : TItem) : Integer; virtual; abstract;
@@ -54,7 +54,7 @@ type
     FData : array of TItem;
   public
     function Get(const i: Integer): TItem; override;
-    procedure Add(Item: TItem); override;
+    procedure Add(const Item: TItem); override;
     function GetCount: Integer; override;
     procedure Remove(const i: Integer); override;
     function IndexOf(const Item: TItem): Integer; override;
@@ -71,7 +71,7 @@ type
   public
     function Get(const i: Integer): TItem; override;
     procedure SetItem(const i : Integer; const NewItem : TItem);
-    procedure Add(Item: TItem); override;
+    procedure Add(const Item: TItem); override;
     procedure SetCount(const i : Integer);
     function GetCount: Integer; override;
     procedure Remove(const i: Integer); override;
@@ -97,7 +97,7 @@ implementation
 
 procedure TCustomOrderArray.Sort;
 begin
-
+   TSorter.InsertComb(FData, 0, Count);
 end;
 
 procedure TCustomOrderArray.Remove(const i: Integer);
@@ -121,7 +121,7 @@ begin
   fData[i] := NewItem;
 end;
 
-procedure TCustomArray.Add(Item: TItem);
+procedure TCustomArray.Add(const Item: TItem);
 var
   h : Integer;
 begin
@@ -156,6 +156,7 @@ begin
   for i := low(fData) to High(fData) do
     if fData[i] = Item then
       exit(i);
+  exit(-1);
 end;
 
 constructor TCustomArray.Create(InitCount: Integer);
@@ -194,11 +195,13 @@ begin
   Result := fData[i];
 end;
 
-procedure TCustomSet.Add(Item: TItem);
+procedure TCustomSet.Add(const Item: TItem);
 begin
+  if IndexOf(Item) >= 0 then
+    exit;
   SetLength(FData, PreInc(Count));
   FData[Count-1] := Item;
-  TMySorter.Insert(FData);
+  TMySorter.Insert(FData, 0, Count);
 end;
 
 function TCustomSet.GetCount: Integer;
