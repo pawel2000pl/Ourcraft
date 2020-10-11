@@ -15,7 +15,7 @@ type
 
 const
   DefaultWorldGenratorSettings : TWorldGeneratorSettings =
-    (WorldScale : (1 / 64, 32, 1 / 64));
+    (WorldScale : (1 / 64, 1/64, 1 / 64));
 
 type
 
@@ -169,12 +169,13 @@ begin
     RandomGenerator.RandomAngle(z * Settings.WorldScale[axisZ],
     ExampleSeedOffset[3] + floor64(MiddleLevel * ExampleSeedOffset[4]));
   Result := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX] + hr * cos(ha),
-    MiddleLevel, z * Settings.WorldScale[axisZ] + hr * sin(ha)], ExampleSeedOffset[3]);
+    z * Settings.WorldScale[axisZ] + hr * sin(ha)], floor64(MiddleLevel*1024) + ExampleSeedOffset[3]);
 end;
 
 procedure TWorldGenerator.Generate(const Chunk : TOurChunk);
 var
   x, y, z, h, l : integer;
+  v : Double;
   stone, glow : TCustomCreator; //TODO: Remove
 begin
   with Chunk do
@@ -185,9 +186,15 @@ begin
       for x := 0 to ChunkSize - 1 do
           for z := 0 to ChunkSize-1 do
           begin
-            h := round(EnsureRange((GetRandom(x + Position[axisX] shl ChunkSizeLog2, z + Position[axisZ] shl ChunkSizeLog2, 0)-0.5) * Settings.WorldScale[axisY] - Position[axisY] shl ChunkSizeLog2, 0, ChunkSize-1));
-            l := min(0, h-1);
-            if (h >= l) and (l>=0) then
+            v := 2*GetRandom(x + Position[axisX] shl ChunkSizeLog2, z + Position[axisZ] shl ChunkSizeLog2, 0)-1;
+            //v := (cos(v*pi*2)/pi/2+v)/2;
+            //v := sin(v*pi*2)/pi/2+v;
+            //v := arctan(pi/2*v);
+            //v := 2/pi*arctan(4*v*(1+intpower(2*v, 4)));
+            //v := tan(v*pi/2);
+            h := round(EnsureRange(v / 2 / Settings.WorldScale[axisY] - Position[axisY] shl ChunkSizeLog2, -1, ChunkSize-1));
+            l := 0;
+            {if (h >= l) then
               if (x mod 8 = 0) and (z mod 8 = 0) then
               begin
                 for y := l to h do
@@ -197,7 +204,12 @@ begin
               begin
                 for y := l to h do
                   SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateNew(0) as TBlock);
-              end;
+              end;}
+              for y := l to h do
+                  if y mod 8 = 0 then
+                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateNew(0) as TBlock)
+                  else
+                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateNew(0) as TBlock);
           end;
   end;
 end;

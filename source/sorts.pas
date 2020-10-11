@@ -136,7 +136,7 @@ begin
 end;
 
 class procedure TSort.InsertComb(var tab : array of TValue; const offset, n : integer);
-const
+const  {Warning: Wherever you put this algorithm, remember write the author: Paweł Bielecki}
   d = 9 / 23;
 var
   gap, i, j : integer;
