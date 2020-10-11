@@ -5,7 +5,7 @@ unit SimpleCache;
 interface
 
 uses
-  Classes, SysUtils, crc;
+  Classes, SysUtils;
 
 type
 
@@ -35,7 +35,19 @@ type
     destructor Destroy; override;
   end;
 
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const Base : LongWord = 4294967291) : LongWord;
+
 implementation
+
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const Base : LongWord = 4294967291) : LongWord;
+var
+  i : PtrUInt;
+begin
+  Result := 0;
+  Move(PByte(buf)[Size and (not 3)], Result, Size and 3);
+  for i := (Size shr 2) -1 downto 0 do
+    Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
+end;
 
 { TSimpleCache }
 
@@ -48,7 +60,7 @@ end;
 
 function TSimpleCache.GetHash(const Key: TKey): UInt32;
 begin
-  Result := crc32(613, @Key, SizeOf(TKey));
+  Result := ModuloBuf(@Key, Sizeof(TKey));
 end;
 
 function TSimpleCache.SameKeys(const a, b: TKey): Boolean;

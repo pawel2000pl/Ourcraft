@@ -25,17 +25,12 @@ Changelog:
 
 Screenshots:
 
-![Screenshot](screenshots/Screenshot_20201006_153428.png)
+![Screenshot](screenshots/Screenshot_20201006_220412.png)
+![Screenshot](screenshots/Screenshot_20201006_174602.png)
 ![Screenshot](screenshots/Screenshot_20201006_140414.png)
-![Screenshot](screenshots/Screenshot_20200825_215450.png)
-![Screenshot](screenshots/Screenshot_20200825_215425.png)
-![Screenshot](screenshots/Screenshot_20200825_215410.png)
 ![Screenshot](screenshots/Screenshot_20200825_215336.png)
 ![Screenshot](screenshots/Screenshot_20200825_215243.png)
 ![Screenshot](screenshots/Screenshot_20200825_215226.png)
-![Screenshot](screenshots/Screenshot_20200825_215201.png)
-![Screenshot](screenshots/Screenshot_20200825_215146.png)
-![Screenshot](screenshots/Screenshot_20200814_180225.png)
 ![Screenshot](screenshots/Screenshot_20200528_155109.png)
 ![Screenshot](screenshots/Screenshot_20200525_000632.png)
 ![Screenshot](screenshots/Screenshot_20200524_133030.png)

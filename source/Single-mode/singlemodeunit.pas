@@ -57,7 +57,8 @@ end;
 procedure TMainForm.OpenGLControl1Paint(Sender : TObject);
 var
   t, dt : Qword;
-begin
+begin            
+  Application.ProcessMessages;
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
@@ -70,7 +71,7 @@ begin
     Game := TOurGame.Create;
     World := TOurWorld.Create(Game.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
     writeln('Generating world');
-    RenderArea := World.AddRenderArea(0, 0, 0, 8);
+    RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;
     Camera.Position := Vector3(10, ChunkSize div 2 + 4, 10);
     writeln('Modeling world');
@@ -203,20 +204,20 @@ begin
 
   if key = 'w' then
     Camera.Position := Camera.Position + FlatVector(Camera.ForwardVector,
-      [axisX, axisZ]) * 0.1;
+      [axisX, axisZ]) * 0.4;
   if key = 's' then
     Camera.Position := Camera.Position + FlatVector(Camera.BackVector,
-      [axisX, axisZ]) * 0.1;
+      [axisX, axisZ]) * 0.4;
   if key = ' ' then
-    Camera.Position := Camera.Position + FlatVector(Camera.UpVector, [axisY]) * 0.1;
+    Camera.Position := Camera.Position + FlatVector(Camera.UpVector, [axisY]) * 0.4;
   if key = 'x' then
-    Camera.Position := Camera.Position + FlatVector(Camera.DownVector, [axisY]) * 0.1;
+    Camera.Position := Camera.Position + FlatVector(Camera.DownVector, [axisY]) * 0.4;
   if key = 'a' then
     Camera.Position := Camera.Position + FlatVector(Camera.LeftVector,
-      [axisX, axisZ]) * 0.1;
+      [axisX, axisZ]) * 0.4;
   if key = 'd' then
     Camera.Position := Camera.Position + FlatVector(Camera.RightVector,
-      [axisX, axisZ]) * 0.1;
+      [axisX, axisZ]) * 0.4;
 
   if key = 'c' then
   begin

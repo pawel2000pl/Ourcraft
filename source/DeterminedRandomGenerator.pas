@@ -43,17 +43,13 @@ implementation
 {$RangeChecks off}
 
 function PowerMod(const x, n, m : QWord) : QWord;
-var
-  h : QWord;
 begin
   if n = 0 then
-    exit(1);
-
-  h := PowerMod(x, n shr 1, m) mod m;
+     exit(1);
   if (n and 1) = 1 then
-    Result := h * h * x mod m
+    exit(sqr(PowerMod(x, n shr 1, m)) mod m * x mod m)
   else
-    Result := h * h;
+    exit(sqr(PowerMod(x, n shr 1, m)) mod m);
 end;
 
 function CreateConstRandomCacheKey(const i : integer;
@@ -157,7 +153,7 @@ end;
 constructor TRandomGenerator.Create(const InitSeed : QWord);
 begin
   fSeed := InitSeed;
-  Cache := TGeneratorCache.Create(2053);
+  Cache := TGeneratorCache.Create();
 end;
 
 destructor TRandomGenerator.Destroy;
