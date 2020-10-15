@@ -5,7 +5,7 @@ unit glowstone;
 interface
 
 uses
-  OurUtils, Models, CalcUtils, OurEnvironment;
+  OurUtils, Models, CalcUtils, OurGame;
 
 type
 
@@ -28,16 +28,12 @@ type
 
     procedure AfterLoading; override;
     function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
-    constructor Create(AnEnvironment: TEnvironment);
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
 
 
 implementation
-
-uses
-  OurGame;
 
 procedure RegisterElementCreator(Environment: TEnvironment;
   Register: TRegisterCreatorMethod);
@@ -61,11 +57,6 @@ function TGlowStoneCreator.CreateElement(const SubID: integer
   ): TEnvironmentElement;
 begin
    Result := TGlowStone.Create(self);
-end;
-
-constructor TGlowStoneCreator.Create(AnEnvironment: TEnvironment);
-begin
-   inherited;
 end;
 
 { TGlowStone }

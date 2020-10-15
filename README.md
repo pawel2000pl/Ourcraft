@@ -9,7 +9,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 
 1. [+] There is no height limit
 2. [-] Levels (as in SAO) instead of other worlds (as Nether or End)
-3. [-] More 3D GUI (during the game)
+3. [-] More 3D GUI (during the gameplay)
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is executable file, so there is more FPS
      
 It's not playable yet. But you can: 
@@ -22,6 +22,12 @@ Changelog:
 
 * Add simply terrain generator
 * Bug fixes and optimalization
+
+How to compile and run
+
+1. Install required packages: "installation/apt install_requires". It may be necessary to change version of some libs, so then edit the file.
+2. Execute "run.sh"
+3. An executable file should be in "bin/SingleMode" (other files do nothing for gameplay)
 
 Screenshots:
 

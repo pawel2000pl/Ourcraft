@@ -30,7 +30,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="19">
+    <Units Count="20">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -52,78 +52,82 @@
         <IsPartOfProject Value="True"/>
       </Unit3>
       <Unit4>
-        <Filename Value="../Blocks/air.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="../Blocks/stone.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit5>
-      <Unit6>
         <Filename Value="../processutils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="ProcessUtils"/>
-      </Unit6>
-      <Unit7>
+      </Unit4>
+      <Unit5>
         <Filename Value="../sorts.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Sorts"/>
-      </Unit7>
-      <Unit8>
+      </Unit5>
+      <Unit6>
         <Filename Value="glcamera.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="GlCamera"/>
-      </Unit8>
-      <Unit9>
+      </Unit6>
+      <Unit7>
         <Filename Value="../models.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Models"/>
-      </Unit9>
-      <Unit10>
+      </Unit7>
+      <Unit8>
         <Filename Value="../freerer.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Freerer"/>
-      </Unit10>
-      <Unit11>
+      </Unit8>
+      <Unit9>
         <Filename Value="../queues.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Queues"/>
-      </Unit11>
-      <Unit12>
+      </Unit9>
+      <Unit10>
         <Filename Value="../locker.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Locker"/>
-      </Unit12>
-      <Unit13>
+      </Unit10>
+      <Unit11>
         <Filename Value="../chain.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Chain"/>
-      </Unit13>
-      <Unit14>
+      </Unit11>
+      <Unit12>
         <Filename Value="../memguard.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MemGuard"/>
-      </Unit14>
-      <Unit15>
+      </Unit12>
+      <Unit13>
         <Filename Value="../worldgenerator.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="WorldGenerator"/>
-      </Unit15>
-      <Unit16>
+      </Unit13>
+      <Unit14>
         <Filename Value="../simplecache.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SimpleCache"/>
-      </Unit16>
-      <Unit17>
+      </Unit14>
+      <Unit15>
         <Filename Value="../arrayofnumber.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="ArrayOfNumber"/>
-      </Unit17>
-      <Unit18>
+      </Unit15>
+      <Unit16>
         <Filename Value="../collections.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Collections"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="../Environment/air.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="../Environment/glowstone.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit18>
+      <Unit19>
+        <Filename Value="../Environment/stone.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit19>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -133,7 +137,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..;../Blocks"/>
+      <OtherUnitFiles Value="..;../Environment"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

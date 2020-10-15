@@ -31,16 +31,31 @@ type
   { TCustomCollection }
 
   generic TCustomCollection<TItem> = class
+  type
+      TItemCollectionEvent = procedure(var Item : TItem) of object;
+  private
+    FOnAdd: TItemCollectionEvent;
+    FOnRemove: TItemCollectionEvent;
+    procedure SetOnAdd(AValue: TItemCollectionEvent);
+    procedure SetOnRemove(AValue: TItemCollectionEvent);
+  protected
+    procedure DoAddEvent(var Item : TItem);
+    procedure DoRemoveEvent(var Item : TItem);
   public
-    function Get(const i : Integer) : TItem; virtual; abstract;
-    procedure Add(const Item : TItem); virtual; abstract;
-    function GetCount : Integer; virtual; abstract;
+    property OnAdd : TItemCollectionEvent read FOnAdd write SetOnAdd;
+    property OnRemove : TItemCollectionEvent read FOnRemove write SetOnRemove;
+
+    function Get(const i : Integer) : TItem; virtual; abstract;  
     procedure Remove(const i : Integer); virtual; abstract;
+    function GetCount : Integer; virtual; abstract;
+    procedure Add(Item : TItem); virtual; abstract;
     function IndexOf(const Item : TItem) : Integer; virtual; abstract;
 
     function RemoveItem(const Item : TItem) : boolean; virtual;
     function HasNext(const i : Integer) : Boolean; virtual;
     function GetNext(var i : integer) : TItem; virtual;
+
+    constructor Create;
   end;
 
   { TCustomSet }
@@ -54,11 +69,10 @@ type
     FData : array of TItem;
   public
     function Get(const i: Integer): TItem; override;
-    procedure Add(const Item: TItem); override;
+    procedure Add(Item: TItem); override;
     function GetCount: Integer; override;
     procedure Remove(const i: Integer); override;
     function IndexOf(const Item: TItem): Integer; override;
-
     constructor Create;
     destructor Destroy; override;
   end;
@@ -71,7 +85,7 @@ type
   public
     function Get(const i: Integer): TItem; override;
     procedure SetItem(const i : Integer; const NewItem : TItem);
-    procedure Add(const Item: TItem); override;
+    procedure Add(Item: TItem); override;
     procedure SetCount(const i : Integer);
     function GetCount: Integer; override;
     procedure Remove(const i: Integer); override;
@@ -85,15 +99,31 @@ type
 
   generic TCustomOrderArray<TItem> = class(specialize TCustomArray<TItem>)
   type
-    TSorter = specialize TSort<TItem>;
+    TSorter = class(specialize TSort<TItem>)
+    public
+      class function Compare(const a, b: TValue): integer; override;
+    end;
   public
+     class function CompareItems(const a, b: TItem): integer; virtual;
      procedure Sort;
      procedure Remove(const i: Integer); override;
   end;
 
 implementation
 
+{ TCustomOrderArray.TSorter }
+
+class function TCustomOrderArray.TSorter.Compare(const a, b: TValue): integer;
+begin
+  Result := CompareItems(a, b);
+end;
+
 { TCustomOrderArray }
+
+class function TCustomOrderArray.CompareItems(const a, b: TItem): integer;
+begin
+  Result := CompareMemRange(@a, @b, sizeof(TItem));
+end;
 
 procedure TCustomOrderArray.Sort;
 begin
@@ -121,10 +151,11 @@ begin
   fData[i] := NewItem;
 end;
 
-procedure TCustomArray.Add(const Item: TItem);
+procedure TCustomArray.Add(Item: TItem);
 var
   h : Integer;
 begin
+  DoAddEvent(Item);
   h := length(fData);
   SetLength(fData, h+1);
   fData[h] := Item;
@@ -144,6 +175,7 @@ procedure TCustomArray.Remove(const i: Integer);
 var
   h : Integer;
 begin
+  DoRemoveEvent(fData[i]);
   h := High(fData);
   fData[i] := fData[h];
   setlength(fData, h);
@@ -167,6 +199,34 @@ end;
 
 { TCustomCollection }
 
+procedure TCustomCollection.SetOnAdd(AValue: TItemCollectionEvent);
+begin
+  if FOnAdd=AValue then Exit;
+  if not Assigned(AValue) then
+    AValue := nil;
+  FOnAdd:=AValue;
+end;
+
+procedure TCustomCollection.SetOnRemove(AValue: TItemCollectionEvent);
+begin
+  if FOnRemove=AValue then Exit;  
+  if not Assigned(AValue) then
+    AValue := nil;
+  FOnRemove:=AValue;
+end;
+
+procedure TCustomCollection.DoAddEvent(var Item: TItem);
+begin
+  if FOnAdd <> nil then
+    FOnAdd(Item);
+end;
+
+procedure TCustomCollection.DoRemoveEvent(var Item: TItem);
+begin
+  if FOnRemove <> nil then
+    FOnRemove(Item);
+end;
+
 function TCustomCollection.RemoveItem(const Item: TItem): boolean;
 var
   i : Integer;
@@ -188,6 +248,12 @@ begin
   Result := Get(PreInc(i));
 end;
 
+constructor TCustomCollection.Create;
+begin
+  FOnAdd:=nil;
+  FOnRemove:=nil;
+end;
+
 { TCustomSet }
 
 function TCustomSet.Get(const i: Integer): TItem;
@@ -195,10 +261,11 @@ begin
   Result := fData[i];
 end;
 
-procedure TCustomSet.Add(const Item: TItem);
+procedure TCustomSet.Add(Item: TItem);
 begin
   if IndexOf(Item) >= 0 then
-    exit;
+    exit;               
+  DoAddEvent(Item);
   SetLength(FData, PreInc(Count));
   FData[Count-1] := Item;
   TMySorter.Insert(FData, 0, Count);
@@ -213,6 +280,7 @@ procedure TCustomSet.Remove(const i: Integer);
 var
   m : Integer;
 begin
+  DoRemoveEvent(FData[i]);
   for m := i+1 to Count-1 do
     fData[m-1] := fData[m];
   SetLength(fData, PreDec(Count));
