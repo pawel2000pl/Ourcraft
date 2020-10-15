@@ -4,7 +4,8 @@ unit air;
 interface
 
 uses
-  OurUtils, OurEnvironment;
+  OurUtils,
+  OurGame;
 
 type
 
@@ -23,15 +24,11 @@ type
   public
     function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
     function getTextID: ansistring; override;
-
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
 
 implementation
-
-uses
-  OurGame;
 
 procedure RegisterElementCreator(Environment: TEnvironment;
   Register: TRegisterCreatorMethod);

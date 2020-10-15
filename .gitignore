@@ -12,3 +12,4 @@ bin/
 source/Single-mode/SingleMode
 *backup*
 source/Single-mode/ppas.sh
+source/Single-mode/lib

@@ -1,0 +1,1 @@
+glowstone.RegisterElementCreator(Self, @RegisterCreator); stone.RegisterElementCreator(Self, @RegisterCreator); air.RegisterElementCreator(Self, @RegisterCreator); 

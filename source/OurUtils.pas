@@ -8,7 +8,7 @@ interface
 uses
   SysUtils, Classes, Math, OurData, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Chain, Collections,
-  gstack;
+  gstack, OurGame;
 
 const
   ChunkSizeLog2 = 4;
@@ -72,7 +72,6 @@ type
   TBlock = class;
   TOurChunk = class;
   TOurWorld = class;
-  TCustomCreator = class;
                          
   { TAbstractGenerator }
 
@@ -85,25 +84,27 @@ type
     constructor Create(const _DestroyWithWorld : Boolean = true);
   end;
 
-  TAbstractGame = class
-  public
-    function GetCreator(const ID : integer) : TCustomCreator; virtual; abstract;
-    function GetID(const Name : ansistring) : integer; virtual; abstract;
-    function GetIDCount : integer; virtual; abstract;
-  end;
-
-
   { TEntity }
 
-  TEntity = class
+  TEntity = class(TEnvironmentElement)
   private
+    FModel: TModel;
+    FPosition: TVector3;
+    FRotate: TRotationVector;
+    FRotateVelocity: TRotationVector;
+    FVelocity: TVector3;
     fWorld : TOurWorld;
+    procedure SetModel(AValue: TModel);
+    procedure SetPosition(AValue: TVector3);
+    procedure SetRotate(AValue: TRotationVector);
+    procedure SetRotateVelocity(AValue: TRotationVector);
+    procedure SetVelocity(AValue: TVector3);
   public
-    Position : TVector3;
-    Velocity : TVector3;
-    Rotate : TRotationVector;
-    RotateVelocity : TRotationVector;
-    Model : TModel;
+    property Position : TVector3 read FPosition write SetPosition;
+    property Velocity : TVector3 read FVelocity write SetVelocity;
+    property Rotate : TRotationVector read FRotate write SetRotate;
+    property RotateVelocity : TRotationVector read FRotateVelocity write SetRotateVelocity;
+    property Model : TModel read FModel write SetModel;
     property World : TOurWorld read fWorld;
     function GetChunk : TOurChunk; virtual; abstract;
     procedure SetChunk(Chunk : TOurChunk); virtual; abstract;
@@ -113,7 +114,7 @@ type
     procedure OnOptions(Entity : TEntity); virtual; abstract; //right click
     procedure UpdateHitBoxes; virtual; abstract;
 
-    constructor Create(TheWorld : TOurWorld);
+    constructor Create(TheWorld : TOurWorld; MyCreator : TElementCreator); //TODO: EntityCreator
   end;
 
 type
@@ -123,40 +124,21 @@ type
   end;
   PBlockDataTag = ^TBlockDataTag;
 
-  { TCustomCreator }
-
-  TCustomCreator = class
-  private
-    fID : integer;
-    fOurGame : TAbstractGame;
-    procedure SetID(const NewID : integer);
-  public
-    function GetOurGame : TAbstractGame;
-    procedure AfterLoading; virtual;
-    function GetType : TIDType; virtual; abstract;
-    function CreateNew(const SubID : integer) : TObject; virtual; abstract;
-    function getTextID : ansistring; virtual;
-    function GetID : integer;
-    property ID : integer read fID write SetID;
-    constructor Create(OurGame : TAbstractGame);
-  end;
-
-  TCreatorRegister = procedure(Register : TCustomCreator) of object;
-
   { TBlockCreator }
 
-  TBlockCreator = class(TCustomCreator)
+  TBlockCreator = class(TElementCreator)
   public
-    function GetType : TIDType; override;
+    function GetType : TElementType; override;
+    function CreateBlock(const SubID : Integer) : TBlock;
   end;
 
   { TBlock }
 
-  TBlock = class
+  TBlock = class(TEnvironmentElement)
   private
-    fCreator : TBlockCreator;
+    function GetBlockCreator: TBlockCreator;
   public
-    property Creator : TBlockCreator read fCreator;
+    property BlockCreator : TBlockCreator read GetBlockCreator;
     function GetID : integer;
     property ID : integer read getID;
     function getTextID : ansistring;
@@ -188,7 +170,6 @@ type
     function Transparency : integer; virtual;
     function LightSource : integer; virtual;
     function Clone : TBlock; virtual;
-    constructor Create(const _Creator : TBlockCreator);
   end;
 
   { TBlockList }
@@ -430,7 +411,8 @@ type
   private       //TODO: everything
     fChunks : array[0..WorldSize - 1, 0..WorldSize - 1, 0..WorldSize - 1] of TOurChunkTable;
     fDefaultBlock : TBlockCreator;
-    fOurGame : TAbstractGame;
+    fOurGame : TOurGame;
+    fEnvironment : TEnvironment;
 
     fFreeThread : TFree;
     fQueues : TQueueManager2;
@@ -448,10 +430,11 @@ type
     fGenerator : TAbstractGenerator;
 
     procedure UpdateRenderArea(Area : TRenderArea);  //todo
-  public
+  public                 
+    property Environment : TEnvironment read fEnvironment;
     property TickDelay : Qword read fTickDelay write fTickDelay;
     property RandomTickSpeed : Qword read fRandomTickSpeed write fRandomTickSpeed;
-    property OurGame : TAbstractGame read fOurGame;
+    property OurGame : TOurGame read fOurGame;
     property Queues : TQueueManager2 read fQueues;
     property FreeThread : TFree read fFreeThread;
 
@@ -473,7 +456,7 @@ type
 
     property Generator : TAbstractGenerator read fGenerator;
 
-    constructor Create(defaultBlock : TBlockCreator; Game : TAbstractGame; WorldGenerator : TAbstractGenerator);
+    constructor Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator);
     destructor Destroy; override;
 
   end;
@@ -995,14 +978,16 @@ begin
           fChunks[x, y, z].Table[i].RandomTick(Count);
 end;
 
-constructor TOurWorld.Create(defaultBlock: TBlockCreator; Game: TAbstractGame;
+constructor TOurWorld.Create(defaultBlock: TBlockCreator; Game: TOurGame;
   WorldGenerator: TAbstractGenerator);
 var
   x, y, z : integer;
 begin
   TickLocker := TLocker.Create;
   UpdateRenderAreaLocker := TLocker.Create;
-  fFreeThread := TFree.Create;
+  fFreeThread := TFree.Create;    
+  fOurGame := Game;
+  fEnvironment := Game.GetEnvironment;
   fGenerator := WorldGenerator;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
@@ -1014,7 +999,6 @@ begin
   fQueues := TQueueManager2.Create(1);
   fRenderAreaCount := 0;
   fDefaultBlock := defaultBlock;
-  fOurGame := Game;
   fTickDelay := 50;
   fRandomTickSpeed := 3;
   fQueues.AddMethodDelay(@Tick, fTickDelay);
@@ -1190,9 +1174,8 @@ var
 begin
   try
     fb := fBlocks[x, y, z];
-
     if AValue = nil then
-      fBlocks[x, y, z] := fdefaultBlock.CreateNew(0) as TBlock
+      fBlocks[x, y, z] := fdefaultBlock.CreateElement(0) as TBlock
     else
       fBlocks[x, y, z] := AValue;
 
@@ -1886,7 +1869,7 @@ begin
     for y := 0 to ChunkSize - 1 do
       for z := 0 to ChunkSize - 1 do
       begin
-        fBlocks[x, y, z] := defaultBlock.CreateNew(0) as TBlock;
+        fBlocks[x, y, z] := defaultBlock.CreateElement(0) as TBlock;
         fLights[x, y, z] := 0;
         fSunLight[x, y, z] := 0;
       end;
@@ -1942,43 +1925,14 @@ end;
 
 { TBlockCreator }
 
-function TBlockCreator.GetType : TIDType;
+function TBlockCreator.GetType: TElementType;
 begin
-  Result := idBlock;
+  Result := etBlock;
 end;
 
-{ TCustomCreator }
-
-procedure TCustomCreator.SetID(const NewID : integer);
+function TBlockCreator.CreateBlock(const SubID: Integer): TBlock;
 begin
-  if fID = -1 then //work only when fID = -1
-    fID := NewID;
-end;
-
-function TCustomCreator.GetOurGame : TAbstractGame;
-begin
-  Result := fOurGame;
-end;
-
-procedure TCustomCreator.AfterLoading;
-begin
-  //do nothing
-end;
-
-function TCustomCreator.getTextID : ansistring;
-begin
-  Result := 'NoID';
-end;
-
-function TCustomCreator.GetID : integer;
-begin
-  Result := fID;
-end;
-
-constructor TCustomCreator.Create(OurGame : TAbstractGame);
-begin
-  fID := -1;
-  fOurGame := OurGame;
+  Result := CreateElement(SubID) as TBlock;
 end;
 
 { TBlockList }
@@ -2117,6 +2071,11 @@ end;
 
 { TBlock }
 
+function TBlock.GetBlockCreator: TBlockCreator;
+begin
+  Result := Creator as TBlockCreator;
+end;
+
 function TBlock.GetID : integer;
 begin
   Result := Creator.getID;
@@ -2184,20 +2143,45 @@ end;
 
 function TBlock.Clone : TBlock;
 begin
-  Result := Creator.CreateNew(getSubID) as TBlock;
-end;
-
-constructor TBlock.Create(const _Creator : TBlockCreator);
-begin
-  fCreator := _Creator;
+  Result := Creator.CreateElement(getSubID) as TBlock;
 end;
 
 { TEntity }
 
-constructor TEntity.Create(TheWorld : TOurWorld);
+procedure TEntity.SetModel(AValue: TModel);
+begin
+  if FModel=AValue then Exit;
+  FModel:=AValue;
+end;
+
+procedure TEntity.SetPosition(AValue: TVector3);
+begin
+  if FPosition=AValue then Exit;
+  FPosition:=AValue;
+end;
+
+procedure TEntity.SetRotate(AValue: TRotationVector);
+begin
+  if FRotate=AValue then Exit;
+  FRotate:=AValue;
+end;
+
+procedure TEntity.SetRotateVelocity(AValue: TRotationVector);
+begin
+  if FRotateVelocity=AValue then Exit;
+  FRotateVelocity:=AValue;
+end;
+
+procedure TEntity.SetVelocity(AValue: TVector3);
+begin
+  if FVelocity=AValue then Exit;
+  FVelocity:=AValue;
+end;
+
+constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator);
 begin
   fWorld := TheWorld;
-  inherited Create;
+  inherited Create(MyCreator);
 end;
 
 { TMovingShape }

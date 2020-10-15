@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  OpenGLContext, OurGame, OurUtils, BlocksLoader, Sorts, GLext, gl, glu, Glut,
+  OpenGLContext, OurGame, OurUtils, Sorts, GLext, gl, glu, Glut,
   CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator;
 
 type
@@ -69,7 +69,7 @@ begin
   if Game = nil then
   begin
     Game := TOurGame.Create;
-    World := TOurWorld.Create(Game.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
+    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;
@@ -102,15 +102,15 @@ end;
 procedure TMainForm.Timer2Timer(Sender : TObject);
 var
   c : TOurChunk;
-  s, g : TCustomCreator;
+  s, g : TElementCreator;
   t, dt : QWord;
   i, j, k : integer;
   side : TTextureMode;
 begin
   if Game = nil then
     exit;
-  s := Game.GetCreator(Game.GetID('stone'));
-  g := Game.GetCreator(Game.GetID('glowstone'));
+  s := Game.Environment.GetCreator(Game.Environment.GetID('stone'));
+  g := Game.Environment.GetCreator(Game.Environment.GetID('glowstone'));
   for i := -1 to 0 do
   begin
     c := World.GetChunk(0, 0, i);
@@ -127,10 +127,10 @@ begin
     end
     else
     begin
-      c.Blocks[8, ChunkSize div 2 + 2, 8] := g.CreateNew(0) as TBlock;
-      c.Blocks[8, ChunkSize div 2 + 2, 0] := s.CreateNew(0) as TBlock;
-      c.Blocks[0, ChunkSize div 2 + 2, 8] := g.CreateNew(0) as TBlock;
-      c.Blocks[0, ChunkSize div 2 + 2, 0] := s.CreateNew(0) as TBlock;
+      c.Blocks[8, ChunkSize div 2 + 2, 8] := g.CreateElement(0) as TBlock;
+      c.Blocks[8, ChunkSize div 2 + 2, 0] := s.CreateElement(0) as TBlock;
+      c.Blocks[0, ChunkSize div 2 + 2, 8] := g.CreateElement(0) as TBlock;
+      c.Blocks[0, ChunkSize div 2 + 2, 0] := s.CreateElement(0) as TBlock;
       writeln('Added');
     end;
   end;
@@ -238,12 +238,12 @@ begin
   if key = 'm' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.GetCreator(Game.GetID('stone')).CreateNew(0) as TBlock);
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('stone')).CreateElement(0) as TBlock);
   end;
   if key = 'n' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.GetCreator(0).CreateNew(0) as TBlock);
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(0) as TBlock);
   end;
 
   RenderArea.SetPosition(IntVector3(floor(Camera.Position[axisX] / ChunkSize),

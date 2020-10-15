@@ -5,7 +5,7 @@ unit WorldGenerator;
 interface
 
 uses
-  Classes, SysUtils, Math, OurUtils, CalcUtils, DeterminedRandomGenerator, ArrayOfNumber;
+  Classes, SysUtils, Math, OurUtils, CalcUtils, OurGame, DeterminedRandomGenerator, ArrayOfNumber;
 
 type
 
@@ -176,12 +176,12 @@ procedure TWorldGenerator.Generate(const Chunk : TOurChunk);
 var
   x, y, z, h, l : integer;
   v : Double;
-  stone, glow : TCustomCreator; //TODO: Remove
+  stone, glow : TElementCreator; //TODO: Remove
 begin
   with Chunk do
   begin
-      Stone := World.OurGame.GetCreator(World.OurGame.GetID('stone'));
-      glow := World.OurGame.GetCreator(World.OurGame.GetID('glowstone'));
+      Stone := World.Environment.GetCreator(World.Environment.GetID('stone'));
+      glow := World.Environment.GetCreator(World.Environment.GetID('glowstone'));
 
       for x := 0 to ChunkSize - 1 do
           for z := 0 to ChunkSize-1 do
@@ -194,22 +194,11 @@ begin
             //v := tan(v*pi/2);
             h := round(EnsureRange(v / 2 / Settings.WorldScale[axisY] - Position[axisY] shl ChunkSizeLog2, -1, ChunkSize-1));
             l := 0;
-            {if (h >= l) then
-              if (x mod 8 = 0) and (z mod 8 = 0) then
-              begin
-                for y := l to h do
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateNew(0) as TBlock);
-              end
-              else
-              begin
-                for y := l to h do
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateNew(0) as TBlock);
-              end;}
-              for y := l to h do
+            for y := l to h do
                   if y mod 8 = 0 then
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateNew(0) as TBlock)
+                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateElement(0) as TBlock)
                   else
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateNew(0) as TBlock);
+                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateElement(0) as TBlock);
           end;
   end;
 end;
