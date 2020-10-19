@@ -43,14 +43,14 @@ type
 
   { TTextureRectSorter }
 
-  TTextureRectSorter = class(specialize TSort<TTextureRect>)
+  TTextureRectSorter = class(specialize TStaticSort<TTextureRect>)
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
 
   { TTextureRectSearcher }
 
-  TTextureRectSearcher = class(specialize TBSearch<TTextureRect, ansistring>)
+  TTextureRectSearcher = class(specialize TStaticBSearch<TTextureRect, ansistring>)
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;
