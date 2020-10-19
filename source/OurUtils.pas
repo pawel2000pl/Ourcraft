@@ -8,7 +8,7 @@ interface
 uses
   SysUtils, Classes, Math, OurData, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Chain, Collections,
-  gstack, OurGame;
+  gstack, OurGame, Incrementations;
 
 const
   ChunkSizeLog2 = 4;
@@ -200,14 +200,14 @@ type
 
   { TRenderAreaSort }
 
-  TRenderAreaSort = class(specialize TSort<TRenderArea>)
+  TRenderAreaSort = class(specialize TStaticSort<TRenderArea>)
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
 
   { TRenderAreaSearcher }
 
-  TRenderAreaSearcher = class(specialize TBSearch<TRenderArea, TRenderArea>)
+  TRenderAreaSearcher = class(specialize TStaticBSearch<TRenderArea, TRenderArea>)
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;
@@ -372,9 +372,12 @@ type
     fRay : integer;
     fOnChange : TRenderAreaChange;
     fWorld : TOurWorld;
+    fBorderWidth : Double;
+
     FIsVisibledPointFunction : TIsVisibledPointFunction;
     function AlwaysTrue(const {%H-}Point : TVector3; const {%H-}Size : double) : boolean;
     function GetIsVisibledPointFunction : TIsVisibledPointFunction;
+    procedure SetBorderWidth(AValue: Double);
     procedure SetIsVisibledPointFunction(AValue : TIsVisibledPointFunction);
     procedure SetOnChage(AValue : TRenderAreaChange);
     procedure SetRay(AValue : integer);
@@ -388,6 +391,7 @@ type
       read GetIsVisibledPointFunction write SetIsVisibledPointFunction;
     property OnChage : TRenderAreaChange read FOnChage write SetOnChage;
 
+    property BorderWidth : Double read fBorderWidth write SetBorderWidth;
     function GetPosition : TIntVector3;
     property World : TOurWorld read fWorld;
     property Ray : integer read fRay write SetRay;
@@ -578,6 +582,15 @@ begin
     Result := FIsVisibledPointFunction;
 end;
 
+procedure TRenderArea.SetBorderWidth(AValue: Double);
+begin                              
+  if AValue > 0 then
+    AValue:=0;
+  if fBorderWidth=AValue then Exit;
+  fBorderWidth:=AValue;
+  World.Queues.AddMethod(@OnChangeEvent);
+end;
+
 procedure TRenderArea.SetIsVisibledPointFunction(AValue : TIsVisibledPointFunction);
 begin
   if FIsVisibledPointFunction = AValue then
@@ -699,6 +712,7 @@ constructor TRenderArea.Create(OurWorld : TOurWorld);
 begin
   FReloadingID := 0;
   fRepaintingID := 0;
+  fBorderWidth:=1.2;
   fWorld := OurWorld;
   fOnchange := nil;
   FIsVisibledPointFunction := @AlwaysTrue;
@@ -753,7 +767,7 @@ begin
               exit;
             c := fChunks[x, y, z].Table[i];
             if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) >
-              Area.Ray + 1)) and c.RenderAreaCollection.RemoveItem(Area) and (c.RenderAreaCollection.GetCount = 0) then
+              Area.Ray + Area.BorderWidth)) and c.RenderAreaCollection.RemoveItem(Area) and (c.RenderAreaCollection.GetCount = 0) then
             begin
               UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
                 fChunks[x, y, z].Table[i].Position[axisY],

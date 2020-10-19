@@ -17,15 +17,14 @@
   Boston, MA 02110-1335, USA.
 }
 
-unit CalcUtils;
+unit CalcUtils; 
 
 {$mode objfpc}
-{$Macro on}
 
 interface
 
 uses
-  Classes, Math, Sorts;
+  Classes, Math, Sorts, Incrementations;
 
 type
   TAxis = (axisX = 0, axisY = 1, axisZ = 2);
@@ -108,33 +107,13 @@ function GetInverseCoordPriorityByDistance(const x, y, z : integer) : Integer; i
 
 function Q_rsqrt(const number : single) : single; inline;
 
-{$define Ordinal_Type := uint64}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := uint32}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := uint16}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := uint8}
-{$include incrementation_headers.inc}
-
-{$define Ordinal_Type := int64}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := int32}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := int16}
-{$include incrementation_headers.inc}
-{$define Ordinal_Type := int8}
-{$include incrementation_headers.inc}
-
-{$UnDef Ordinal_Type}
-
 implementation
 
 type
 
   { TIntVector3Sort }
 
-  TIntVector3Sort = class(specialize TSort<TIntVector3>)
+  TIntVector3Sort = class(specialize TStaticSort<TIntVector3>)
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
@@ -150,25 +129,6 @@ var
   NearPriorityLengths : array[0..(2 * NearPrioritySide + 1) * (2 * NearPrioritySide + 1) *
     (2 * NearPrioritySide + 1) - 1] of Double;
   NearPriorityInverse : array[-NearPrioritySide..NearPrioritySide, -NearPrioritySide..NearPrioritySide, -NearPrioritySide..NearPrioritySide] of uint32;
-
-  {$define Ordinal_Type := uint64}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := uint32}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := uint16}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := uint8}
-  {$include incrementations.inc}
-
-  {$define Ordinal_Type := int64}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := int32}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := int16}
-  {$include incrementations.inc}
-  {$define Ordinal_Type := int8}
-  {$include incrementations.inc}
-  {$UnDef Ordinal_Type}
 
 operator +(const a, b : TIntVector3) : TIntVector3; inline;
 begin

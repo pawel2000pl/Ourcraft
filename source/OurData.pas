@@ -61,14 +61,14 @@ type
 
   { TOurDataSort }
 
-  TOurDataSort = class(specialize TSort<TOurData>)
+  TOurDataSort = class(specialize TStaticSort<TOurData>)
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
 
   { TOurDataSearcher }
 
-  TOurDataSearcher = class(specialize TBSearch<TOurData, ansistring>)
+  TOurDataSearcher = class(specialize TStaticBSearch<TOurData, ansistring>)
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;

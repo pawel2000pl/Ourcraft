@@ -64,11 +64,11 @@ type
 
   TEnvironment = class
   type
-    TCreatorSort = class(specialize TSort<TElementCreator>)
+    TCreatorSort = class(specialize TStaticSort<TElementCreator>)
     public
       class function Compare(const a, b: TValue): integer; override;
     end;
-    TCreatorBSearch = class(specialize TBSearch<TElementCreator, AnsiString>)
+    TCreatorBSearch = class(specialize TStaticBSearch<TElementCreator, AnsiString>)
     public
       class function Compare(const a: TValue; const b: TKey): integer; override;
     end;

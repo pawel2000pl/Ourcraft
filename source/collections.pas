@@ -24,7 +24,7 @@ unit Collections;
 interface
 
 uses
-  Classes, SysUtils, Sorts, CalcUtils;
+  Classes, SysUtils, Sorts, CalcUtils, Incrementations;
 
 type
 
@@ -33,6 +33,7 @@ type
   generic TCustomCollection<TItem> = class
   type
       TItemCollectionEvent = procedure(var Item : TItem) of object;
+      TIterationMethod = procedure(Item : TItem) of object;
   private
     FOnAdd: TItemCollectionEvent;
     FOnRemove: TItemCollectionEvent;
@@ -51,6 +52,7 @@ type
     procedure Add(Item : TItem); virtual; abstract;
     function IndexOf(const Item : TItem) : Integer; virtual; abstract;
 
+    procedure Iterate(const Event : TIterationMethod);
     function RemoveItem(const Item : TItem) : boolean; virtual;
     function HasNext(const i : Integer) : Boolean; virtual;
     function GetNext(var i : integer) : TItem; virtual;
@@ -98,14 +100,19 @@ type
   { TCustomOrderArray }
 
   generic TCustomOrderArray<TItem> = class(specialize TCustomArray<TItem>)
-  type
-    TSorter = class(specialize TSort<TItem>)
+  type      
+    TStaticSorter = class(specialize TStaticSort<TItem>)
     public
       class function Compare(const a, b: TValue): integer; override;
+    end;
+    TSorter = class(specialize TSort<PtrUInt>)
+    public
+      function Compare(const a, b: TValue): integer; override;
     end;
   public
      class function CompareItems(const a, b: TItem): integer; virtual;
      procedure Sort;
+     procedure GetSortedIndexList(var List : array of PtrUInt); // todo: test
      procedure Remove(const i: Integer); override;
   end;
 
@@ -113,7 +120,14 @@ implementation
 
 { TCustomOrderArray.TSorter }
 
-class function TCustomOrderArray.TSorter.Compare(const a, b: TValue): integer;
+function TCustomOrderArray.TSorter.Compare(const a, b: TValue): integer;
+begin
+  Result := TStaticSorter.Compare(FData[a], FData[b]);
+end;
+
+{ TCustomOrderArray.TStaticSorter }
+
+class function TCustomOrderArray.TStaticSorter.Compare(const a, b: TValue): integer;
 begin
   Result := CompareItems(a, b);
 end;
@@ -127,7 +141,16 @@ end;
 
 procedure TCustomOrderArray.Sort;
 begin
-   TSorter.InsertComb(FData, 0, Count);
+   TStaticSorter.InsertComb(FData, 0, Count);
+end;
+
+procedure TCustomOrderArray.GetSortedIndexList(var List: array of PtrUInt);
+var
+  Sorter : TSorter;
+begin              
+  Sorter := TSorter.Create;
+  Sorter.InsertComb(List);
+  Sorter.Free;
 end;
 
 procedure TCustomOrderArray.Remove(const i: Integer);
@@ -162,8 +185,17 @@ begin
 end;
 
 procedure TCustomArray.SetCount(const i: Integer);
-begin
-  SetLength(fData, i);
+var
+  j, oc : Integer;
+begin             
+  oc := GetCount;
+  if (FOnRemove <> nil) and Assigned(FOnRemove) and (i<oc) then
+    for j := i to oc-1 do
+      FOnRemove(fData[j]);
+  SetLength(fData, i);   
+  if (FOnAdd <> nil) and Assigned(FOnAdd) and (i>oc) then
+    for j := oc to i-1 do
+      FOnAdd(fData[j]);
 end;
 
 function TCustomArray.GetCount: Integer;
@@ -225,6 +257,15 @@ procedure TCustomCollection.DoRemoveEvent(var Item: TItem);
 begin
   if FOnRemove <> nil then
     FOnRemove(Item);
+end;
+
+procedure TCustomCollection.Iterate(const Event: TIterationMethod);
+var
+  i : Integer;
+begin
+  i := 0;
+  while HasNext(i) do
+    Event(Get(i));
 end;
 
 function TCustomCollection.RemoveItem(const Item: TItem): boolean;

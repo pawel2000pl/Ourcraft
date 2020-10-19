@@ -5,7 +5,7 @@ unit ThreeDimensionalArrayOfBoolean;
 interface
 
 uses
-  Classes, SysUtils, math, CalcUtils;
+  Classes, SysUtils, math, CalcUtils, Incrementations;
 
 type
 
