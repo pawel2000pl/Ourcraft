@@ -15,7 +15,6 @@ type
 
   TMainForm = class(TForm)
     Timer1 : TTimer;
-    Timer2 : TTimer;
     procedure FormCreate(Sender : TObject);
     procedure FormDestroy(Sender : TObject);
     procedure FormKeyPress(Sender : TObject; var Key : char);
@@ -100,51 +99,7 @@ begin
 end;
 
 procedure TMainForm.Timer2Timer(Sender : TObject);
-var
-  c : TOurChunk;
-  s, g : TElementCreator;
-  t, dt : QWord;
-  i, j, k : integer;
-  side : TTextureMode;
 begin
-  if Game = nil then
-    exit;
-  s := Game.Environment.GetCreator(Game.Environment.GetID('stone'));
-  g := Game.Environment.GetCreator(Game.Environment.GetID('glowstone'));
-  for i := -1 to 0 do
-  begin
-    c := World.GetChunk(0, 0, i);
-    if c = nil then
-      continue;
-    if Timer2.tag = 0 then
-    begin
-      c.Blocks[8, ChunkSize div 2 + 2, 0] := nil;
-      c.Blocks[8, ChunkSize div 2 + 2, 8] := nil;
-      c.Blocks[0, ChunkSize div 2 + 2, 8] := nil;
-      c.Blocks[0, ChunkSize div 2 + 2, 0] := nil;
-
-      writeln('Removed');
-    end
-    else
-    begin
-      c.Blocks[8, ChunkSize div 2 + 2, 8] := g.CreateElement(0) as TBlock;
-      c.Blocks[8, ChunkSize div 2 + 2, 0] := s.CreateElement(0) as TBlock;
-      c.Blocks[0, ChunkSize div 2 + 2, 8] := g.CreateElement(0) as TBlock;
-      c.Blocks[0, ChunkSize div 2 + 2, 0] := s.CreateElement(0) as TBlock;
-      writeln('Added');
-    end;
-  end;
-
-  if Timer2.tag = 0 then
-    Timer2.tag := 1
-  else
-    Timer2.tag := 0;
-
-
-  t := GetMicroseconds;
-  dt := GetMicroseconds - t;
-  writeln('Updating: ', dt / 1000: 2: 3, 'ms');
-
 end;
 
 procedure TMainForm.FormCreate(Sender : TObject);

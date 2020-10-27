@@ -69,7 +69,7 @@ end;
 
 procedure TGlCamera.UpdatePerspectiveWidth;
 begin
-  PerspectiveWidth := hypot(fWidth / fHeight, 1) * fPerspective / 2;
+  PerspectiveWidth := arctan(tan(fPerspective/2) * sqrt(sqr(fWidth / fHeight)+1));
 end;
 
 procedure TGlCamera.SetHeight(const AValue: longword);

@@ -93,6 +93,7 @@ type
     FRotate: TRotationVector;
     FRotateVelocity: TRotationVector;
     FVelocity: TVector3;
+    FChunk : TOurChunk;
     fWorld : TOurWorld;
     procedure SetModel(AValue: TModel);
     procedure SetPosition(AValue: TVector3);
@@ -105,9 +106,11 @@ type
     property Rotate : TRotationVector read FRotate write SetRotate;
     property RotateVelocity : TRotationVector read FRotateVelocity write SetRotateVelocity;
     property Model : TModel read FModel write SetModel;
+    property Chunk : TOurChunk read FChunk;
     property World : TOurWorld read fWorld;
-    function GetChunk : TOurChunk; virtual; abstract;
-    procedure SetChunk(Chunk : TOurChunk); virtual; abstract;
+
+    procedure UpdateChunk;
+
     function GetID : integer; virtual; abstract;
     procedure OnTick(const DeltaTime : QWord); virtual; abstract;
     procedure OnHit(Entity : TEntity); virtual; abstract; //left click
@@ -2190,6 +2193,16 @@ procedure TEntity.SetVelocity(AValue: TVector3);
 begin
   if FVelocity=AValue then Exit;
   FVelocity:=AValue;
+end;
+
+procedure TEntity.UpdateChunk;
+var
+  x, y, z : Integer;
+begin
+  x := floor(FPosition[axisX]);
+  y := floor(FPosition[axisY]);
+  z := floor(FPosition[axisZ]);
+  World.GetChunkFromBlockCoors(x, y, z);
 end;
 
 constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator);

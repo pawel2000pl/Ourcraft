@@ -26,15 +26,13 @@ type
   public
     procedure Clear;
     procedure Load(const s : ansistring); overload;
-    procedure Load(const s : ansistring; var Position : integer;
-      const Len : integer); overload;
+    procedure Load(const s : ansistring; var Position : integer; const Len : integer); overload;
     function Save : ansistring;
-    function AddSection(const SectionName : ansistring) : TOurData;
-    //warning: section cannot exists
+    function AddSection(const SectionName : ansistring) : TOurData; //warning: section cannot exists
     function GetSection(const SectionName : ansistring;
       const CreateIfNotExists : boolean) : TOurData; overload;
     function GetSection(const SectionName : ansistring) : TOurData; overload;
-    function GetSectionList : TStringList; //free after
+    function GetSectionList : TStringList; //must be freed after
     procedure DeleteSection(const SectionName : ansistring);
     function Sorted(const All : boolean) : boolean;
     procedure Sort(const All : boolean);

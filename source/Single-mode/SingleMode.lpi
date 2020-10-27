@@ -160,9 +160,6 @@
       </Options>
     </Linking>
     <Other>
-      <CompilerMessages>
-        <IgnoredMessages idx5023="True"/>
-      </CompilerMessages>
       <CustomOptions Value="-B
 -dUseCThreads 
 -Sc 
