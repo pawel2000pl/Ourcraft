@@ -14,11 +14,4 @@ object MainForm: TMainForm
     left = 10
     top = 10
   end
-  object Timer2: TTimer
-    Enabled = False
-    Interval = 2000
-    OnTimer = Timer2Timer
-    left = 64
-    top = 10
-  end
 end
