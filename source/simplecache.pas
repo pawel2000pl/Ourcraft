@@ -35,15 +35,15 @@ type
     destructor Destroy; override;
   end;
 
-function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const Base : LongWord = 4294967291) : LongWord;
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
 
 implementation
 
-function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const Base : LongWord = 4294967291) : LongWord;
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
 var
   i : PtrUInt;
 begin
-  Result := 0;
+  Result := InitValue;
   Move(PByte(buf)[Size and (not 3)], Result, Size and 3);
   for i := (Size shr 2) -1 downto 0 do
     Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
