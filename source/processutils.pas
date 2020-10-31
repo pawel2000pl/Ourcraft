@@ -27,7 +27,8 @@ function StrToFloatE(const s : ansistring; const MinValue : double = NegInfinity
   const MaxValue : double = Infinity) : double;
 function StrToUnsigned(const s : ansistring) : integer;
 function GetMicroseconds : qword;
-procedure SleepMicroseconds(const Delay : QWord);
+procedure SleepMicroseconds(const Delay : QWord);     
+procedure SleepNanoseconds(const Delay : QWord);
 
 procedure SetToMainOurcraftDirectory;
 
@@ -161,6 +162,11 @@ begin
 end;
 
 procedure SleepMicroseconds(const Delay : QWord);
+begin
+  SleepNanoseconds(Delay*1000);
+end;
+
+procedure SleepNanoseconds(const Delay : QWord);
 var
   Req, Rem : TimeSpec;
 begin
