@@ -1,4 +1,6 @@
-all:  init requires hello compile textures 
+all: init requires hello compile textures 
+
+all_again: clean all
 
 init:
 	date
@@ -10,14 +12,17 @@ init:
 requires: init
 	bash -i "./installation/apt_install_requires.sh"
 	
-compile: init texture_compiler
+compile: init texture_compiler bin/SingleMode
+
+bin/SingleMode:
 	bash -i "./source/Preprocesor/preprocesor.sh"	
 	lazbuild "./source/Single-mode/SingleMode.lpr" 
-	mv "./source/Single-mode/SingleMode" "./bin/"
+	mv "./source/Single-mode/SingleMode" "./bin/SingleMode"
 	rm -rf "./source/Single-mode/lib"
-	chmod u+x "bin/OurCraft"
 	
 texture_compiler: bin/TextureCompiler
+
+bin/TextureCompiler:
 	fpc -B -Mobjfpc -dUseCThreads -Sc -Sh -Si -ap "./source/TextureCompiler.pas" "-obin/TextureCompiler"
 	chmod u+x "bin/TextureCompiler"
 	
@@ -32,4 +37,4 @@ clear: clean
 hello: init
 	bash -i "./installation/hello.sh"	
 
-.PHONY: all init hello compile clean clear requires texture_compiler textures
+.PHONY: all init hello compile clean clear requires texture_compiler textures all_again
