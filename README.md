@@ -29,6 +29,8 @@ How to compile and run
 2. Execute "run.sh"
 3. An executable file should be in "bin/SingleMode" (other files do nothing for gameplay)
 
+or execute "make all" to install and compile and then execute "make run" to open game in single mode.
+
 Screenshots:
 
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)

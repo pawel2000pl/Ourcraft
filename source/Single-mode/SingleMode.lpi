@@ -137,12 +137,12 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="SingleMode"/>
+      <Filename Value="../../bin/SingleMode"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
       <OtherUnitFiles Value="..;../Environment"/>
-      <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+      <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>
       <Checks>
