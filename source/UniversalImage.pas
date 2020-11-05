@@ -316,33 +316,8 @@ begin
 end;
 
 procedure TUniversalImage.SetSize(AWidth, AHeight : integer);
-var
-  x, y : integer;
 begin
-  if Width > AWidth then
-  begin
-    for x := AWidth to Width - 1 do
-      setlength(FData[x], 0);
-    setlength(FData, AWidth);
-  end
-  else if Width < AWidth then
-  begin
-    setlength(FData, AWidth);
-    for x := Width to AWidth - 1 do
-    begin
-      setlength(FData[x], AHeight);
-      for y := 0 to AHeight - 1 do
-        FData[x, y] := FPColor(0, 0, 0, 0);
-    end;
-  end;
-  if Height <> AHeight then
-    for x := 0 to Width - 1 do
-    begin
-      setlength(FData[x], AHeight);
-      if AHeight > Height then
-        for y := Height to AHeight - 1 do
-          FData[x, y] := fpColor(0, 0, 0, 0);
-    end;
+  setLength(FData, AWidth, AHeight);
   inherited;
 end;
 

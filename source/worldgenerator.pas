@@ -25,9 +25,12 @@ type
 
   TWorldLevel = class;
 
+  { TBiome }
+
   TBiome = class
   public
     procedure Register(Level : TWorldLevel); virtual; abstract;
+    function GetSize : Double; virtual;
     function GetHeight(const x, z : integer) : integer; virtual; abstract;
   end;
 
@@ -72,6 +75,13 @@ type
 
 implementation
 
+{ TBiome }
+
+function TBiome.GetSize: Double;
+begin
+  Result := 1;
+end;
+
 { TWorldLevel }
 
 procedure TWorldLevel.ProcessBiomes;
@@ -111,7 +121,7 @@ begin
            if Area = 0 then
              len := Infinity
              else
-             len /= Area;
+             len /= (Area*BiomesList[m].GetSize);
            Tab[i, j, k][m] := len;
          end;
       end;
