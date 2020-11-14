@@ -5,12 +5,10 @@ interface
 {$mode objfpc}
 
 uses 
-    math, fpImage;
+    math, fpImage, UniversalImage;
 
 type
     TDrawMode = (dmNormal, dmDissolve, dmMultiply, dmDivide, dmScreen, dmOverlay, dmDodge, dmBurn, dmHardLight, dmSoftLight, dmGrainExtract, dmGrainMerge, dmDifference, dmAddition, dmSubtract, dmDarkenOnly, dmLightenOnly, dmHue, dmSaturation, dmColor, dmValue);
-
-    TDrawFunction = function(const a, b : TFPColor) : TFPColor;
     
 function GetDrawFunction(const mode : TDrawMode) : TDrawFunction;
 function min(const a, b : QWord) : QWord; overload; inline;
