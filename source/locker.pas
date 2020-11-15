@@ -5,7 +5,7 @@ unit Locker;
 interface
 
 uses
-  Classes, SysUtils, ProcessUtils;
+  Classes, SysUtils;
 
 type
 

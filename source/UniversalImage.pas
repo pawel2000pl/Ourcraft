@@ -24,7 +24,7 @@ unit UniversalImage;
 interface
 
 uses
-  SysUtils, Classes, Math, FPImage, DrawModes, fpreadbmp, fpwritebmp,
+  SysUtils, Classes, Math, FpImage, fpreadbmp, fpwritebmp,
   fpreadjpeg, fpwritejpeg, fpreadpng, fpwritepng, fpreadpnm, fpwritepnm,
   fpreadtga, fpwritetga, fpreadtiff, fpwritetiff, fpreadxpm, fpwritexpm,
   fpreadpcx, fpwritepcx;
@@ -34,6 +34,8 @@ type
     X, Y : integer;
   end;
 
+  TDrawFunction = function(const a, b : TFPColor) : TFPColor;
+    
   { TUniversalImage }
 
   TUniversalImage = class(TFPCustomImage)
@@ -66,7 +68,7 @@ type
     destructor Destroy; override;
     procedure SetSize(AWidth, AHeight : integer); override;
     procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage;
-      const Transparency : double = 0; const DrawMode : TDrawMode = dmNormal);
+      const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
   end;
 
 function MixColors(const CanvColor, DrawColor : TFPColor;
@@ -88,6 +90,11 @@ operator = (const a, b : TFPColor) : boolean; inline;
 begin
   Result := (a.alpha = b.alpha) and (a.red = b.red) and (a.green = b.green) and
     (a.blue = b.blue);
+end;
+
+function NormalDraw(const a, b : TFPColor) : TFPColor;
+begin
+    Result := b;
 end;
 
 function MixColors(const CanvColor, DrawColor : TFPColor;
@@ -317,27 +324,28 @@ end;
 
 procedure TUniversalImage.SetSize(AWidth, AHeight : integer);
 begin
-  setLength(FData, AWidth, AHeight);
+  if (AWidth <> Width) or (AHeight <> AHeight) then
+    setLength(FData, AWidth, AHeight);
   inherited;
 end;
 
 procedure TUniversalImage.Draw(const PositionX, PositionY : integer;
   Img : TUniversalImage; const Transparency : double = 0;
-  const DrawMode : TDrawMode = dmNormal);
+  DrawFunction : TDrawFunction = nil);
 var
   x, y : integer;
-  foo : TDrawFunction;
 begin
   if Img = nil then
-    exit;
-  foo := GetDrawFunction(DrawMode);
+      exit;
+  if DrawFunction = nil then
+      DrawFunction := @NormalDraw;
   for x := 0 to Img.Width - 1 do
     if (x + PositionX >= 0) and (x + PositionX < Width) then
       for y := 0 to Img.Height - 1 do
         if (y + PositionY >= 0) and (y + PositionY < Height) then
           FData[x + PositionX, y + PositionY] :=
             MixColors(FData[x + PositionX, y + PositionY],
-            foo(FData[x + PositionX, y + PositionY], Img.FData[x, y]), Transparency);
+            DrawFunction(FData[x + PositionX, y + PositionY], Img.FData[x, y]), Transparency);
 
 end;
 

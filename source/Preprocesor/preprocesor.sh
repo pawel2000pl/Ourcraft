@@ -34,4 +34,4 @@ find "source/Environment" -name "*.attribute" -exec cat {} \; | sort | tee $TEMP
 echo ");" >> "source/Preprocesor/AttributeList.inc"
     
 rm $TEMP_FILE
-cd $OLD_PATH
+cd "$OLD_PATH"

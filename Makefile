@@ -17,7 +17,11 @@ compile: init texture_compiler bin/SingleMode
 
 bin/SingleMode:
 	bash -i "./source/Preprocesor/preprocesor.sh"	
-	lazbuild "./source/Single-mode/SingleMode.lpr" 
+	lazbuild --build-mode=Release "./source/Single-mode/SingleMode.lpr" 
+	
+rebuild: init
+	rm "bin/SingleMode"
+	make compile
 	
 texture_compiler: bin/TextureCompiler
 
@@ -40,4 +44,4 @@ hello: init
 run:
 	bin/SingleMode
 
-.PHONY: all init hello compile clean clear requires texture_compiler textures all_again run
+.PHONY: all init hello compile clean clear requires texture_compiler textures all_again run rebuild

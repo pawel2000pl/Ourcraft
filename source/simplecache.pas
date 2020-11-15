@@ -39,15 +39,16 @@ function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : 
 
 implementation
 
-function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : longword = 4294967291) : longword;
 var
-  i : PtrUInt;
+  i : PtrInt;
 begin
   Result := InitValue;
-  Move(PByte(buf)[Size and (not 3)], Result, Size and 3);
-  for i := (Size shr 2) -1 downto 0 do
+  for i := (Size shr 2) - 1 downto 0 do
     Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
-end;
+  for i := (Size and 3) downto 1 do
+    Result := ((QWord(Result) shl 32) or PByte(Buf)[Size-i]) mod Base;
+end;      
 
 { TSimpleCache }
 
