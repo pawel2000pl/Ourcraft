@@ -5,7 +5,7 @@ program SingleMode;
 uses
   {$IFDEF UNIX}
   {$IFDEF UseCThreads}
-  cmem, MemGuard,
+  cmem, {$ifdef debug} MemGuard, {$endif}
   cthreads,
   {$ENDIF}
   {$ENDIF}

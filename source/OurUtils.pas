@@ -131,8 +131,9 @@ type
 
   TBlockCreator = class(TElementCreator)
   public
-    function GetType : TElementType; override;
-    function CreateBlock(const SubID : Integer) : TBlock;
+    function GetType : TElementType; override; 
+    //warning: Coord for CreateElement must be floor
+    function CreateBlock(const Coord : TIntVector3; const SubID : Integer) : TBlock;
   end;
 
   { TBlock }
@@ -142,11 +143,7 @@ type
     function GetBlockCreator: TBlockCreator;
   public
     property BlockCreator : TBlockCreator read GetBlockCreator;
-    function GetID : integer;
-    property ID : integer read getID;
-    function getTextID : ansistring;
-    function getSubID : integer; virtual;
-    function getTag : PBlockDataTag; virtual;
+    function GetTag : PBlockDataTag; virtual;
 
     function NeedDraw : boolean; virtual;
     function IsSolid : boolean; virtual; //not draw on every frame
@@ -156,6 +153,7 @@ type
     function NeedAfterCreate : boolean; virtual;
     function NeedNearChangeUpdate : boolean; virtual;
 
+    //TBlockCoord is relative in-chunk coord
     procedure DrawModel(Chunk : TOurChunk; Side : TTextureMode;
       const Coord : TBlockCoord); virtual; abstract;
     procedure DrawUnsolid(Chunk : TOurChunk; const Coord : TBlockCoord);
@@ -172,7 +170,7 @@ type
 
     function Transparency : integer; virtual;
     function LightSource : integer; virtual;
-    function Clone : TBlock; virtual;
+    function Clone(const NewCoord : TIntVector3) : TBlock; virtual;
   end;
 
   { TBlockList }
@@ -1192,7 +1190,7 @@ begin
   try
     fb := fBlocks[x, y, z];
     if AValue = nil then
-      fBlocks[x, y, z] := fdefaultBlock.CreateElement(0) as TBlock
+      fBlocks[x, y, z] := fdefaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock
     else
       fBlocks[x, y, z] := AValue;
 
@@ -1886,7 +1884,7 @@ begin
     for y := 0 to ChunkSize - 1 do
       for z := 0 to ChunkSize - 1 do
       begin
-        fBlocks[x, y, z] := defaultBlock.CreateElement(0) as TBlock;
+        fBlocks[x, y, z] := defaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock;
         fLights[x, y, z] := 0;
         fSunLight[x, y, z] := 0;
       end;
@@ -1947,9 +1945,10 @@ begin
   Result := etBlock;
 end;
 
-function TBlockCreator.CreateBlock(const SubID: Integer): TBlock;
+function TBlockCreator.CreateBlock(const Coord: TIntVector3;
+  const SubID: Integer): TBlock;
 begin
-  Result := CreateElement(SubID) as TBlock;
+  Result := CreateElement(Coord, SubID) as TBlock;
 end;
 
 { TBlockList }
@@ -2093,22 +2092,7 @@ begin
   Result := Creator as TBlockCreator;
 end;
 
-function TBlock.GetID : integer;
-begin
-  Result := Creator.getID;
-end;
-
-function TBlock.getTextID : ansistring;
-begin
-  Result := Creator.getTextID;
-end;
-
-function TBlock.getSubID : integer;
-begin
-  Result := 0;
-end;
-
-function TBlock.getTag : PBlockDataTag;
+function TBlock.GetTag: PBlockDataTag;
 begin
   Result := nil;
 end;
@@ -2158,9 +2142,9 @@ begin
   Result := 0;
 end;
 
-function TBlock.Clone : TBlock;
+function TBlock.Clone(const NewCoord: TIntVector3): TBlock;
 begin
-  Result := Creator.CreateElement(getSubID) as TBlock;
+  Result := Creator.CreateElement(NewCoord, getSubID) as TBlock;
 end;
 
 { TEntity }

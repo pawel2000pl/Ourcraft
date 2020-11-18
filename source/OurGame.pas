@@ -4,7 +4,7 @@ unit OurGame;
 interface
 
 uses
-  SysUtils, Classes, Sorts,
+  SysUtils, Classes, Sorts, CalcUtils,
   Models, ProcessUtils;
 
 type
@@ -24,7 +24,7 @@ type
 
   { TEnvironmentElement }
                                 //TODO: replace TOurGame with TEnvironment
-  TEnvironmentElement = class
+  TEnvironmentElement = class abstract
   private
     fCreator : TElementCreator;
   protected
@@ -32,8 +32,16 @@ type
   public              {TODO}
     function GetAttributeID(const Name : AnsiString) : Integer; virtual;
     function GetAttributeValue(const {%H-}ID : PtrUInt) : PtrInt; virtual;
-    function GetAttributeAsObject(const {%H-}ID : PtrUInt) : Pointer; virtual;
+    function GetAttributeAsObject(const {%H-}ID : PtrUInt) : TObject; virtual;
     function HasAttribute(const {%H-}ID : PtrUInt) : Boolean; virtual;
+
+    function GetID : integer;
+    property ID : integer read getID;
+    function GetTextID : ansistring;
+    function GetSubID : integer; virtual;
+
+    //procedure SaveToStream(Stream : TStream);  virtual; abstract;
+    //procedure LoadFromStream(Stream : TStream);  virtual; abstract;
 
     property Creator : TElementCreator read fCreator;
     constructor Create(MyCreator : TElementCreator);
@@ -41,7 +49,7 @@ type
 
   { TElementCreator }
 
-  TElementCreator = class
+  TElementCreator = class abstract
   private
     fID : integer;
     fEnvironment : TEnvironment;
@@ -49,7 +57,7 @@ type
   public
     procedure AfterLoading; virtual;
     function GetType : TElementType; virtual; abstract;
-    function CreateElement(const SubID : integer = 0) : TEnvironmentElement; virtual; abstract;
+    function CreateElement(const Coords : TVector3; const SubID : integer = 0) : TEnvironmentElement; virtual; abstract;
     function getTextID : ansistring; virtual;
     function GetID : integer;
     property Environment : TEnvironment read fEnvironment;
@@ -158,7 +166,7 @@ begin
   Result := GetEnvironment.GetAttribute(ID).DefaultValue;
 end;
 
-function TEnvironmentElement.GetAttributeAsObject(const ID: PtrUInt): Pointer;
+function TEnvironmentElement.GetAttributeAsObject(const ID: PtrUInt): TObject;
 begin
   Result := TObject(GetAttributeValue(ID));
 end;
@@ -166,6 +174,21 @@ end;
 function TEnvironmentElement.HasAttribute(const ID: PtrUInt): Boolean;
 begin
   Result := False;
+end;
+
+function TEnvironmentElement.GetID : integer;
+begin
+  Result := Creator.getID;
+end;
+
+function TEnvironmentElement.GetTextID: ansistring;
+begin
+  Result := Creator.getTextID;
+end;
+
+function TEnvironmentElement.GetSubID: integer;
+begin
+  Result := 0;
 end;
 
 constructor TEnvironmentElement.Create(MyCreator: TElementCreator);
@@ -217,8 +240,7 @@ begin
     Result := NullAttribute;
 end;
 
-class function TEnvironment.GetAttribute(const ID: PtrUInt
-  ): TEnvironmentElementAttribute;
+class function TEnvironment.GetAttribute(const ID: PtrUInt): TEnvironmentElementAttribute;
 begin
    if ExistsAttribute(ID) then
      Result := AttributeList[ID]
@@ -282,7 +304,7 @@ begin
   inherited Destroy;
 end;
 
-{ TCustomCreator }
+{ TElementCreator }
 
 procedure TElementCreator.SetID(const NewID: integer);
 begin

@@ -12,7 +12,6 @@ type
   { TGlowStone }
 
   TGlowStone = class(TBlock)
-    function Clone : TBlock; override;
     procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
     function LightSource: integer; override;
   end;
@@ -27,7 +26,7 @@ type
     function getTextID: ansistring; override;
 
     procedure AfterLoading; override;
-    function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
@@ -53,18 +52,13 @@ begin
     fTexture := (Environment.Game as TOurGame).Textures.GetTexture('glowstone');
 end;
 
-function TGlowStoneCreator.CreateElement(const SubID: integer
-  ): TEnvironmentElement;
+function TGlowStoneCreator.CreateElement(const Coords: TVector3;
+  const SubID: integer): TEnvironmentElement;
 begin
    Result := TGlowStone.Create(self);
 end;
 
 { TGlowStone }
-
-function TGlowStone.Clone: TBlock;
-begin
-  Result:=Creator.CreateElement(0) as TBlock;
-end;
 
 procedure TGlowStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
   const Coord: TBlockCoord);

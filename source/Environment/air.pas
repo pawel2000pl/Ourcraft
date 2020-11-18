@@ -5,7 +5,8 @@ interface
 
 uses
   OurUtils,
-  OurGame;
+  OurGame,
+  CalcUtils;
 
 type
 
@@ -13,7 +14,6 @@ type
 
   TAir = class(TBlock)
   public
-    function Clone : TBlock; override;
     function Transparency : Integer; override;
     function NeedDraw: boolean; override;
   end;
@@ -22,7 +22,7 @@ type
 
   TAirCreator = class(TBlockCreator)
   public
-    function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
     function getTextID: ansistring; override;
   end;
 
@@ -38,7 +38,8 @@ end;
 
 { TAirCreator }
 
-function TAirCreator.CreateElement(const SubID: integer): TEnvironmentElement;
+function TAirCreator.CreateElement(const Coords: TVector3; const SubID: integer
+  ): TEnvironmentElement;
 begin
   Result := TAir.Create(self);
 end;
@@ -49,11 +50,6 @@ begin
 end;
 
 { TAir }
-
-function TAir.Clone : TBlock;
-begin
-  Result := Creator.CreateElement(Self.getSubID) as TBlock;
-end;
 
 function TAir.Transparency : Integer;
 begin

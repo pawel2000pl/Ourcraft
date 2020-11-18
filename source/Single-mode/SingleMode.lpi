@@ -56,7 +56,8 @@
 -Sc 
 -Sh 
 -Si 
--ap"/>
+-ap
+-dDebug"/>
           </Other>
         </CompilerOptions>
       </Item2>
