@@ -23,26 +23,15 @@
             <OtherUnitFiles Value="..;../Environment"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Parsing>
-            <SyntaxOptions>
-              <IncludeAssertionCode Value="True"/>
-            </SyntaxOptions>
-          </Parsing>
           <CodeGeneration>
             <Checks>
               <IOChecks Value="True"/>
-              <RangeChecks Value="True"/>
-              <OverflowChecks Value="True"/>
               <StackChecks Value="True"/>
             </Checks>
-            <VerifyObjMethodCallValidity Value="True"/>
           </CodeGeneration>
           <Linking>
             <Debugging>
-              <DebugInfoType Value="dsDwarf2Set"/>
-              <UseHeaptrc Value="True"/>
               <TrashVariables Value="True"/>
-              <UseExternalDbgSyms Value="True"/>
             </Debugging>
             <Options>
               <Win32>
@@ -57,7 +46,7 @@
 -Sh 
 -Si 
 -ap
--dDebug"/>
+-dDebugBuild"/>
           </Other>
         </CompilerOptions>
       </Item2>
@@ -117,7 +106,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="21">
+    <Units Count="22">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -219,6 +208,11 @@
         <Filename Value="../Incrementations.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit20>
+      <Unit21>
+        <Filename Value="../customsaver.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CustomSaver"/>
+      </Unit21>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

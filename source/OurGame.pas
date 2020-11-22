@@ -35,13 +35,11 @@ type
     function GetAttributeAsObject(const {%H-}ID : PtrUInt) : TObject; virtual;
     function HasAttribute(const {%H-}ID : PtrUInt) : Boolean; virtual;
 
-    function GetID : integer;
+    function GetID : integer;       
     property ID : integer read getID;
-    function GetTextID : ansistring;
+    function GetTextID : AnsiString;      
+    property TextID : AnsiString read GetTextID;
     function GetSubID : integer; virtual;
-
-    //procedure SaveToStream(Stream : TStream);  virtual; abstract;
-    //procedure LoadFromStream(Stream : TStream);  virtual; abstract;
 
     property Creator : TElementCreator read fCreator;
     constructor Create(MyCreator : TElementCreator);
@@ -85,7 +83,8 @@ type
     end;
   const
     {$Include Preprocesor/AttributeList.inc}
-  private
+  private                  
+    FRemote : Boolean;
     fIDList : array of TElementCreator;
     fIDCount : Integer;
     fGame : TOurGame;
@@ -93,6 +92,7 @@ type
     function GetElement(const ID : Integer): TElementCreator;
     procedure RegisterCreator(Creator : TElementCreator);
   public
+    property Remote : Boolean read FRemote write FRemote; //decides if it is a client (true) or server (false)
     property Game : TOurGame read fGame;
     property IDCount : Integer read fIDCount;
     property Elements[const ID : Integer] : TElementCreator read GetElement;

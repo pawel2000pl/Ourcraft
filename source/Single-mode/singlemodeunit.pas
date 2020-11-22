@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  OpenGLContext, OurGame, OurUtils, Sorts, GLext, gl, glu, Glut,
+  OpenGLContext, OurGame, OurUtils, GLext, gl, glu, Glut,
   CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator;
 
 type
