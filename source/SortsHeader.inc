@@ -20,27 +20,22 @@
     {$ifdef StaticSort} class {$endif} procedure Insert(var tab : array of TValue; const offset, n : integer); overload;
     //best for random less than 127
     {$ifdef StaticSort} class {$endif} procedure InsertComb(var tab : array of TValue); overload;
-    {$ifdef StaticSort} class {$endif} procedure InsertComb(var tab : array of TValue;
-      const offset, n : integer); overload;
+    {$ifdef StaticSort} class {$endif} procedure InsertComb(var tab : array of TValue; const offset, n : integer); overload;
     //better for completly random       
     {$ifdef StaticSort} class {$endif} procedure Quick(var A : array of TValue); overload;
-    {$ifdef StaticSort} class {$endif} procedure Quick(var A : array of TValue; const l, r : integer;
-      const MaxDepth : UIntPtr = 32); overload;
+    {$ifdef StaticSort} class {$endif} procedure Quick(var A : array of TValue; const l, r : integer; const MaxDepth : UIntPtr = 32); overload;
     //better for half-sorted       
     {$ifdef StaticSort} class {$endif} procedure Quick2(var A : array of TValue); overload;
-    {$ifdef StaticSort} class {$endif} procedure Quick2(var AI : array of TValue; const ALo, AHi : integer);
-      overload;
+    {$ifdef StaticSort} class {$endif} procedure Quick2(var AI : array of TValue; const ALo, AHi : integer); overload;
     //stable and always constant time
     {$ifdef StaticSort} class {$endif} procedure Merge(var Tab : array of TValue; const a, b : integer); overload;
     {$ifdef StaticSort} class {$endif} procedure Merge(var Tab : array of TValue); overload;
     //check if is sorted
     {$ifdef StaticSort} class {$endif} function Sorted(const Tab : array of TValue) : boolean; overload;
-    {$ifdef StaticSort} class {$endif} function Sorted(const Tab : array of TValue;
-      const offset, n : integer) : boolean; overload;
+    {$ifdef StaticSort} class {$endif} function Sorted(const Tab : array of TValue; const offset, n : integer) : boolean; overload;
     //check sort level (0-1) / usually useless
     {$ifdef StaticSort} class {$endif} function SortLevel(const Tab : array of TValue) : double; overload;
-    {$ifdef StaticSort} class {$endif} function SortLevel(const Tab : array of TValue;
-      const offset, n : integer) : double; overload;
+    {$ifdef StaticSort} class {$endif} function SortLevel(const Tab : array of TValue; const offset, n : integer) : double; overload;
   end;
 
   { TBSearch }

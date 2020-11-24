@@ -29,8 +29,7 @@ type
     procedure Load(const s : ansistring; var Position : integer; const Len : integer); overload;
     function Save : ansistring;
     function AddSection(const SectionName : ansistring) : TOurData; //warning: section cannot exists
-    function GetSection(const SectionName : ansistring;
-      const CreateIfNotExists : boolean) : TOurData; overload;
+    function GetSection(const SectionName : ansistring; const CreateIfNotExists : boolean) : TOurData; overload;
     function GetSection(const SectionName : ansistring) : TOurData; overload;
     function GetSectionList : TStringList; //must be freed after
     procedure DeleteSection(const SectionName : ansistring);
@@ -406,7 +405,7 @@ function TOurData.GetSection(const SectionName : ansistring;
 var
   i : integer;
 begin
-  if (Cache <> nil) and (sametext(SectionName, Cache.Name)) then
+  if (Cache <> nil) and (SameText(SectionName, Cache.Name)) then
   begin
     Result := Cache;
     exit;

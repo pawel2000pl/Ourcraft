@@ -12,7 +12,6 @@ type
   { TGlowStone }
 
   TGlowStone = class(TBlock)
-    function Clone : TBlock; override;
     procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
     function LightSource: integer; override;
   end;
@@ -27,7 +26,7 @@ type
     function getTextID: ansistring; override;
 
     procedure AfterLoading; override;
-    function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
@@ -53,23 +52,18 @@ begin
     fTexture := (Environment.Game as TOurGame).Textures.GetTexture('glowstone');
 end;
 
-function TGlowStoneCreator.CreateElement(const SubID: integer
-  ): TEnvironmentElement;
+function TGlowStoneCreator.CreateElement(const Coords: TVector3;
+  const SubID: integer): TEnvironmentElement;
 begin
    Result := TGlowStone.Create(self);
 end;
 
 { TGlowStone }
 
-function TGlowStone.Clone: TBlock;
-begin
-  Result:=Creator.CreateElement(0) as TBlock;
-end;
-
 procedure TGlowStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
   const Coord: TBlockCoord);
 begin
-  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoords[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightLevel(coord[axisX], coord[axisY], coord[axisZ]));
+  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightLevel(coord[axisX], coord[axisY], coord[axisZ]));
 end;
 
 function TGlowStone.LightSource: integer;

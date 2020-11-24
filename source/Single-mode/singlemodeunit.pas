@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  OpenGLContext, OurGame, OurUtils, Sorts, GLext, gl, glu, Glut,
+  OpenGLContext, OurGame, OurUtils, GLext, gl, glu, Glut,
   CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator;
 
 type
@@ -193,12 +193,12 @@ begin
   if key = 'm' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('stone')).CreateElement(0) as TBlock);
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('stone')).CreateElement(v, 0) as TBlock);
   end;
   if key = 'n' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(0) as TBlock);
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(v, 0) as TBlock);
   end;
 
   RenderArea.SetPosition(IntVector3(floor(Camera.Position[axisX] / ChunkSize),

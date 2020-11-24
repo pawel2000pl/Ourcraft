@@ -12,7 +12,6 @@ type
 
   TStone = class(TBlock)
   public
-    function Clone : TBlock; override;
     procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
          //TODO: Draw
   end;
@@ -27,7 +26,7 @@ type
     function getTextID: ansistring; override;
 
     procedure AfterLoading; override;
-    function CreateElement(const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
@@ -52,21 +51,17 @@ begin
   fTexture := (Environment.Game as TOurGame).Textures.GetTexture('stone');
 end;
 
-function TStoneCreator.CreateElement(const SubID: integer): TEnvironmentElement;
+function TStoneCreator.CreateElement(const Coords: TVector3;
+  const SubID: integer): TEnvironmentElement;
 begin
   Result := TStone.Create(self);
 end;
 
 { TStone }
 
-function TStone.Clone: TBlock;
-begin
-  Result := Creator.CreateElement(Self.getSubID) as TBlock;
-end;
-
 procedure TStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord);
 begin
-  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoords[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
+  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
 end;
 
 end.

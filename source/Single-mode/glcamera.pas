@@ -5,7 +5,7 @@ unit GlCamera;
 interface
 
 uses
-  Classes, SysUtils, Math, CalcUtils, GLext, gl, glu, Glut;
+  Classes, SysUtils, Math, CalcUtils, gl, glu, Glut;
 
 type
 

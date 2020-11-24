@@ -92,7 +92,7 @@ begin
     (a.blue = b.blue);
 end;
 
-function NormalDraw(const a, b : TFPColor) : TFPColor;
+function NormalDraw(const {%H-}a, b : TFPColor) : TFPColor;
 begin
     Result := b;
 end;

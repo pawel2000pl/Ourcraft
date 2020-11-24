@@ -76,6 +76,11 @@ operator * (const a, b : TMatrix3x3) : TMatrix3x3;
 operator +(const a, b : TMatrix3x3) : TMatrix3x3;
 operator -(const a, b : TMatrix3x3) : TMatrix3x3;
 operator * (const a : TMatrix3x3; const b : TVector3) : TVector3;
+
+function floor(const v : TVector3) : TIntVector3; inline; overload;
+function round(const v : TVector3) : TIntVector3; inline; overload;
+function ceil(const v : TVector3) : TIntVector3; inline; overload;
+
 function Normalize(const v : TVector3) : TVector3; inline;
 function Transposing(const m : TMatrix3x3) : TMatrix3x3;
 function ReverseMatrix(const m : TMatrix3x3) : TMatrix3x3;
@@ -106,6 +111,8 @@ function GetCoordPriorityByDistanceLength(const i : integer) : Double; inline;
 function GetInverseCoordPriorityByDistance(const x, y, z : integer) : Integer; inline;
 
 function Q_rsqrt(const number : single) : single; inline;
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
+
 
 implementation
 
@@ -289,6 +296,27 @@ begin
     for j := axisX to axisZ do
       Result[i] += a[j, i] * b[j];
   end;
+end;
+
+function floor(const v: TVector3): TIntVector3;
+begin
+  Result[axisX] := floor(v[axisX]);
+  Result[axisY] := floor(v[axisY]);
+  Result[axisZ] := floor(v[axisZ]);
+end;
+
+function round(const v: TVector3): TIntVector3;
+begin
+  Result[axisX] := round(v[axisX]);
+  Result[axisY] := round(v[axisY]);
+  Result[axisZ] := round(v[axisZ]);
+end;
+
+function ceil(const v: TVector3): TIntVector3;
+begin
+  Result[axisX] := ceil(v[axisX]);
+  Result[axisY] := ceil(v[axisY]);
+  Result[axisZ] := ceil(v[axisZ]);
 end;
 
 function Normalize(const v : TVector3) : TVector3;
@@ -486,6 +514,17 @@ begin
   y := y * (threehalfs - (x2 * y * y));
   y := y * (threehalfs - (x2 * y * y));
   Result := y;
+end;
+
+function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : longword = 4294967291) : longword;
+var
+  i : PtrInt;
+begin
+  Result := InitValue;
+  for i := (Size shr 2) - 1 downto 0 do
+    Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
+  for i := (Size and 3) downto 1 do
+    Result := ((QWord(Result) shl 32) or PByte(Buf)[Size-i]) mod Base;
 end;
 
 { TIntVector3Sort }
