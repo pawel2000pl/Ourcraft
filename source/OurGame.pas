@@ -92,7 +92,7 @@ type
     function GetElement(const ID : Integer): TElementCreator;
     procedure RegisterCreator(Creator : TElementCreator);
   public
-    property Remote : Boolean read FRemote write FRemote; //decides if it is a client (true) or server (false)
+    property Remote : Boolean read FRemote write FRemote; //decides if it is a client (true) or a server (false)
     property Game : TOurGame read fGame;
     property IDCount : Integer read fIDCount;
     property Elements[const ID : Integer] : TElementCreator read GetElement;

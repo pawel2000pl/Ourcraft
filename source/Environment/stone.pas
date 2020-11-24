@@ -61,7 +61,7 @@ end;
 
 procedure TStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord);
 begin
-  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoords[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
+  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
 end;
 
 end.

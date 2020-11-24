@@ -51,6 +51,7 @@ type
     function GetCount : Integer; virtual; abstract;
     procedure Add(Item : TItem); virtual; abstract;
     function IndexOf(const Item : TItem) : Integer; virtual; abstract;
+    procedure Clear; virtual; abstract;
 
     procedure AddCollection(const Collection : TCustomCollection); virtual;
     procedure Iterate(const Event : TIterationMethod);
@@ -76,6 +77,7 @@ type
     function GetCount: Integer; override;
     procedure Remove(const i: Integer); override;
     function IndexOf(const Item: TItem): Integer; override;
+    procedure Clear; override;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -91,12 +93,14 @@ type
     procedure Add(Item: TItem); override;
     procedure SetCount(const i : Integer);
     function GetCount: Integer; override;
+    procedure Clear; override;
     procedure Remove(const i: Integer); override;
     function IndexOf(const Item: TItem): Integer; override;
     property Data[const Index : Integer] : TItem read Get write SetItem; default;
     property Count : Integer read GetCount write SetCount;
     constructor Create(InitCount : Integer=0);
     constructor Create(const InitValues : array of TItem);
+    destructor Destroy; override;
   end;
 
   { TCustomOrderArray }
@@ -205,6 +209,16 @@ begin
   Result := length(fData);
 end;
 
+procedure TCustomArray.Clear;
+var
+  i : Integer;
+begin
+  if OnRemoveItem <> nil then
+    for i := 0 to GetCount-1 do
+      DoRemoveItemEvent(FData[i]);
+  SetLength(fData, 0);
+end;
+
 procedure TCustomArray.Remove(const i: Integer);    
 var
   h : Integer;
@@ -240,6 +254,12 @@ begin
   SetCount(c);
   for i := 0 to c-1 do
     fData[i] := InitValues[i];
+end;
+
+destructor TCustomArray.Destroy;
+begin
+  Clear;
+  inherited Destroy;
 end;
 
 { TCustomCollection }
@@ -367,6 +387,16 @@ begin
   Result := TMySearcher.BSearch(FData, Item, 0, Count-1);
 end;
 
+procedure TCustomSet.Clear;
+var
+  i : Integer;
+begin
+  if OnRemoveItem <> nil then
+    for i := 0 to GetCount-1 do
+      DoRemoveItemEvent(FData[i]);  
+  SetLength(fData, 0);
+end;
+
 constructor TCustomSet.Create;
 begin
   Count := 0;
@@ -375,7 +405,7 @@ end;
 
 destructor TCustomSet.Destroy;
 begin
-  SetLength(fData, 0);
+  Clear;
   inherited Destroy;
 end;
 
