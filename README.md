@@ -31,6 +31,10 @@ How to compile and run
 
 or execute "make all" to install and compile and then execute "make run" to open game in single mode.
 
+In case of errors with the compilation, open with the Lazarus "source/Single-mode/SingleMode.lpr" and then click Package -> Open loaded package
+Find "lazopenglcontext", open it and compile. Then click Run -> Build.
+And then, you can type "make run" (in the console, in main directiry of project) to open the game in single mode.
+
 Screenshots:
 
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)

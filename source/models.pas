@@ -5,8 +5,8 @@ unit Models;
 interface
 
 uses
-  Classes, SysUtils, math, CalcUtils, OpenGLContext, UniversalImage, Sorts,
-  GLext, gl, glu, Glut, strutils, ProcessUtils, Locker;
+  Classes, SysUtils, math, CalcUtils, UniversalImage, Sorts,
+  GLext, gl, strutils, ProcessUtils, Locker;
 
 type
   //               +x        -x      +y     -y      +z      -z    See: TextureModeSides

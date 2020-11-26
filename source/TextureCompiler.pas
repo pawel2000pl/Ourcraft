@@ -71,11 +71,8 @@ var
 begin
   Texture := TUniversalImage.CreateEmpty;
 
-  Texture.SetSize(32, AreaHeight);
-  setlength(Area, 32, AreaHeight);
-  for i := 0 to 32 - 1 do
-    for j := 0 to 32 - 1 do
-      Area[i, j] := False;
+  Texture.SetSize(34, AreaHeight);
+  setlength(Area, 34, AreaHeight);
 
   try
     while not ReadString(FileName) do

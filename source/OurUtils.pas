@@ -148,7 +148,7 @@ type
     function GetTag : PBlockDataTag; virtual;
 
     function NeedDraw : boolean; virtual;
-    function IsSolid : boolean; virtual; //not draw on every frame
+    function IsSolid : boolean; virtual; //not draw on every frame / regular cube
     function NeedTick : boolean; virtual;
     function NeedRandomTick : boolean; virtual;
     function HasAnimation : boolean; virtual; //draw on every frame
@@ -366,6 +366,7 @@ type
     procedure RelistBlock(const x, y, z : integer);
 
     procedure SaveToStream(Stream : TStream);
+    procedure SaveChangesToStream(Stream : TStream);
     procedure LoadFromStream(Stream : TStream);
 
     function GetHashCode: PtrInt; override;
@@ -508,7 +509,7 @@ implementation
 {$macro on}
 
 const
-  NilBlockCoord : TBlockCoord = (0, 0, 0);
+  NilBlockCoord : TBlockCoord = (255, 255, 255);
 
 function RealCoord(const ChunkPosition : TIntVector3;
   const BlockPosition : TBlockCoord) : TVector3;
@@ -2026,6 +2027,7 @@ procedure TOurChunk.SaveToStream(Stream: TStream);
 var
   x, y, z : Integer;
 begin
+  Stream.WriteByte(0);
   Stream.WriteBuffer(FPosition, SizeOf(FPosition));
   for x := 0 to ChunkSize-1 do
     for y := 0 to ChunkSize-1 do
@@ -2034,15 +2036,56 @@ begin
   ChangedBlocks.Clear;
 end;
 
+procedure TOurChunk.SaveChangesToStream(Stream: TStream);
+var
+  i : Integer;
+  c : TBlockCoord;
+begin
+  if ChangedBlocks.GetCount > MaxDynamicBlockChanged then
+     SaveToStream(Stream)
+     else
+     begin
+       if ChangedBlocks.GetCount = 0 then
+          exit;
+       Stream.WriteByte(1); 
+       Stream.WriteBuffer(FPosition, SizeOf(FPosition));
+       i := 0;
+       while ChangedBlocks.GetNext(i, c) do
+       begin
+          Stream.WriteBuffer(c, SizeOf(c));
+          DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(Stream, Self, c);
+       end;
+       ChangedBlocks.Clear;
+     end;
+  c := NilBlockCoord;
+  Stream.WriteBuffer(c, SizeOf(c));
+end;
+
 procedure TOurChunk.LoadFromStream(Stream: TStream);  
 var
   x, y, z : Integer;
+  mode : Integer;
+  c : TBlockCoord;
 begin
-  Stream.ReadBuffer(FPosition, SizeOf(FPosition));   
-  for x := 0 to ChunkSize-1 do
-    for y := 0 to ChunkSize-1 do
-      for z := 0 to ChunkSize-1 do
-        DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
+  mode := Stream.ReadByte;
+  Stream.ReadBuffer(FPosition, SizeOf(FPosition));
+  if mode = 0 then
+  begin
+    for x := 0 to ChunkSize-1 do
+      for y := 0 to ChunkSize-1 do
+        for z := 0 to ChunkSize-1 do
+          DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
+  end
+  else
+  begin
+    while true do
+    begin
+        Stream.ReadBuffer(c, SizeOf(c));
+        if c = NilBlockCoord then
+           break;
+        DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(Stream, Self, c);
+    end;
+  end;
 end;
 
 function TOurChunk.GetHashCode: PtrInt;
