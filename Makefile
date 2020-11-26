@@ -6,7 +6,7 @@ bin/.initialized:
 	date
 	chmod u+x installation/*.sh
 	chmod u+x source/Preprocesor/preprocesor.sh
-	bash -i "installation/init2.sh"
+	bash -i "./installation/init2.sh"
 	
 init: bin/.initialized	
 	

@@ -20,6 +20,7 @@
 unit CalcUtils; 
 
 {$mode objfpc}
+{$ModeSwitch typehelpers}
 
 interface
 
@@ -27,24 +28,24 @@ uses
   Classes, Math, Sorts, Incrementations;
 
 type
-  TAxis = (axisX = 0, axisY = 1, axisZ = 2);
+  TAxis = (AxisX = 0, AxisY = 1, AxisZ = 2);
   TAxisSet = set of TAxis;
   TVector3 = array[TAxis] of double;
   TMatrix3x3 = array[TAxis, TAxis] of double;
   TIntVector3 = array[TAxis] of integer; //chunk in world
-  TBlockCoord = packed array[TAxis] of byte; //in chunk
+  TBlockCoord = array[TAxis] of byte; //in chunk
 
 const
   IdentityMatrix : TMatrix3x3 = ((1, 0, 0), (0, 1, 0), (0, 0, 1));
 
   {Rotation}
-  rotateRoll = axisX;
-  rotatePich = axisY;
-  rotateYaw = axisZ;
+  RotateRoll = axisX;
+  RotatePich = axisY;
+  RotateYaw = axisZ;
   {Size}
-  sizeWidth = axisX;
-  sizeHeight = axisY;
-  sizeDepth = axisZ;
+  SizeWidth = axisX;
+  SizeHeight = axisY;
+  SizeDepth = axisZ;
 
 type
   TRotationVector = TVector3;
@@ -53,6 +54,63 @@ type
 
   TIntRange = record
     Min, Max : integer;
+  end;
+
+  { TVector3Helper }
+
+  TVector3Helper = type helper for TVector3
+  private
+    function GetX: Double; inline;
+    function GetY: Double; inline;
+    function GetZ: Double; inline;
+    procedure SetX(const AValue: Double); inline;
+    procedure SetY(const AValue: Double); inline;
+    procedure SetZ(const AValue: Double); inline;
+  public
+    property X : Double read GetX write SetX;
+    property Y : Double read GetY write SetY;
+    property Z : Double read GetZ write SetZ;
+    property RotateRoll : Double read GetX write SetX;
+    property RotatePich : Double read GetY write SetY;
+    property RotateYaw : Double read GetZ write SetZ;
+    property Width : Double read GetX write SetX;
+    property Height : Double read GetY write SetY;
+    property Depth : Double read GetZ write SetZ;
+  end;
+
+  { TIntVector3Helper }
+
+  TIntVector3Helper = type helper for TIntVector3
+  private
+    function GetX: Integer; inline;
+    function GetY: Integer; inline;
+    function GetZ: Integer; inline;
+    procedure SetX(const AValue: Integer); inline;
+    procedure SetY(const AValue: Integer); inline;
+    procedure SetZ(const AValue: Integer); inline;
+  public
+    property X : Integer read GetX write SetX;
+    property Y : Integer read GetY write SetY;
+    property Z : Integer read GetZ write SetZ;    
+    property Width : Integer read GetX write SetX;
+    property Height : Integer read GetY write SetY;
+    property Depth : Integer read GetZ write SetZ;
+  end;
+
+  { TBlockCoordHelper }
+
+  TBlockCoordHelper = type helper for TBlockCoord
+  private
+    function GetX: Byte; inline;
+    function GetY: Byte; inline;
+    function GetZ: Byte; inline;
+    procedure SetX(const AValue: Byte); inline;
+    procedure SetY(const AValue: Byte); inline;
+    procedure SetZ(const AValue: Byte); inline;
+  public
+    property X : Byte read GetX write SetX;
+    property Y : Byte read GetY write SetY;
+    property Z : Byte read GetZ write SetZ;
   end;
 
 operator +(const a, b : TIntVector3) : TIntVector3; inline;
@@ -525,6 +583,102 @@ begin
     Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
   for i := (Size and 3) downto 1 do
     Result := ((QWord(Result) shl 32) or PByte(Buf)[Size-i]) mod Base;
+end;
+
+{ TBlockCoordHelper }
+
+function TBlockCoordHelper.GetX: Byte;
+begin
+  Result := Self[AxisX];
+end;
+
+function TBlockCoordHelper.GetY: Byte;
+begin
+  Result := Self[AxisY];
+end;
+
+function TBlockCoordHelper.GetZ: Byte;
+begin
+  Result := Self[AxisZ];
+end;
+
+procedure TBlockCoordHelper.SetX(const AValue: Byte);
+begin
+  Self[AxisX] := AValue;
+end;
+
+procedure TBlockCoordHelper.SetY(const AValue: Byte);
+begin
+  Self[AxisY] := AValue;
+end;
+
+procedure TBlockCoordHelper.SetZ(const AValue: Byte);
+begin
+  Self[AxisZ] := AValue;
+end;
+
+{ TIntVector3Helper }
+
+function TIntVector3Helper.GetX: Integer;
+begin
+  Result := Self[AxisX];
+end;
+
+function TIntVector3Helper.GetY: Integer;
+begin
+  Result := Self[AxisY];
+end;
+
+function TIntVector3Helper.GetZ: Integer;
+begin
+  Result := Self[AxisZ];
+end;
+
+procedure TIntVector3Helper.SetX(const AValue: Integer);
+begin
+   Self[AxisX] := AValue;
+end;
+
+procedure TIntVector3Helper.SetY(const AValue: Integer);
+begin
+   Self[AxisY] := AValue;
+end;
+
+procedure TIntVector3Helper.SetZ(const AValue: Integer);
+begin
+   Self[AxisZ] := AValue;
+end;
+
+{ TVector3Helper }
+
+function TVector3Helper.GetX: Double;
+begin
+   Result := Self[AxisX];
+end;
+
+function TVector3Helper.GetY: Double;
+begin
+   Result := Self[AxisY];
+end;
+
+function TVector3Helper.GetZ: Double;
+begin
+   Result := Self[AxisZ];
+end;
+
+procedure TVector3Helper.SetX(const AValue: Double);
+begin
+  Self[AxisX] := AValue;
+end;
+
+procedure TVector3Helper.SetY(const AValue: Double);
+begin
+  Self[AxisY] := AValue;
+end;
+
+procedure TVector3Helper.SetZ(const AValue: Double);
+begin
+  Self[AxisZ] := AValue;
 end;
 
 { TIntVector3Sort }
