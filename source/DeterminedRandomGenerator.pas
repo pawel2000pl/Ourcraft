@@ -5,7 +5,7 @@ unit DeterminedRandomGenerator;
 interface
 
 uses
-  Classes, SysUtils, Math, SimpleCache;
+  Classes, SysUtils, Math, SimpleCache, Incrementations;
 
 const
   ExampleSeedOffset : array[0..7] of QWord = (3392232331, 2697266237, 2106098177, 2139937253, 3402672613, 2000438761, 1622329061, 3220468841);
@@ -27,10 +27,14 @@ type
     Cache : TGeneratorCache;
   public
     property Seed : QWord read fSeed write fSeed;
-    function ConstRandom(const i : integer; const SeedOffset : QWord = 0) : double;
+    function ConstRandom(const i : integer; const SeedOffset : QWord = 0) : double; overload;
+    function ConstRandom(const Dim : array of Integer; const SeedOffset : QWord = 0) : double; overload;
     function RandomAngle(const x : double; const SeedOffset : QWord = 0) : double;
     function LinearRandom(const x : double; const SeedOffset : QWord = 0) : double; overload;
     function LinearRandom(const Dim : array of double; const SeedOffset : QWord = 0) : double; overload;
+    function PerlinNoise(const Dim : array of double; const SeedOffset : QWord = 0) : double;
+    procedure RandomVector(const Dim : array of Double; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
+    procedure RandomVector(const Dim : array of Integer; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
     constructor Create(const InitSeed : QWord);
     destructor Destroy; override;
   end;
@@ -39,6 +43,18 @@ function CreateConstRandomCacheKey(const i : integer;
   const SeedOffset : QWord) : TConstRandomCacheKey; inline;
 
 implementation
+
+uses
+  Sorts;
+
+type
+
+  { TInvertedDoubleSort }
+
+  TInvertedDoubleSort = class(specialize TStaticSort<Double>)
+  public
+    class function Compare(const a, b: TValue): integer; override;
+  end;
 
 {$RangeChecks off}
 
@@ -57,6 +73,13 @@ function CreateConstRandomCacheKey(const i : integer;
 begin
   Result.i := i;
   Result.SeedOffset := SeedOffset;
+end;
+
+{ TInvertedDoubleSort }
+
+class function TInvertedDoubleSort.Compare(const a, b: TValue): integer;
+begin
+  Result := Sign(b-a);
 end;
 
 { TRandomGenerator }
@@ -80,6 +103,18 @@ begin
   Result := PowerMod(Seed + SeedOffset + PowerMod(b + 3, p, 4294967161),
     163, 4294967291) / 4294967291;
   Cache.AddItem(CreateConstRandomCacheKey(i, SeedOffset), Result);
+end;
+
+function TRandomGenerator.ConstRandom(const Dim: array of Integer; const SeedOffset: QWord): double;
+var
+  i, c : Integer;
+  r : Double;
+begin
+  c := length(Dim);
+  r := 1;
+  for i := 0 to c - 1 do
+    r += ConstRandom(Dim[i], SeedOffset+ExampleSeedOffset[0] + i);
+  Result := ConstRandom(floor64(r * 4294967311), SeedOffset);
 end;
 
 function TRandomGenerator.RandomAngle(const x: double; const SeedOffset: QWord): double;
@@ -148,6 +183,116 @@ begin
 
   SetLength(x0, 0);
   SetLength(fx, 0);
+end;
+
+function TRandomGenerator.PerlinNoise(const Dim: array of double;
+  const SeedOffset: QWord): double;
+var
+  Coords : array of Integer;    
+  fraqs : array of Double;
+  c : Integer;
+
+  function dotGridGradient(const Mask : QWord) : Double;
+  type
+    TQWordSet = set of 0..63;
+    PQWordSet = ^TQWordSet;
+  var
+    pqs : PQWordSet;
+    i : Integer;
+    Gradient : array of Double;
+    Coords2 : array of Integer;
+  begin
+    SetLength(Gradient, c);
+    SetLength(Coords2, c);
+    pqs := Pointer(@Mask);
+    for i := 0 to c-1 do
+      Coords2[i] := Coords[i] + ifthen(i in pqs^, 1, 0);
+    RandomVector(Coords2, Gradient, SeedOffset);
+    Result := 0;
+    for i := 0 to c-1 do
+      Result += (Dim[i] - Coords2[i]) * abs(Gradient[i]);
+    SetLength(Gradient, 0);
+    SetLength(Coords2, 0);
+  end;
+
+var
+  Mask : QWord;
+
+function Merge(const Depth : Integer) : Double;
+var
+  a, b : Double;
+begin
+  if Depth = 0 then
+  begin
+     a := dotGridGradient(PostInc(Mask));
+     b := dotGridGradient(PostInc(Mask))
+  end
+  else
+  begin
+    a := Merge(Depth-1);
+    b := Merge(Depth-1);
+  end;
+  Result := (b - a) * (3.0 - fraqs[Depth] * 2.0) * sqr(fraqs[Depth]) + a;
+end;
+
+var
+  i : Integer;
+begin
+  c := Length(Dim);
+  SetLength(Coords, c);
+  SetLength(fraqs, c);
+
+  for i := 0 to c-1 do
+  begin
+    Coords[i] := floor(Dim[i]);
+    fraqs[i] := Dim[i]-Coords[i];
+  end;
+
+  Mask := 0;
+  Result := Merge(c-1);
+
+  SetLength(Coords, 0);
+  SetLength(fraqs, 0);
+end;
+
+procedure TRandomGenerator.RandomVector(const Dim: array of Double;
+  var Vector: array of Double; const SeedOffset: QWord);
+var
+  i, c : Integer;
+  d : Double;
+  v : Integer;
+begin
+  c := Min(Length(Dim), Length(Vector));
+  d := 0;
+  v := Floor(LinearRandom(Dim, SeedOffset)*$7FFFFFFF);
+  for i := 0 to c-1 do
+  begin
+    Vector[i] := ConstRandom(v, SeedOffset+i)*2-1;
+    d += sqr(Vector[i]);
+  end;
+  d := sqrt(d);
+  for i := 0 to c-1 do
+    Vector[i] /= d;
+end;
+
+procedure TRandomGenerator.RandomVector(const Dim: array of Integer;
+  var Vector: array of Double; const SeedOffset: QWord);
+var
+  i, c : Integer;
+  d : Double;
+  v : Integer;
+begin
+  c := Min(Length(Dim), Length(Vector));
+  d := 0;
+  v := Floor(ConstRandom(Dim, SeedOffset)*$7FFFFFFF);
+  for i := 0 to c-1 do
+  begin
+    Vector[i] := ConstRandom(v, SeedOffset+i)*2-1;
+    d += sqr(Vector[i]);
+  end;
+  d := sqrt(d);
+  for i := 0 to c-1 do
+    Vector[i] /= d;
 end;
 
 constructor TRandomGenerator.Create(const InitSeed : QWord);

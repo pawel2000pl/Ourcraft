@@ -77,7 +77,7 @@ type
                          
   { TAbstractGenerator }
 
-  TAbstractGenerator = class
+  TAbstractGenerator = class abstract
   private
     FDestroyWithWorld : boolean;
   public
@@ -171,7 +171,7 @@ type
     function LightSource : integer; virtual;
     function Clone(const NewCoord : TIntVector3) : TBlock; virtual;
 
-    function GetHashCode: PtrInt; override;
+    function GetDataHashCode: PtrInt;
   end;
 
   { TExtendedBlock }
@@ -369,7 +369,7 @@ type
     procedure SaveChangesToStream(Stream : TStream);
     procedure LoadFromStream(Stream : TStream);
 
-    function GetHashCode: PtrInt; override;
+    function GetDataHashCode: PtrInt;
 
     constructor Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
     destructor Destroy; override;
@@ -382,12 +382,14 @@ type
   end;
 
   TIsVisibledPointFunction = function(const Point : TVector3; const Size : double) : boolean of object;
+  TChangesInArea = procedure(const Coord : TBlockCoord; Chunk : TOurChunk) of object;
 
   { TRenderArea }
 
   TRenderArea = class
   private
     FOnChage : TRenderAreaChange;
+    FOnChunkChange: TChangesInArea;
     FReloadingID : QWord;
     fRepaintingID : QWord;
     fx, fy, fz : integer;
@@ -402,6 +404,7 @@ type
     procedure SetBorderWidth(AValue: Double);
     procedure SetIsVisibledPointFunction(AValue : TIsVisibledPointFunction);
     procedure SetOnChage(AValue : TRenderAreaChange);
+    procedure SetOnChunkChange(AValue: TChangesInArea);
     procedure SetRay(AValue : integer);
     procedure SetReloadingID(AValue : QWord);
     procedure setX(AValue : integer);
@@ -409,8 +412,8 @@ type
     procedure setZ(AValue : integer);
     procedure OnChangeEvent;
   public
-    property IsVisibledPointFunction : TIsVisibledPointFunction
-      read GetIsVisibledPointFunction write SetIsVisibledPointFunction;
+    property IsVisibledPointFunction : TIsVisibledPointFunction read GetIsVisibledPointFunction write SetIsVisibledPointFunction;
+    property OnChunkChange : TChangesInArea read FOnChunkChange write SetOnChunkChange;
     property OnChage : TRenderAreaChange read FOnChage write SetOnChage;
 
     property BorderWidth : Double read fBorderWidth write SetBorderWidth;
@@ -723,6 +726,14 @@ begin
     FOnChage := nil;
 end;
 
+procedure TRenderArea.SetOnChunkChange(AValue: TChangesInArea);
+begin
+  if FOnChunkChange=AValue then Exit;
+  if not Assigned(AValue) then
+    AValue:=nil;
+  FOnChunkChange:=AValue;
+end;
+
 function TRenderArea.AlwaysTrue(const Point : TVector3; const Size : double) : boolean;
 begin
   Result := True;
@@ -869,6 +880,7 @@ begin
   fBorderWidth:=1.2;
   fWorld := OurWorld;
   fOnchange := nil;
+  FOnChunkChange := nil;
   FIsVisibledPointFunction := @AlwaysTrue;
   fx := 0;
   fy := 0;
@@ -1295,12 +1307,9 @@ procedure TOurChunk.Generate;
 begin
   if fGenerated or Finishing then
     exit;
-  if not World.Generator.ClassNameIs(TAbstractGenerator.ClassName) then
-  begin
-    AutoLightUpdate := False;
-    World.Generator.Generate(Self);
-    AutoLightUpdate := True;
-  end;
+  AutoLightUpdate := False;
+  World.Generator.Generate(Self);
+  AutoLightUpdate := True;
   fGenerated := True;
   RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
 end;
@@ -1361,6 +1370,9 @@ var
   fb : TBlock;
   c : TOurChunk;
   coord : TBlockCoord;
+  CheckCoord : TIntVector3;
+  i : Integer;
+  RenderArea : TRenderArea;
 begin
   try
     fb := fBlocks[x, y, z];
@@ -1371,28 +1383,30 @@ begin
 
     RelistBlock(x, y, z);
 
-    if fAutoLightUpdate then
-      RelightArea(x, y, z, x, y, z);
-
     if fBlocks[x, y, z].NeedAfterPut then
       fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
 
+    Coord := BlockCoord(x, y, z);
     NeedModelSolidUpdate := AllTextureSides;
     for side := low(TTextureMode) to High(TTextureMode) do
     begin
-      c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX],
-        y + TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
+      c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
       if c <> nil then
       begin
-        coord := BlockCoord((x + TextureModeSidesI[side][axisX]) and
-          ChunkSizeMask, (y + TextureModeSidesI[side][axisY]) and
-          ChunkSizeMask, (z + TextureModeSidesI[side][axisZ]) and ChunkSizeMask);
-        if c.fBlocks[coord[axisX], coord[axisY], coord[axisZ]].NeedNearChangeUpdate then
-          c.fBlocks[coord[axisX], coord[axisY], coord[axisZ]].NearChangeUpdate(c,
-            OppositeSide[side], coord);
+        CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
+        if c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NeedNearChangeUpdate then
+          c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NearChangeUpdate(c, OppositeSide[side], coord);
         include(c.NeedModelSolidUpdate, OppositeSide[side]);
       end;
     end;
+
+    if fAutoLightUpdate then
+      RelightArea(x, y, z, x, y, z);
+
+    i := 0;
+    while RenderAreaCollection.GetNext(i, RenderArea{%H-}) do
+      if RenderArea.OnChunkChange <> nil then
+        RenderArea.OnChunkChange(BlockCoord(x, y, z), Self);
 
     if fb <> nil then
     begin
@@ -2050,7 +2064,7 @@ begin
        Stream.WriteByte(1); 
        Stream.WriteBuffer(FPosition, SizeOf(FPosition));
        i := 0;
-       while ChangedBlocks.GetNext(i, c) do
+       while ChangedBlocks.GetNext(i, c{%H-}) do
        begin
           Stream.WriteBuffer(c, SizeOf(c));
           DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(Stream, Self, c);
@@ -2080,7 +2094,7 @@ begin
   begin
     while true do
     begin
-        Stream.ReadBuffer(c, SizeOf(c));
+        Stream.ReadBuffer(c{%H-}, SizeOf(c));
         if c = NilBlockCoord then
            break;
         DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(Stream, Self, c);
@@ -2088,7 +2102,7 @@ begin
   end;
 end;
 
-function TOurChunk.GetHashCode: PtrInt;
+function TOurChunk.GetDataHashCode: PtrInt;
 var
   buf : array[0..ChunkSize*ChunkSize*ChunkSize] of QWord;
   i, x, y, z : Integer;
@@ -2097,7 +2111,7 @@ begin
   for x := 0 to ChunkSize-1 do
     for y := 0 to ChunkSize-1 do
       for z := 0 to ChunkSize-1 do
-          buf[PostInc(i)] := GetBlockDirect(x, y, z).GetHashCode;
+          buf[PostInc(i)] := GetBlockDirect(x, y, z).GetDataHashCode;
   buf[High(buf)] := inherited GetHashCode;
   Result:=ModuloBuf(@buf[0], sizeof(buf), 1);
 end;
@@ -2305,13 +2319,12 @@ begin
   Result := Creator.CreateElement(NewCoord, getSubID) as TBlock;
 end;
 
-function TBlock.GetHashCode: PtrInt;
+function TBlock.GetDataHashCode: PtrInt;
 var
-  buf : array[0..2] of QWord;
+  buf : array[0..1] of QWord;
 begin
   buf[0] := GetID;
   buf[1] := GetSubID;
-  buf[2] := inherited GetHashCode;
   Result:= ModuloBuf(@buf[0], SizeOf(buf), 1);
 end;
 
