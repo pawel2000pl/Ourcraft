@@ -44,18 +44,6 @@ function CreateConstRandomCacheKey(const i : integer;
 
 implementation
 
-uses
-  Sorts;
-
-type
-
-  { TInvertedDoubleSort }
-
-  TInvertedDoubleSort = class(specialize TStaticSort<Double>)
-  public
-    class function Compare(const a, b: TValue): integer; override;
-  end;
-
 {$RangeChecks off}
 
 function PowerMod(const x, n, m : QWord) : QWord;
@@ -73,13 +61,6 @@ function CreateConstRandomCacheKey(const i : integer;
 begin
   Result.i := i;
   Result.SeedOffset := SeedOffset;
-end;
-
-{ TInvertedDoubleSort }
-
-class function TInvertedDoubleSort.Compare(const a, b: TValue): integer;
-begin
-  Result := Sign(b-a);
 end;
 
 { TRandomGenerator }
@@ -264,7 +245,7 @@ var
 begin
   c := Min(Length(Dim), Length(Vector));
   d := 0;
-  v := Floor(LinearRandom(Dim, SeedOffset)*$7FFFFFFF);
+  v := Floor(LinearRandom(Dim, SeedOffset)*ExampleSeedOffset[0]);
   for i := 0 to c-1 do
   begin
     Vector[i] := ConstRandom(v, SeedOffset+i)*2-1;
@@ -284,7 +265,7 @@ var
 begin
   c := Min(Length(Dim), Length(Vector));
   d := 0;
-  v := Floor(ConstRandom(Dim, SeedOffset)*$7FFFFFFF);
+  v := Floor(ConstRandom(Dim, SeedOffset)*ExampleSeedOffset[0]);
   for i := 0 to c-1 do
   begin
     Vector[i] := ConstRandom(v, SeedOffset+i)*2-1;
