@@ -123,7 +123,7 @@ var
 begin
   try
     len := Hypot3(Point - fPosition);
-    Result := (Len <= Size) or (ScalarProduct(Point - fPosition,
+    Result := (Len <= Size*2) or (ScalarProduct(Point - fPosition,
       fRotateNormalVector) >= len * cos(PerspectiveWidth + Size / len));
   except                            //cos(min(pi, …))  ?
     Result := True;

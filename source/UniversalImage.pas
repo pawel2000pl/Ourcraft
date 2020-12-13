@@ -65,6 +65,7 @@ type
     procedure LoadFromFile(const FileName : ansistring); overload;
     constructor CreateEmpty;
     constructor Create(AWidth, AHeight : integer); override;
+    constructor CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer);
     destructor Destroy; override;
     procedure SetSize(AWidth, AHeight : integer); override;
     procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage;
@@ -316,10 +317,21 @@ begin
   SetUsePalette(False);
 end;
 
+constructor TUniversalImage.CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); 
+var
+    w, h : Integer;
+begin
+    w := Right-Left+1;
+    h := Bottom-Top+1;
+    SetLength(FData, w, h);
+    inherited Create(w, h);
+    Draw(-Left, -Top, Image);
+end;
+
 destructor TUniversalImage.Destroy;
 begin
   SetLength(FData, 0, 0);
-  inherited destroy;
+  inherited Destroy;
 end;
 
 procedure TUniversalImage.SetSize(AWidth, AHeight : integer);

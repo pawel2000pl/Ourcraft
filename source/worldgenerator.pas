@@ -178,8 +178,9 @@ begin
     ExampleSeedOffset[2] + floor64(MiddleLevel * ExampleSeedOffset[4])) +
     RandomGenerator.RandomAngle(z * Settings.WorldScale[axisZ],
     ExampleSeedOffset[3] + floor64(MiddleLevel * ExampleSeedOffset[4]));
-  Result := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX] + hr * cos(ha),
+  Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX] + hr * cos(ha),
     z * Settings.WorldScale[axisZ] + hr * sin(ha)], floor64(MiddleLevel*1024) + ExampleSeedOffset[3]);
+ // Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX], z * Settings.WorldScale[axisZ]], ExampleSeedOffset[0]);
 end;
 
 procedure TWorldGenerator.Generate(const Chunk : TOurChunk);

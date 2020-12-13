@@ -95,6 +95,7 @@ type
     property Width : Integer read GetX write SetX;
     property Height : Integer read GetY write SetY;
     property Depth : Integer read GetZ write SetZ;
+    function Mask(const BitMask : PtrUInt) : TIntVector3; inline;
   end;
 
   { TBlockCoordHelper }
@@ -111,6 +112,7 @@ type
     property X : Byte read GetX write SetX;
     property Y : Byte read GetY write SetY;
     property Z : Byte read GetZ write SetZ;
+    function Mask(const BitMask : Byte) : TBlockCoord; inline;
   end;
 
 operator +(const a, b : TIntVector3) : TIntVector3; inline;
@@ -439,7 +441,7 @@ function VectorProduct(const a, b : TVector3) : TVector3;  //iloczyn wektorowy a
 begin
   Result[axisX] := a[axisY] * b[axisZ] - a[axisZ] * b[axisY];
   Result[axisY] := a[axisZ] * b[axisX] - a[axisX] * b[axisZ];
-  Result[axisZ] := a[axisX] * b[axisY] - a[axisY] * b[axisZ];
+  Result[axisZ] := a[axisX] * b[axisY] - a[axisY] * b[axisX];
 end;
 
 function ScalarProduct(const a, b : TVector3) : double;  //iloczyn skalarny
@@ -524,7 +526,6 @@ begin
     NearPriorityInverse[NearPriority[i][axisX], NearPriority[i][axisY], NearPriority[i][axisZ]] := i;
     NearPriorityLengths[i] := hypot3(NearPriority[i]);
   end;
-  writeln(sizeof(NearPriorityInverse) + sizeof(NearPriorityLengths) + sizeof(NearPriority));
 end;
 
 function GetCoordPriorityByDistance(const i : integer) : TIntVector3; inline;
@@ -617,6 +618,14 @@ begin
   Self[AxisZ] := AValue;
 end;
 
+function TBlockCoordHelper.Mask(const BitMask: Byte): TBlockCoord;
+var
+  a : TAxis;
+begin
+  for a := low(TAxis) to High(TAxis) do
+     Result[a] := Self[a] and BitMask;
+end;
+
 { TIntVector3Helper }
 
 function TIntVector3Helper.GetX: Integer;
@@ -647,6 +656,14 @@ end;
 procedure TIntVector3Helper.SetZ(const AValue: Integer);
 begin
    Self[AxisZ] := AValue;
+end;
+
+function TIntVector3Helper.Mask(const BitMask: PtrUInt): TIntVector3;
+var
+  a : TAxis;
+begin
+  for a := low(TAxis) to High(TAxis) do
+     Result[a] := Self[a] and BitMask;
 end;
 
 { TVector3Helper }

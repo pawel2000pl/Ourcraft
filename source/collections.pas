@@ -91,6 +91,7 @@ type
     function Get(const i: Integer): TItem; override;
     procedure SetItem(const i : Integer; const NewItem : TItem);
     procedure Add(Item: TItem); override;
+    procedure Insert(Item : TItem; const Index : Integer); virtual;
     procedure SetCount(const i : Integer);
     function GetCount: Integer; override;
     procedure Clear; override;
@@ -122,7 +123,176 @@ type
      procedure Remove(const i: Integer); override;
   end;
 
+  ENotContainKey = class(Exception);
+
+  { TCustomKeySet }
+
+  generic TCustomKeySet<TKey, TItem> = class
+  type               
+      TItemContainer = record
+        Key : TKey;
+        Item : TItem;
+      end;
+
+      TBSearchComparator = function(const a : TItemContainer; const b : TKey) : Integer of object; 
+      TIterationMethod = procedure(const Key : TKey; Item : TItem) of object;
+      TKeyList = specialize TCustomArray<TKey>;
+
+      { TSearcher }
+
+      TSearcher = class(specialize TBSearch<TItemContainer, TKey>)
+      private
+        FComaprator : TBSearchComparator;
+      public
+        function Compare(const a: TItemContainer; const b: TKey): integer; override;
+        constructor Create(const Comparator : TBSearchComparator);
+      end;
+
+  private
+    BSearcher : TSearcher;
+    FCount : Integer;
+    FData : array of TItemContainer;
+    function BSearchCompare(const Container : TItemContainer; const Key : TKey) : Integer;  
+    procedure AddNew(const Key : TKey; const Item : TItem);
+  public
+    function CompareKeys(const a, b : TKey) : Integer; virtual;
+
+    property Count : Integer read FCount;
+    function GetCount : Integer;
+    function ContainKey(const Key : TKey) : Boolean;
+    procedure Add(const Key : TKey; const Item : TItem);
+    procedure Remove(const Key : TKey);
+    function Get(const Key : TKey) : TItem; overload;
+    property Data[const Key : TKey] : TItem read Get write Add; default;
+    procedure KeyList(List : TKeyList);
+    function KeyList : TKeyList; //must be free after
+    procedure Iterate(const Event : TIterationMethod);
+
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
 implementation
+
+{ TCustomKeySet }
+
+function TCustomKeySet.BSearchCompare(const Container: TItemContainer;
+  const Key: TKey): Integer;
+begin
+  Result := CompareKeys(Container.Key, Key);
+end;
+
+function TCustomKeySet.CompareKeys(const a, b: TKey): Integer;
+begin
+  Result := CompareMemRange(@a, @b, sizeof(TKey));
+end;
+
+function TCustomKeySet.GetCount: Integer;
+begin
+  Result := FCount;
+end;
+
+function TCustomKeySet.ContainKey(const Key: TKey): Boolean;
+begin
+  Result := BSearcher.BSearch(FData, Key, 0, FCount-1) >= 0;
+end;
+
+procedure TCustomKeySet.AddNew(const Key: TKey; const Item: TItem);
+var
+  i : Integer;
+begin
+  i := FCount-1;
+  SetLength(FData, PreInc(FCount));
+  while BSearchCompare(FData[i], Key) > 0 do
+  begin
+    FData[i+1] := FData[i];
+    Dec(i);
+  end;
+  FData[i+1].Key := Key;
+  FData[i+1].Item := Item;
+end;
+
+procedure TCustomKeySet.Add(const Key: TKey; const Item: TItem);
+var
+   i : Integer;
+begin
+   i := BSearcher.BSearch(FData, Key, 0, FCount-1);
+   if i < 0 then
+     Add(Key, Item)
+     else
+     FData[i].Item:=Item;
+end;
+
+procedure TCustomKeySet.Remove(const Key: TKey);
+var
+   i, m : Integer;
+begin
+  i := BSearcher.BSearch(FData, Key, 0, FCount-1);
+  if i < 0 then
+    exit;
+  for m := i+1 to Count-1 do
+    fData[m-1] := fData[m];
+  SetLength(fData, PreDec(FCount));
+end;
+
+function TCustomKeySet.Get(const Key: TKey): TItem;
+var
+   i : Integer;
+begin
+   i := BSearcher.BSearch(FData, Key, 0, FCount-1);
+   if i < 0 then
+     raise ENotContainKey.Create('Key not found');
+   Result := FData[i].Item;
+end;
+
+procedure TCustomKeySet.KeyList(List: TKeyList);
+var
+   i : Integer;
+begin
+  for i := 0 to FCount-1 do
+    List.Add(FData[i].Key);
+end;
+
+function TCustomKeySet.KeyList: TKeyList;
+begin
+  Result := TKeyList.Create();
+  KeyList(Result);
+end;
+
+procedure TCustomKeySet.Iterate(const Event: TIterationMethod);
+var
+   i : Integer;
+begin
+  for i := 0 to FCount-1 do
+    Event(FData[i].Key, FData[i].Item);
+end;
+
+constructor TCustomKeySet.Create;
+begin
+  BSearcher:=TSearcher.Create(@BSearchCompare);
+  setlength(FData, 0);
+  FCount := 0;
+end;
+
+destructor TCustomKeySet.Destroy;
+begin
+  BSearcher.Free;   
+  SetLength(FData, 0);
+  inherited Destroy;
+end;
+
+{ TCustomKeySet.TSearcher }
+
+function TCustomKeySet.TSearcher.Compare(const a: TItemContainer; const b: TKey
+  ): integer;
+begin
+  Result := FComaprator(a, b);
+end;
+
+constructor TCustomKeySet.TSearcher.Create(const Comparator: TBSearchComparator);
+begin
+  FComaprator:=Comparator;
+end;
 
 { TCustomOrderArray.TSorter }
 
@@ -188,6 +358,18 @@ begin
   h := length(fData);
   SetLength(fData, h+1);
   fData[h] := Item;
+end;
+
+procedure TCustomArray.Insert(Item: TItem; const Index: Integer);
+var
+  i, h : Integer;
+begin
+  DoCreateItemEvent(Item);  
+  h := length(fData);
+  SetLength(fData, h+1);
+  for i := h downto Index+1 do
+    fData[i] := fData[i-1];
+  fData[Index] := Item;
 end;
 
 procedure TCustomArray.SetCount(const i: Integer);
