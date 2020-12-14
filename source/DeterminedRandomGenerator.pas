@@ -191,7 +191,7 @@ var
     RandomVector(Coords2, Gradient, SeedOffset);
     Result := 0;
     for i := 0 to c-1 do
-      Result += (Dim[i] - Coords2[i]) * abs(Gradient[i]);
+      Result += (Dim[i] - Coords2[i]) * sin(pi*Gradient[i]);
     SetLength(Gradient, 0);
     SetLength(Coords2, 0);
   end;
