@@ -168,10 +168,10 @@ end;
 
 function TWorldGenerator.GetRandom(const x, z : integer;
   const MiddleLevel : double) : double;
-var
-  hr, ha : double;
+//var
+  //hr, ha : double;
 begin
-  hr := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX],
+  {hr := RandomGenerator.LinearRandom([x * Settings.WorldScale[axisX],
     z * Settings.WorldScale[axisZ]], ExampleSeedOffset[1] + floor64(
     MiddleLevel * ExampleSeedOffset[5])) * 2 - 1;
   ha := RandomGenerator.RandomAngle(x * Settings.WorldScale[axisX],
@@ -180,7 +180,8 @@ begin
     ExampleSeedOffset[3] + floor64(MiddleLevel * ExampleSeedOffset[4]));
   Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX] + hr * cos(ha),
     z * Settings.WorldScale[axisZ] + hr * sin(ha)], floor64(MiddleLevel*1024) + ExampleSeedOffset[3]);
- // Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX], z * Settings.WorldScale[axisZ]], ExampleSeedOffset[0]);
+  }Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX], z * Settings.WorldScale[axisZ]], ExampleSeedOffset[0]);
+  Result += RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX]*4, z * Settings.WorldScale[axisZ]*4], ExampleSeedOffset[1])/4;
 end;
 
 procedure TWorldGenerator.Generate(const Chunk : TOurChunk);

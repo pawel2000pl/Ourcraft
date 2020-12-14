@@ -20,7 +20,9 @@ It's not playable yet. But you can:
 
 Changelog:
 
-* Add simply terrain generator
+* Still buf fixes
+* Added Perlin Noise algorithm for any count of dimenstion
+* Added simply terrain generator
 * Bug fixes and optimalization
 
 How to compile and run
@@ -37,9 +39,9 @@ And then, you can type "make run" (in the console, in main directiry of project)
 
 Screenshots:
 
+![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)
 ![Screenshot](screenshots/Screenshot_20201006_174602.png)
-![Screenshot](screenshots/Screenshot_20201006_140414.png)
 ![Screenshot](screenshots/Screenshot_20200825_215336.png)
 ![Screenshot](screenshots/Screenshot_20200825_215243.png)
 ![Screenshot](screenshots/Screenshot_20200825_215226.png)
