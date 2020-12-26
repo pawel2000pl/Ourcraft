@@ -7,9 +7,9 @@ unit OurUtils;
 interface
 
 uses
-  SysUtils, Classes, Math, Models, CalcUtils, Sorts, Freerer, Queues,
+  SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Collections,
-  OurGame, Incrementations;
+  OurGame, Incrementations, CustomSaver, SaverPaths;
 
 const
   ChunkSizeLog2 = 4;
@@ -165,7 +165,7 @@ type
     procedure {%H-}NearChangeUpdate(Chunk : TOurChunk; const side : TTextureMode; const Coord : TBlockCoord); virtual; abstract;
 
     procedure SaveToStream(Stream: TStream; {%H-}Chunk : TOurChunk; const {%H-}Coord: TBlockCoord); virtual; //inherited first!
-    procedure LoadFromStream(Stream: TStream; Chunk : TOurChunk; const Coord: TBlockCoord);virtual; //inherited first!
+    function LoadFromStream(Stream: TStream; Chunk : TOurChunk; const Coord: TBlockCoord) : Boolean ;virtual; //inherited first! / retunrs if loading could be continued
 
     function Transparency : integer; virtual;
     function LightSource : integer; virtual;
@@ -255,6 +255,7 @@ type
     fSunLight : array[0..ChunkSize - 1, 0..ChunkSize - 1, 0..ChunkSize - 1] of byte;
     fLoaded : boolean;
     fGenerated : boolean;
+    fModifiedAfterLoading : Boolean;
     fLighted : boolean; //first lighting up (sun)
     //Entities : array of TEntity;
 
@@ -278,11 +279,11 @@ type
     LightFunctions : array[TLightFunctionKind] of TLightFunctions;
 
     procedure AddLight(const x, y, z : integer; LightLevel : integer; const Functions : TLightFunctionKind; const maxDepth : integer = 32; const Force : boolean = False);
-
     function GetBlock(const x, y, z : integer) : TBlock;      
     procedure SetBlock(const x, y, z : integer; AValue : TBlock);
     function GetNeightbors(const Index : TTextureMode) : TOurChunk;
     procedure Load;
+    procedure Save;
     procedure Generate;
   protected
     procedure Finalize(const DelayTime : QWord); override;
@@ -370,6 +371,10 @@ type
     procedure LoadFromStream(Stream : TStream);
 
     function GetDataHashCode: PtrInt;
+
+    function GetStringCoordinatesForSaver : AnsiString; overload;
+    class function GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : AnsiString; overload;
+    class function GetCoordinatesFromStringForSaver(s : AnsiString) : TIntVector3;
 
     constructor Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
     destructor Destroy; override;
@@ -467,8 +472,11 @@ type
 
     fGenerator : TAbstractGenerator;
 
+    fSaver : TCustomSaver;
+    procedure LoadFromSaver({%H-}Saver : TCustomSaver; const Path : array of AnsiString; Stream : TStream);
     procedure UpdateRenderArea(Area : TRenderArea);  //todo
   public
+    property Saver : TCustomSaver read fSaver;
     property RenderAreaSet : TRenderAreaCollection read fRenderAreaSet;
     property Environment : TEnvironment read fEnvironment;
     property TickDelay : Qword read fTickDelay write fTickDelay;
@@ -496,7 +504,7 @@ type
 
     property Generator : TAbstractGenerator read fGenerator;
 
-    constructor Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator);
+    constructor Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator; ASaver : TCustomSaver);
     destructor Destroy; override;
 
   end;
@@ -899,6 +907,20 @@ end;
 
 { TOurWorld }
 
+procedure TOurWorld.LoadFromSaver(Saver: TCustomSaver; const Path: array of AnsiString; Stream: TStream);
+var
+  v : TIntVector3;
+  c : TOurChunk;
+begin
+  if Path[0] = SaverPaths.ChunkPath then
+  begin
+    v := TOurChunk.GetCoordinatesFromStringForSaver(Path[1]);
+    c := GetChunk(v.x, v.y, v.z);
+    if c <> nil then
+      c.LoadFromStream(Stream);
+  end;
+end;
+
 procedure TOurWorld.UpdateRenderArea(Area : TRenderArea);
 var
   x, y, z, i : integer;
@@ -1168,7 +1190,7 @@ begin
 end;
 
 constructor TOurWorld.Create(defaultBlock: TBlockCreator; Game: TOurGame;
-  WorldGenerator: TAbstractGenerator);
+  WorldGenerator: TAbstractGenerator; ASaver: TCustomSaver);
 var
   x, y, z : integer;
 begin
@@ -1179,6 +1201,8 @@ begin
   fOurGame := Game;
   fEnvironment := Game.GetEnvironment;
   fGenerator := WorldGenerator;
+  fSaver := ASaver;
+  fSaver.OnLoad:=@LoadFromSaver;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
@@ -1209,8 +1233,10 @@ begin
   fQueues.Free;
   UpdateRenderAreaLocker.Free;
 
-  if fGenerator.FDestroyWithWorld then
+  if fGenerator.DestroyWithWorld then
      fGenerator.Free;
+  if fSaver.DestroyWithOwner then
+    fSaver.Free;
 
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
@@ -1261,6 +1287,23 @@ begin
   end;
 end;
 
+function TOurChunk.GetStringCoordinatesForSaver: AnsiString;
+begin
+  Result := GetStringCoordinatesForSaver(Position);
+end;
+
+class function TOurChunk.GetStringCoordinatesForSaver(const ChunkPosition: TIntVector3): AnsiString;
+begin
+  Result := IntToStr(ChunkPosition[AxisX])+'.'+IntToStr(ChunkPosition[AxisY])+'.'+IntToStr(ChunkPosition[AxisZ])+'.chunk';
+end;
+
+class function TOurChunk.GetCoordinatesFromStringForSaver(s: AnsiString): TIntVector3;
+begin
+  Result[AxisX]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+  Result[AxisY]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+  Result[AxisZ]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+end;
+
 function TOurChunk.GetBlockLightSource(const x, y, z : integer) : integer;
 begin
   Result := fBlocks[x, y, z].LightSource;
@@ -1294,13 +1337,34 @@ begin
 end;
 
 procedure TOurChunk.Load;
+var
+  s : array of AnsiString;
 begin
   if fLoaded or Finishing then
     exit;
-  //todo: loading from file
-  Generate;
-  ChangedBlocks.Clear;
+  SetLength(s, 2);
+  s[0] := SaverPaths.ChunkPath;
+  s[1] := GetStringCoordinatesForSaver;
+  if World.Saver.Exists(s) then
+    World.Saver.Load(s)
+  else
+    Generate;
+  ChangedBlocks.Clear;   
+  RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+  fModifiedAfterLoading := False;
   fLoaded := True;
+end;
+
+procedure TOurChunk.Save;
+var
+  ms : TMemoryStream;
+begin
+  ms := TMemoryStream.Create;
+  SaveToStream(ms);
+  ms.Position:=0;
+  if fModifiedAfterLoading then //todo: ... or world.saveAllChunks
+    World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], ms);
+  ms.Free;
 end;
 
 procedure TOurChunk.Generate;
@@ -1311,7 +1375,6 @@ begin
   World.Generator.Generate(Self);
   AutoLightUpdate := True;
   fGenerated := True;
-  RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
 end;
 
 procedure TOurChunk.Finalize(const DelayTime : QWord);
@@ -1323,6 +1386,7 @@ begin
   for side := low(TTextureMode) to High(TTextureMode) do
     if fNeightbors[side] <> nil then
       fNeightbors[side].RemoveNeightbor(OppositeSide[side]);
+  Save;
 end;
 
 procedure TOurChunk.UpdateNeightborLight;
@@ -1386,6 +1450,7 @@ begin
     if fBlocks[x, y, z].NeedAfterPut then
       fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
 
+    fModifiedAfterLoading := True;
     Coord := BlockCoord(x, y, z);
     NeedModelSolidUpdate := AllTextureSides;
     for side := low(TTextureMode) to High(TTextureMode) do
@@ -2046,7 +2111,7 @@ begin
   for x := 0 to ChunkSize-1 do
     for y := 0 to ChunkSize-1 do
       for z := 0 to ChunkSize-1 do
-        DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
+        DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
   ChangedBlocks.Clear;
 end;
 
@@ -2088,7 +2153,7 @@ begin
     for x := 0 to ChunkSize-1 do
       for y := 0 to ChunkSize-1 do
         for z := 0 to ChunkSize-1 do
-          DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
+          DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
   end
   else
   begin
@@ -2148,6 +2213,7 @@ begin
   fAutoLightUpdate := True;
   fLockUpdateModelLight := False;
   fLighted := False;
+  fModifiedAfterLoading := False;
 
   BlocksForRandomTick := TBlockList.Create;
   BlocksForTick := TBlockList.Create;
@@ -2286,7 +2352,8 @@ begin
   Stream.WriteDWord(GetSubID);
 end;
 
-procedure TBlock.LoadFromStream(Stream: TStream; Chunk: TOurChunk; const Coord: TBlockCoord);
+function TBlock.LoadFromStream(Stream: TStream; Chunk: TOurChunk;
+  const Coord: TBlockCoord): Boolean;
 var
   StreamPosition : Integer;
   ReadedID, ReadedSubID : Integer;
@@ -2301,7 +2368,10 @@ begin
      if not Chunk.SetBlockDirectAuto(Coord[axisX], Coord[axisY], Coord[axisZ], ReadedID, ReadedSubID) then
         RaiseException('Invalid ID in stream', True);
      Chunk.GetBlockDirect(Coord[axisX], Coord[axisY], Coord[axisZ]).LoadFromStream(Stream, Chunk, Coord);
-  end;
+     Result := False;
+  end
+  else
+     Result := True;
 end;
 
 function TBlock.Transparency : integer;

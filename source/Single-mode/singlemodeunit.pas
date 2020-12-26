@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl, glu, Glut,
-  CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator;
+  CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator, FileSaver;
 
 type
 
@@ -68,7 +68,7 @@ begin
   if Game = nil then
   begin
     Game := TOurGame.Create;
-    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
+    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;

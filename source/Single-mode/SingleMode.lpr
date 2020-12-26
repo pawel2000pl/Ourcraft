@@ -5,14 +5,15 @@ program SingleMode;
 uses
   {$IFDEF UNIX}
   {$IFDEF UseCThreads}
-  cmem, {$ifdef DEBUGBUILD} MemGuard, {$endif}
+  {cmem} fastcmem, {$ifdef DEBUGBUILD} MemGuard, {$endif}
   cthreads,
   {$ENDIF}
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, lazopenglcontext, SingleModeUnit, OurData, OurUtils, ProcessUtils,
   Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
-  DeterminedRandomGenerator, SimpleCache, ArrayOfNumber, Collections, CustomSaver;
+  DeterminedRandomGenerator, SimpleCache, ArrayOfNumber, Collections,
+  CustomSaver, FileSaver, SaverPaths;
 
 {$R *.res}
 
