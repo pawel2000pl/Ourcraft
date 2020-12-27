@@ -74,34 +74,35 @@ type
   TBlock = class;
   TOurChunk = class;
   TOurWorld = class;
-                         
+
   { TAbstractGenerator }
 
-  TAbstractGenerator = class abstract
+  TAbstractGenerator = class
+    abstract
   private
     FDestroyWithWorld : boolean;
   public
-    property DestroyWithWorld : Boolean read FDestroyWithWorld write FDestroyWithWorld;
+    property DestroyWithWorld : boolean read FDestroyWithWorld write FDestroyWithWorld;
     procedure Generate(const Chunk : TOurChunk); virtual; abstract;
-    constructor Create(const _DestroyWithWorld : Boolean = true);
+    constructor Create(const _DestroyWithWorld : boolean = True);
   end;
 
   { TEntity }
 
   TEntity = class(TEnvironmentElement)
   private
-    FModel: TModel;
-    FPosition: TVector3;
-    FRotate: TRotationVector;
-    FRotateVelocity: TRotationVector;
-    FVelocity: TVector3;
+    FModel : TModel;
+    FPosition : TVector3;
+    FRotate : TRotationVector;
+    FRotateVelocity : TRotationVector;
+    FVelocity : TVector3;
     FChunk : TOurChunk;
     fWorld : TOurWorld;
-    procedure SetModel(AValue: TModel);
-    procedure SetPosition(AValue: TVector3);
-    procedure SetRotate(AValue: TRotationVector);
-    procedure SetRotateVelocity(AValue: TRotationVector);
-    procedure SetVelocity(AValue: TVector3);
+    procedure SetModel(AValue : TModel);
+    procedure SetPosition(AValue : TVector3);
+    procedure SetRotate(AValue : TRotationVector);
+    procedure SetRotateVelocity(AValue : TRotationVector);
+    procedure SetVelocity(AValue : TVector3);
   public
     property Position : TVector3 read FPosition write SetPosition;
     property Velocity : TVector3 read FVelocity write SetVelocity;
@@ -133,16 +134,16 @@ type
 
   TBlockCreator = class(TElementCreator)
   public
-    function GetType : TElementType; override; 
+    function GetType : TElementType; override;
     //warning: Coord for CreateElement must be floor
-    function CreateBlock(const Coord : TIntVector3; const SubID : Integer) : TBlock;
+    function CreateBlock(const Coord : TIntVector3; const SubID : integer) : TBlock;
   end;
 
   { TBlock }
 
   TBlock = class(TEnvironmentElement)
   private
-    function GetBlockCreator: TBlockCreator;
+    function GetBlockCreator : TBlockCreator;
   public
     property BlockCreator : TBlockCreator read GetBlockCreator;
     function GetTag : PBlockDataTag; virtual;
@@ -162,16 +163,18 @@ type
     procedure {%H-}OnTick(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
     procedure {%H-}OnRandomTick(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
     procedure {%H-}AfterPut(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}NearChangeUpdate(Chunk : TOurChunk; const side : TTextureMode; const Coord : TBlockCoord); virtual; abstract;
+    procedure {%H-}NearChangeUpdate(Chunk : TOurChunk; const side : TTextureMode; const Coord : TBlockCoord);
+      virtual; abstract;
 
-    procedure SaveToStream(Stream: TStream; {%H-}Chunk : TOurChunk; const {%H-}Coord: TBlockCoord); virtual; //inherited first!
-    function LoadFromStream(Stream: TStream; Chunk : TOurChunk; const Coord: TBlockCoord) : Boolean ;virtual; //inherited first! / retunrs if loading could be continued
+    procedure SaveToStream(Stream : TStream; {%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual; //inherited first!
+    function LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean; virtual;
+    //inherited first! / retunrs if loading could be continued
 
     function Transparency : integer; virtual;
     function LightSource : integer; virtual;
     function Clone(const NewCoord : TIntVector3) : TBlock; virtual;
 
-    function GetDataHashCode: PtrInt;
+    function GetDataHashCode : PtrInt;
   end;
 
   { TExtendedBlock }
@@ -180,16 +183,16 @@ type
   private
     FCoord : TBlockCoord;
     FChunk : TOurChunk;
-    function FieldsNotSet : Boolean; inline;
+    function FieldsNotSet : boolean; inline;
   public
     property GetCoord : TBlockCoord read FCoord;
     property GetChunk : TOurChunk read FChunk;
     procedure SetAsChanged;
-    function NeedAfterPut: boolean; override;
-    procedure AfterPut(Chunk: TOurChunk; const Coord: TBlockCoord); override;
-    constructor Create(MyCreator: TElementCreator);
-    constructor Create(MyCreator: TElementCreator; const AChunk : TOurChunk; const MyCoord : TBlockCoord);
-    constructor Create(MyCreator: TElementCreator; const World : TOurWorld; const MyAbsoluteCoord : TIntVector3);
+    function NeedAfterPut : boolean; override;
+    procedure AfterPut(Chunk : TOurChunk; const Coord : TBlockCoord); override;
+    constructor Create(MyCreator : TElementCreator);
+    constructor Create(MyCreator : TElementCreator; const AChunk : TOurChunk; const MyCoord : TBlockCoord);
+    constructor Create(MyCreator : TElementCreator; const World : TOurWorld; const MyAbsoluteCoord : TIntVector3);
   end;
 
   { TBlockList }
@@ -200,10 +203,10 @@ type
   public
     property Locker : TLocker read FLocker;
 
-    procedure Add(Item: TItem); override;
-    procedure Remove(const i: Integer); override;
-    function GetNext(var i: integer; var Item: TItem): Boolean; overload; override;
-    function IndexOf(const Item: TItem): Integer; override;
+    procedure Add(Item : TItem); override;
+    procedure Remove(const i : integer); override;
+    function GetNext(var i : integer; var Item : TItem) : boolean; overload; override;
+    function IndexOf(const Item : TItem) : integer; override;
 
     constructor Create;
     destructor Destroy; override;
@@ -242,7 +245,7 @@ type
 
   TOurChunk = class(TFreeObject)
   const
-    MaxDynamicBlockChanged = ChunkSize*ChunkSize*ChunkSize div 4; //powyżej tej ilości, musi być wysłany cały chunk
+    MaxDynamicBlockChanged = ChunkSize * ChunkSize * ChunkSize div 4; //powyżej tej ilości, musi być wysłany cały chunk
   private
     fLockUpdateModelLight : boolean;
     fAutoLightUpdate : boolean;
@@ -255,7 +258,7 @@ type
     fSunLight : array[0..ChunkSize - 1, 0..ChunkSize - 1, 0..ChunkSize - 1] of byte;
     fLoaded : boolean;
     fGenerated : boolean;
-    fModifiedAfterLoading : Boolean;
+    fModifiedAfterLoading : boolean;
     fLighted : boolean; //first lighting up (sun)
     //Entities : array of TEntity;
 
@@ -266,7 +269,6 @@ type
 
     ChangedBlocks : TBlockList;
 
-    //TODO: Save, Load
     fNeightbors : array[TTextureMode] of TOurChunk;
     fBlocks : array[0..ChunkSize - 1, 0..ChunkSize - 1, 0..ChunkSize - 1] of TBlock;
 
@@ -278,13 +280,16 @@ type
 
     LightFunctions : array[TLightFunctionKind] of TLightFunctions;
 
-    procedure AddLight(const x, y, z : integer; LightLevel : integer; const Functions : TLightFunctionKind; const maxDepth : integer = 32; const Force : boolean = False);
-    function GetBlock(const x, y, z : integer) : TBlock;      
+    procedure AddLight(const x, y, z : integer; LightLevel : integer; const Functions : TLightFunctionKind;
+      const maxDepth : integer = 32; const Force : boolean = False);
+    function GetBlock(const x, y, z : integer) : TBlock;
     procedure SetBlock(const x, y, z : integer; AValue : TBlock);
     function GetNeightbors(const Index : TTextureMode) : TOurChunk;
     procedure Load;
     procedure Save;
     procedure Generate;
+    procedure LoadEverything(Stream : TStream);
+    procedure LoadChanges(Stream : TStream);
   protected
     procedure Finalize(const DelayTime : QWord); override;
   public
@@ -298,13 +303,13 @@ type
     procedure UpdateNeightborLight;
 
     //local Coord
-    function SetBlockDirectAuto(const x, y, z, ID, SubID : Integer) : Boolean; //return false, if ID is not a block
+    function SetBlockDirectAuto(const x, y, z, ID, SubID : integer) : boolean; //return false, if ID is not a block
     property Blocks[const x, y, z : integer] : TBlock read GetBlock write SetBlock;
-    function GetBlockDirect(const x, y, z : Integer) : TBlock;
-    procedure SetBlockDirect(const x, y, z : Integer; AValue : TBlock);
+    function GetBlockDirect(const x, y, z : integer) : TBlock;
+    procedure SetBlockDirect(const x, y, z : integer; AValue : TBlock);
     property DirectBlocks[const x, y, z : integer] : TBlock read GetBlockDirect write SetBlockDirect;
-    class function IsInsert(const x, y, z : Integer) : boolean; inline;
-    class function IsBorder(const x, y, z : Integer) : boolean; inline;
+    class function IsInsert(const x, y, z : integer) : boolean; inline;
+    class function IsBorder(const x, y, z : integer) : boolean; inline;
     procedure RegisterChangedBlock(const Coord : TBlockCoord);
 
     //must be in-chunk Coord
@@ -326,7 +331,8 @@ type
 
     procedure NeightborLightUpdate(const x, y, z : integer); inline;
 
-    procedure UpdateSunLight(const x1, z1, x2, z2 : integer; const FromY : integer = ChunkSize - 1; const ToY : integer = 0; goDown : boolean = True);
+    procedure UpdateSunLight(const x1, z1, x2, z2 : integer; const FromY : integer = ChunkSize - 1;
+      const ToY : integer = 0; goDown : boolean = True);
 
     function GetSmoothLightLevel(const v : TVector3) : double; overload;
     function GetSmoothLightLevel(const v : TVector3; const side : TTextureMode) : double; overload;
@@ -370,11 +376,11 @@ type
     procedure SaveChangesToStream(Stream : TStream);
     procedure LoadFromStream(Stream : TStream);
 
-    function GetDataHashCode: PtrInt;
+    function GetDataHashCode : PtrInt;
 
-    function GetStringCoordinatesForSaver : AnsiString; overload;
-    class function GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : AnsiString; overload;
-    class function GetCoordinatesFromStringForSaver(s : AnsiString) : TIntVector3;
+    function GetStringCoordinatesForSaver : ansistring; overload;
+    class function GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : ansistring; overload;
+    class function GetCoordinatesFromStringForSaver(s : ansistring) : TIntVector3;
 
     constructor Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
     destructor Destroy; override;
@@ -394,22 +400,22 @@ type
   TRenderArea = class
   private
     FOnChage : TRenderAreaChange;
-    FOnChunkChange: TChangesInArea;
+    FOnChunkChange : TChangesInArea;
     FReloadingID : QWord;
     fRepaintingID : QWord;
     fx, fy, fz : integer;
     fRay : integer;
     fOnChange : TRenderAreaChange;
     fWorld : TOurWorld;
-    fBorderWidth : Double;
+    fBorderWidth : double;
 
     FIsVisibledPointFunction : TIsVisibledPointFunction;
     function AlwaysTrue(const {%H-}Point : TVector3; const {%H-}Size : double) : boolean;
     function GetIsVisibledPointFunction : TIsVisibledPointFunction;
-    procedure SetBorderWidth(AValue: Double);
+    procedure SetBorderWidth(AValue : double);
     procedure SetIsVisibledPointFunction(AValue : TIsVisibledPointFunction);
     procedure SetOnChage(AValue : TRenderAreaChange);
-    procedure SetOnChunkChange(AValue: TChangesInArea);
+    procedure SetOnChunkChange(AValue : TChangesInArea);
     procedure SetRay(AValue : integer);
     procedure SetReloadingID(AValue : QWord);
     procedure setX(AValue : integer);
@@ -417,11 +423,12 @@ type
     procedure setZ(AValue : integer);
     procedure OnChangeEvent;
   public
-    property IsVisibledPointFunction : TIsVisibledPointFunction read GetIsVisibledPointFunction write SetIsVisibledPointFunction;
+    property IsVisibledPointFunction : TIsVisibledPointFunction read GetIsVisibledPointFunction
+      write SetIsVisibledPointFunction;
     property OnChunkChange : TChangesInArea read FOnChunkChange write SetOnChunkChange;
     property OnChage : TRenderAreaChange read FOnChage write SetOnChage;
 
-    property BorderWidth : Double read fBorderWidth write SetBorderWidth;
+    property BorderWidth : double read fBorderWidth write SetBorderWidth;
     function GetPosition : TIntVector3;
     property World : TOurWorld read fWorld;
     property Ray : integer read fRay write SetRay;
@@ -446,7 +453,7 @@ type
     Chunk : TOurChunk;
     Coord : TBlockCoord;
     procedure Clear;
-    function Exists : Boolean;
+    function Exists : boolean;
     procedure Init(_Block : TBlock; _Chunk : TOurChunk; const _Coord : TBlockCoord);
     function AbsoluteCoord : TIntVector3;
   end;
@@ -454,7 +461,7 @@ type
   { TOurWorld }
 
   TOurWorld = class
-  private       //TODO: everything
+  private
     fChunks : array[0..WorldSize - 1, 0..WorldSize - 1, 0..WorldSize - 1] of TOurChunkTable;
     fDefaultBlock : TBlockCreator;
     fOurGame : TOurGame;
@@ -463,6 +470,7 @@ type
     fFreeThread : TFree;
     fQueues : TQueueManager2;
     fRenderAreaSet : TRenderAreaCollection;
+    FSaveAllChunks : boolean;
 
     fTickDelay : QWord;
     fRandomTickSpeed : QWord;
@@ -473,9 +481,10 @@ type
     fGenerator : TAbstractGenerator;
 
     fSaver : TCustomSaver;
-    procedure LoadFromSaver({%H-}Saver : TCustomSaver; const Path : array of AnsiString; Stream : TStream);
-    procedure UpdateRenderArea(Area : TRenderArea);  //todo
+    procedure LoadFromSaver({%H-}Saver : TCustomSaver; const Path : array of ansistring; Stream : TStream);
+    procedure UpdateRenderArea(Area : TRenderArea);
   public
+    property SaveAllChunks : boolean read FSaveAllChunks write FSaveAllChunks;
     property Saver : TCustomSaver read fSaver;
     property RenderAreaSet : TRenderAreaCollection read fRenderAreaSet;
     property Environment : TEnvironment read fEnvironment;
@@ -488,7 +497,7 @@ type
     function GetChunk(const ChunkX, ChunkY, ChunkZ : integer) : TOurChunk;
     function GetChunkFromBlockCoors(const x, y, z : integer) : TOurChunk;
     function GetBlock(const x, y, z : integer) : TBlock;
-    procedure SetBlock(const x, y, z : integer; AValue : TBlock);       
+    procedure SetBlock(const x, y, z : integer; AValue : TBlock);
     function GetBlockInformation(const x, y, z : integer) : TBlockInformation;
 
     procedure UnloadChunk(const ChunkX, ChunkY, ChunkZ : integer);
@@ -504,15 +513,14 @@ type
 
     property Generator : TAbstractGenerator read fGenerator;
 
-    constructor Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator; ASaver : TCustomSaver);
+    constructor Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator;
+      ASaver : TCustomSaver);
     destructor Destroy; override;
 
   end;
 
-function EntityShapeToTexturedCuboid(const EntityShape : TEntityShape)
-  : TTexturedCuboid;
-function RealCoord(const ChunkPosition : TIntVector3;
-  const BlockPosition : TBlockCoord) : TVector3;
+function EntityShapeToTexturedCuboid(const EntityShape : TEntityShape) : TTexturedCuboid;
+function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlockCoord) : TVector3;
 
 implementation
 
@@ -522,8 +530,7 @@ implementation
 const
   NilBlockCoord : TBlockCoord = (255, 255, 255);
 
-function RealCoord(const ChunkPosition : TIntVector3;
-  const BlockPosition : TBlockCoord) : TVector3;
+function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlockCoord) : TVector3;
 begin
   Result[axisX] := ChunkPosition[axisX] shl ChunkSizeLog2 + BlockPosition[axisX];
   Result[axisY] := ChunkPosition[axisY] shl ChunkSizeLog2 + BlockPosition[axisY];
@@ -540,19 +547,18 @@ var
 begin
   c := CreateRotateMatrix(EntityShape.Rotate);
   Result.Textures := EntityShape.TextureCorners;
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
     for i := 0 to 3 do
     begin
-      for a := low(TAxis) to High(TAxis) do
-        v[a] := TextureStandardModeCoord[side][i][a] *
-          EntityShape.Size[a] - EntityShape.Center[a];
+      for a := Low(TAxis) to High(TAxis) do
+        v[a] := TextureStandardModeCoord[side][i][a] * EntityShape.Size[a] - EntityShape.Center[a];
       Result.Corners[side][i] := c * v;
     end;
 end;
 
 { TExtendedBlock }
 
-function TExtendedBlock.FieldsNotSet: Boolean;
+function TExtendedBlock.FieldsNotSet : boolean;
 begin
   Result := (FChunk = nil) or (FCoord = NilBlockCoord);
 end;
@@ -562,12 +568,12 @@ begin
   GetChunk.RegisterChangedBlock(GetCoord);
 end;
 
-function TExtendedBlock.NeedAfterPut: boolean;
+function TExtendedBlock.NeedAfterPut : boolean;
 begin
-  Result:=true;
+  Result := True;
 end;
 
-procedure TExtendedBlock.AfterPut(Chunk: TOurChunk; const Coord: TBlockCoord);
+procedure TExtendedBlock.AfterPut(Chunk : TOurChunk; const Coord : TBlockCoord);
 begin
   if FieldsNotSet then
   begin
@@ -576,26 +582,25 @@ begin
   end;
 end;
 
-constructor TExtendedBlock.Create(MyCreator: TElementCreator);
+constructor TExtendedBlock.Create(MyCreator : TElementCreator);
 begin
   FChunk := nil;
   FCoord := NilBlockCoord;
   inherited Create(MyCreator);
 end;
 
-constructor TExtendedBlock.Create(MyCreator: TElementCreator;
-  const AChunk: TOurChunk; const MyCoord: TBlockCoord);
-begin     
+constructor TExtendedBlock.Create(MyCreator : TElementCreator; const AChunk : TOurChunk; const MyCoord : TBlockCoord);
+begin
   FChunk := AChunk;
   FCoord := MyCoord;
   inherited Create(MyCreator);
 end;
 
-constructor TExtendedBlock.Create(MyCreator: TElementCreator;
-  const World: TOurWorld; const MyAbsoluteCoord: TIntVector3);
+constructor TExtendedBlock.Create(MyCreator : TElementCreator; const World : TOurWorld; const MyAbsoluteCoord : TIntVector3);
 begin
   FChunk := World.GetChunkFromBlockCoors(MyAbsoluteCoord[axisX], MyAbsoluteCoord[axisY], MyAbsoluteCoord[axisZ]);
-  FCoord := BlockCoord(MyAbsoluteCoord[axisX] and ChunkSizeMask, MyAbsoluteCoord[axisY] and ChunkSizeMask, MyAbsoluteCoord[axisZ] and ChunkSizeMask);
+  FCoord := BlockCoord(MyAbsoluteCoord[axisX] and ChunkSizeMask, MyAbsoluteCoord[axisY] and
+    ChunkSizeMask, MyAbsoluteCoord[axisZ] and ChunkSizeMask);
   inherited Create(MyCreator);
 end;
 
@@ -608,54 +613,53 @@ begin
   Coord := NilBlockCoord;
 end;
 
-function TBlockInformation.Exists: Boolean;
+function TBlockInformation.Exists : boolean;
 begin
   Result := (Chunk <> nil) and (Block <> nil);
 end;
 
-procedure TBlockInformation.Init(_Block: TBlock; _Chunk: TOurChunk;
-  const _Coord: TBlockCoord);
+procedure TBlockInformation.Init(_Block : TBlock; _Chunk : TOurChunk; const _Coord : TBlockCoord);
 begin
   Block := _Block;
   Chunk := _Chunk;
   Coord := _Coord;
 end;
 
-function TBlockInformation.AbsoluteCoord: TIntVector3;
+function TBlockInformation.AbsoluteCoord : TIntVector3;
 begin
   if Exists then
     Result := Chunk.Position * ChunkSize + Coord
-    else
+  else
     Result := IntVector3(0, 0, 0);
 end;
 
 { TBlockList }
 
-procedure TBlockList.Add(Item: TItem);
+procedure TBlockList.Add(Item : TItem);
 begin
   Locker.Lock;
   inherited Add(Item);
   Locker.Unlock;
 end;
 
-procedure TBlockList.Remove(const i: Integer);
-begin           
-  Locker.Lock;
-  inherited Remove(i);  
-  Locker.Unlock;
-end;
-
-function TBlockList.GetNext(var i: integer; var Item: TItem): Boolean;
+procedure TBlockList.Remove(const i : integer);
 begin
   Locker.Lock;
-  Result:=inherited GetNext(i, Item); 
+  inherited Remove(i);
   Locker.Unlock;
 end;
 
-function TBlockList.IndexOf(const Item: TItem): Integer;
-begin           
+function TBlockList.GetNext(var i : integer; var Item : TItem) : boolean;
+begin
   Locker.Lock;
-  Result:=inherited IndexOf(Item); 
+  Result := inherited GetNext(i, Item);
+  Locker.Unlock;
+end;
+
+function TBlockList.IndexOf(const Item : TItem) : integer;
+begin
+  Locker.Lock;
+  Result := inherited IndexOf(Item);
   Locker.Unlock;
 end;
 
@@ -673,9 +677,9 @@ end;
 
 { TAbstractGenerator }
 
-constructor TAbstractGenerator.Create(const _DestroyWithWorld: Boolean);
+constructor TAbstractGenerator.Create(const _DestroyWithWorld : boolean);
 begin
-   FDestroyWithWorld:=_DestroyWithWorld;
+  FDestroyWithWorld := _DestroyWithWorld;
 end;
 
 { TRenderAreaSearcher }
@@ -734,12 +738,13 @@ begin
     FOnChage := nil;
 end;
 
-procedure TRenderArea.SetOnChunkChange(AValue: TChangesInArea);
+procedure TRenderArea.SetOnChunkChange(AValue : TChangesInArea);
 begin
-  if FOnChunkChange=AValue then Exit;
+  if FOnChunkChange = AValue then
+    Exit;
   if not Assigned(AValue) then
-    AValue:=nil;
-  FOnChunkChange:=AValue;
+    AValue := nil;
+  FOnChunkChange := AValue;
 end;
 
 function TRenderArea.AlwaysTrue(const Point : TVector3; const Size : double) : boolean;
@@ -755,12 +760,13 @@ begin
     Result := FIsVisibledPointFunction;
 end;
 
-procedure TRenderArea.SetBorderWidth(AValue: Double);
-begin                              
+procedure TRenderArea.SetBorderWidth(AValue : double);
+begin
   if AValue > 0 then
-    AValue:=0;
-  if fBorderWidth=AValue then Exit;
-  fBorderWidth:=AValue;
+    AValue := 0;
+  if fBorderWidth = AValue then
+    Exit;
+  fBorderWidth := AValue;
   World.Queues.AddMethod(@OnChangeEvent);
 end;
 
@@ -841,10 +847,9 @@ begin
         break;
 
       v := GetCoordPriorityByDistance(i);
-      if not IsVisibledPointFunction(Vector3((v[axisX] + fx) shl
-        ChunkSizeLog2 + ChunkSize shr 1, (v[axisY] + fy) shl
-        ChunkSizeLog2 + ChunkSize shr 1, (v[axisZ] + fz) shl
-        ChunkSizeLog2 + ChunkSize shr 1), ChunkSize * (sqrt(3) / 2)) then
+      if not IsVisibledPointFunction(Vector3((v[axisX] + fx) shl ChunkSizeLog2 + ChunkSize shr
+        1, (v[axisY] + fy) shl ChunkSizeLog2 + ChunkSize shr 1, (v[axisZ] + fz) shl ChunkSizeLog2 + ChunkSize shr 1),
+        ChunkSize * (sqrt(3) / 2)) then
         Continue;
 
       c := World.GetChunk(v[axisX] + fx, v[axisY] + fy, v[axisZ] + fz);
@@ -885,7 +890,7 @@ constructor TRenderArea.Create(OurWorld : TOurWorld);
 begin
   FReloadingID := 0;
   fRepaintingID := 0;
-  fBorderWidth:=1.2;
+  fBorderWidth := 1.2;
   fWorld := OurWorld;
   fOnchange := nil;
   FOnChunkChange := nil;
@@ -907,7 +912,7 @@ end;
 
 { TOurWorld }
 
-procedure TOurWorld.LoadFromSaver(Saver: TCustomSaver; const Path: array of AnsiString; Stream: TStream);
+procedure TOurWorld.LoadFromSaver(Saver : TCustomSaver; const Path : array of ansistring; Stream : TStream);
 var
   v : TIntVector3;
   c : TOurChunk;
@@ -938,8 +943,7 @@ begin
           Break;
         v := GetCoordPriorityByDistance(i);
         if GetCoordPriorityByDistanceLength(i) <= Area.Ray then
-          LoadChunk(v[axisX] + Area.X, v[axisY] + Area.Y, v[axisZ] +
-            Area.Z).RenderAreaCollection.Add(Area)
+          LoadChunk(v[axisX] + Area.X, v[axisY] + Area.Y, v[axisZ] + Area.Z).RenderAreaCollection.Add(Area)
         else
           break;
       end;
@@ -954,8 +958,8 @@ begin
             if (Area.Ray > 0) and (Area.ReloadingID xor session > 1) then
               exit;
             c := fChunks[x, y, z].Table[i];
-            if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) >
-              Area.Ray + Area.BorderWidth)) and c.RenderAreaCollection.RemoveItem(Area) and (c.RenderAreaCollection.GetCount = 0) then
+            if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) > Area.Ray + Area.BorderWidth)) and
+              c.RenderAreaCollection.RemoveItem(Area) and (c.RenderAreaCollection.GetCount = 0) then
             begin
               UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
                 fChunks[x, y, z].Table[i].Position[axisY],
@@ -1001,7 +1005,7 @@ begin
   x := ChunkX and WorldSizeMask;
   y := ChunkY and WorldSizeMask;
   z := ChunkZ and WorldSizeMask;
-  try                      
+  try
     fChunks[x, y, z].Locker.Lock;
     for i := 0 to fChunks[x, y, z].Count - 1 do
       if (fChunks[x, y, z].Table[i].Position[axisX] = ChunkX) and
@@ -1016,8 +1020,8 @@ end;
 
 function TOurWorld.GetChunkFromBlockCoors(const x, y, z : integer) : TOurChunk;
 begin
-  Result := GetChunk(integer(PtrUInt(x) shr ChunkSizeLog2),
-    integer(PtrUInt(y) shr ChunkSizeLog2), integer(PtrUInt(z) shr ChunkSizeLog2));
+  Result := GetChunk(integer(PtrUInt(x) shr ChunkSizeLog2), integer(PtrUInt(y) shr ChunkSizeLog2),
+    integer(PtrUInt(z) shr ChunkSizeLog2));
 end;
 
 function TOurWorld.GetBlock(const x, y, z : integer) : TBlock;
@@ -1028,8 +1032,7 @@ begin
   if Chunk = nil then
     Result := nil
   else
-    Result := Chunk.GetBlockDirect(x and (ChunkSize - 1), y and
-      (ChunkSize - 1), z and (ChunkSize - 1));
+    Result := Chunk.GetBlockDirect(x and (ChunkSize - 1), y and (ChunkSize - 1), z and (ChunkSize - 1));
 end;
 
 procedure TOurWorld.SetBlock(const x, y, z : integer; AValue : TBlock);
@@ -1042,7 +1045,7 @@ begin
       z and ChunkSizeMask, AValue);
 end;
 
-function TOurWorld.GetBlockInformation(const x, y, z: integer): TBlockInformation;
+function TOurWorld.GetBlockInformation(const x, y, z : integer) : TBlockInformation;
 var
   c : TOurChunk;
   b : TBlock;
@@ -1076,7 +1079,7 @@ begin
         c := fChunks[x, y, z].Table[i];
         Dec(fChunks[x, y, z].Count);
         fChunks[x, y, z].Table[i] := fChunks[x, y, z].Table[fChunks[x, y, z].Count];
-        setlength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
+        SetLength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
         exit;
       end;
   finally
@@ -1100,7 +1103,7 @@ begin
   fChunks[x, y, z].Locker.Lock;
   try
     Inc(fChunks[x, y, z].Count);
-    setlength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
+    SetLength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
     fChunks[x, y, z].Table[fChunks[x, y, z].Count - 1] :=
       TOurChunk.Create(fDefaultBlock, IntVector3(ChunkX, ChunkY, ChunkZ), self);
     Result := fChunks[x, y, z].Table[fChunks[x, y, z].Count - 1];
@@ -1120,7 +1123,7 @@ begin
       for z := 0 to WorldSize - 1 do
       begin
         fChunks[x, y, z].Locker.Lock;
-        setlength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
+        SetLength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
         fChunks[x, y, z].Locker.Unlock;
       end;
 end;
@@ -1131,7 +1134,7 @@ var
 begin
   Area := TRenderArea.Create(self);
   Area.SetPosition(IntVector3(x, y, z));
-  Area.ray := ray;            
+  Area.ray := ray;
   Area.OnChage := @UpdateRenderArea;
   RenderAreaSet.Add(Area);
   Result := Area;
@@ -1189,20 +1192,20 @@ begin
           fChunks[x, y, z].Table[i].RandomTick(Count);
 end;
 
-constructor TOurWorld.Create(defaultBlock: TBlockCreator; Game: TOurGame;
-  WorldGenerator: TAbstractGenerator; ASaver: TCustomSaver);
+constructor TOurWorld.Create(defaultBlock : TBlockCreator; Game : TOurGame; WorldGenerator : TAbstractGenerator;
+  ASaver : TCustomSaver);
 var
   x, y, z : integer;
 begin
   TickLocker := TLocker.Create;
   UpdateRenderAreaLocker := TLocker.Create;
   fRenderAreaSet := TRenderAreaCollection.Create;
-  fFreeThread := TFree.Create;    
+  fFreeThread := TFree.Create;
   fOurGame := Game;
   fEnvironment := Game.GetEnvironment;
   fGenerator := WorldGenerator;
   fSaver := ASaver;
-  fSaver.OnLoad:=@LoadFromSaver;
+  fSaver.OnLoad := @LoadFromSaver;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
@@ -1215,6 +1218,7 @@ begin
   fTickDelay := 50;
   fRandomTickSpeed := 3;
   fQueues.AddMethodDelay(@Tick, fTickDelay);
+  FSaveAllChunks := False;
   Queues.AddMethodDelay(@RandomTickAuto, 1000);
 end;
 
@@ -1234,7 +1238,7 @@ begin
   UpdateRenderAreaLocker.Free;
 
   if fGenerator.DestroyWithWorld then
-     fGenerator.Free;
+    fGenerator.Free;
   if fSaver.DestroyWithOwner then
     fSaver.Free;
 
@@ -1252,8 +1256,8 @@ begin
   Result := fNeightbors[Index];
 end;
 
-procedure TOurChunk.AddLight(const x, y, z : integer; LightLevel : integer;
-  const Functions : TLightFunctionKind; const maxDepth : integer; const Force : boolean);
+procedure TOurChunk.AddLight(const x, y, z : integer; LightLevel : integer; const Functions : TLightFunctionKind;
+  const maxDepth : integer; const Force : boolean);
 const
   DepthResistance : array[TLightFunctionKind, TTextureMode] of integer =
     ((1, 1, 1, 1, 1, 1), (1, 1, 1, 0, 1, 1));
@@ -1262,8 +1266,8 @@ var
   nx, ny, nz : integer;
   c : TOurChunk;
 begin
-  LightLevel := max(LightLevel - MAX_BLOCK_TRANSPARENCY +
-    fBlocks[x, y, z].Transparency, LightFunctions[Functions].GetLightSource(x, y, z));
+  LightLevel := max(LightLevel - MAX_BLOCK_TRANSPARENCY + fBlocks[x, y, z].Transparency,
+    LightFunctions[Functions].GetLightSource(x, y, z));
 
   if Force then
     UpdateIfGreater(LightLevel, LightFunctions[Functions].GetLight(x, y, z))
@@ -1281,27 +1285,26 @@ begin
     c := GetNeightborFromBlockCoord(nx, ny, nz);
     if c = nil then
       Continue;
-    c.AddLight(nx and ChunkSizeMask, ny and ChunkSizeMask, nz and
-      ChunkSizeMask, LightLevel - 1, Functions, maxDepth -
-      DepthResistance[Functions, side], False);
+    c.AddLight(nx and ChunkSizeMask, ny and ChunkSizeMask, nz and ChunkSizeMask, LightLevel -
+      1, Functions, maxDepth - DepthResistance[Functions, side], False);
   end;
 end;
 
-function TOurChunk.GetStringCoordinatesForSaver: AnsiString;
+function TOurChunk.GetStringCoordinatesForSaver : ansistring;
 begin
   Result := GetStringCoordinatesForSaver(Position);
 end;
 
-class function TOurChunk.GetStringCoordinatesForSaver(const ChunkPosition: TIntVector3): AnsiString;
+class function TOurChunk.GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : ansistring;
 begin
-  Result := IntToStr(ChunkPosition[AxisX])+'.'+IntToStr(ChunkPosition[AxisY])+'.'+IntToStr(ChunkPosition[AxisZ])+'.chunk';
+  Result := IntToStr(ChunkPosition[AxisX]) + '.' + IntToStr(ChunkPosition[AxisY]) + '.' + IntToStr(ChunkPosition[AxisZ]) + '.chunk';
 end;
 
-class function TOurChunk.GetCoordinatesFromStringForSaver(s: AnsiString): TIntVector3;
+class function TOurChunk.GetCoordinatesFromStringForSaver(s : ansistring) : TIntVector3;
 begin
-  Result[AxisX]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
-  Result[AxisY]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
-  Result[AxisZ]:=StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+  Result[AxisX] := StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+  Result[AxisY] := StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
+  Result[AxisZ] := StrToIntDef(Copy2SymbDel(s, '.'), MaxInt);
 end;
 
 function TOurChunk.GetBlockLightSource(const x, y, z : integer) : integer;
@@ -1320,8 +1323,7 @@ var
 begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if (c <> nil) then
-    Result := c.GetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask,
-      z and ChunkSizeMask)
+    Result := c.GetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask)
   else
     Result := nil;
 end;
@@ -1332,39 +1334,33 @@ var
 begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if (c <> nil) then
-    c.SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and
-      ChunkSizeMask, AValue);
+    c.SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, AValue);
 end;
 
 procedure TOurChunk.Load;
 var
-  s : array of AnsiString;
+  s : array[0..1] of ansistring;
 begin
   if fLoaded or Finishing then
     exit;
-  SetLength(s, 2);
   s[0] := SaverPaths.ChunkPath;
   s[1] := GetStringCoordinatesForSaver;
   if World.Saver.Exists(s) then
-    World.Saver.Load(s)
+    World.Saver.Load(s, @LoadFromStream)
   else
     Generate;
-  ChangedBlocks.Clear;   
+  ChangedBlocks.Clear;
   RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
   fModifiedAfterLoading := False;
   fLoaded := True;
+  s[0] := EmptyStr;
+  s[1] := EmptyStr;
 end;
 
 procedure TOurChunk.Save;
-var
-  ms : TMemoryStream;
 begin
-  ms := TMemoryStream.Create;
-  SaveToStream(ms);
-  ms.Position:=0;
-  if fModifiedAfterLoading then //todo: ... or world.saveAllChunks
-    World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], ms);
-  ms.Free;
+  if fModifiedAfterLoading or World.SaveAllChunks then
+    World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], @SaveToStream);
 end;
 
 procedure TOurChunk.Generate;
@@ -1383,7 +1379,7 @@ var
 begin
   inherited Finalize(DelayTime);
   World.Queues.DequeueObject(self);
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
     if fNeightbors[side] <> nil then
       fNeightbors[side].RemoveNeightbor(OppositeSide[side]);
   Save;
@@ -1398,44 +1394,42 @@ begin
     for j := -1 to 1 do
       for k := -1 to 1 do
       begin
-        c := GetNeightborFromBlockCoord(i shl ChunkSizeLog2 + 1,
-          j shl ChunkSizeLog2 + 1, k shl ChunkSizeLog2 + 1);
+        c := GetNeightborFromBlockCoord(i shl ChunkSizeLog2 + 1, j shl ChunkSizeLog2 + 1, k shl ChunkSizeLog2 + 1);
         if c <> nil then
           World.Queues.AddMethod(@c.UpdateModelLight);
       end;
 end;
 
-function TOurChunk.SetBlockDirectAuto(const x, y, z, ID, SubID: Integer): Boolean;
+function TOurChunk.SetBlockDirectAuto(const x, y, z, ID, SubID : integer) : boolean;
 var
   Creator : TElementCreator;
 begin
   Creator := Environment.GetCreator(ID);
   if (Creator <> nil) and (Creator.GetType = etBlock) and (Creator is TBlockCreator) then
     SetBlockDirect(x, y, z, (Creator as TBlockCreator).CreateBlock(IntVector3(x, y, z) + Position, SubID))
-    else
+  else
     Exit(False);
   Result := True;
 end;
 
-function TOurChunk.GetBlockDirect(const x, y, z: Integer): TBlock;
+function TOurChunk.GetBlockDirect(const x, y, z : integer) : TBlock;
 begin
   try
     Result := fBlocks[x, y, z];
   except
-    RaiseException('Error while getting block: ' + x.ToString +
-      #32 + y.toString + #32 + z.toString + ' in chunk: 0x' +
-      IntToHex(QWord(Self), 16), True);
+    RaiseException('Error while getting block: ' + x.ToString + #32 + y.toString + #32 +
+      z.toString + ' in chunk: 0x' + IntToHex(QWord(Self), 16), True);
   end;
 end;
 
-procedure TOurChunk.SetBlockDirect(const x, y, z: Integer; AValue: TBlock);
+procedure TOurChunk.SetBlockDirect(const x, y, z : integer; AValue : TBlock);
 var
   side : TTextureMode;
   fb : TBlock;
   c : TOurChunk;
   coord : TBlockCoord;
   CheckCoord : TIntVector3;
-  i : Integer;
+  i : integer;
   RenderArea : TRenderArea;
 begin
   try
@@ -1453,9 +1447,10 @@ begin
     fModifiedAfterLoading := True;
     Coord := BlockCoord(x, y, z);
     NeedModelSolidUpdate := AllTextureSides;
-    for side := low(TTextureMode) to High(TTextureMode) do
+    for side := Low(TTextureMode) to High(TTextureMode) do
     begin
-      c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
+      c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY],
+        z + TextureModeSidesI[side][axisZ]);
       if c <> nil then
       begin
         CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
@@ -1483,28 +1478,26 @@ begin
     if Loaded then
       RegisterChangedBlock(BlockCoord(x, y, z));
   except
-    RaiseException('Error while setting block: ' + x.ToString + #32 +
-      y.toString + #32 + z.toString + ' in chunk: ' + IntToHex(QWord(Self), 16), True);
+    RaiseException('Error while setting block: ' + x.ToString + #32 + y.toString + #32 +
+      z.toString + ' in chunk: ' + IntToHex(QWord(Self), 16), True);
   end;
 end;
 
-class function TOurChunk.IsInsert(const x, y, z: Integer): boolean;
+class function TOurChunk.IsInsert(const x, y, z : integer) : boolean;
 begin
-  Result := (x >= 0) and (x < ChunkSize) and (y >= 0) and (y < ChunkSize) and
-    (z >= 0) and (z < ChunkSize);
+  Result := (x >= 0) and (x < ChunkSize) and (y >= 0) and (y < ChunkSize) and (z >= 0) and (z < ChunkSize);
 end;
 
-class function TOurChunk.IsBorder(const x, y, z: Integer): boolean;
+class function TOurChunk.IsBorder(const x, y, z : integer) : boolean;
 begin
-  Result := IsInsert(x, y, z) and
-    (not ((x > 0) and (x < ChunkSize - 1) and (y > 0) and (y < ChunkSize - 1) and
-    (z > 0) and (z < ChunkSize - 1)));
+  Result := IsInsert(x, y, z) and (not ((x > 0) and (x < ChunkSize - 1) and (y > 0) and
+    (y < ChunkSize - 1) and (z > 0) and (z < ChunkSize - 1)));
 end;
 
-procedure TOurChunk.RegisterChangedBlock(const Coord: TBlockCoord);
+procedure TOurChunk.RegisterChangedBlock(const Coord : TBlockCoord);
 begin
   if ChangedBlocks.GetCount < MaxDynamicBlockChanged then
-     ChangedBlocks.Add(Coord);
+    ChangedBlocks.Add(Coord);
 end;
 
 function TOurChunk.GetExtLightLevel(const x, y, z : integer) : integer;
@@ -1514,8 +1507,7 @@ begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c = nil then
     exit(0);
-  Result := c.GetLightLevel(x and ChunkSizeMask, y and ChunkSizeMask,
-    z and ChunkSizeMask);
+  Result := c.GetLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
 end;
 
 function TOurChunk.GetExtBlockLightLevel(const x, y, z : integer) : integer;
@@ -1525,8 +1517,7 @@ begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c = nil then
     exit(0);
-  Result := c.GetBlockLightLevel(x and ChunkSizeMask, y and ChunkSizeMask,
-    z and ChunkSizeMask);
+  Result := c.GetBlockLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
 end;
 
 procedure TOurChunk.SetExtBlockLightLevel(const x, y, z, Value : integer);
@@ -1548,8 +1539,7 @@ begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c = nil then
     exit(0);
-  Result := c.GetSunLightLevel(x and ChunkSizeMask, y and ChunkSizeMask,
-    z and ChunkSizeMask);
+  Result := c.GetSunLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
 end;
 
 procedure TOurChunk.SetExtSunLightLevel(const x, y, z, Value : integer);
@@ -1559,8 +1549,7 @@ begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c = nil then
     exit;
-  c.SetSunLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and
-    ChunkSizeMask, Value);
+  c.SetSunLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, Value);
   NeedModelLightUpdate := AllTextureSides;
 end;
 
@@ -1570,8 +1559,7 @@ var
 begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c <> nil then
-    Result := c.fBlocks[x and ChunkSizeMask, y and ChunkSizeMask,
-      z and ChunkSizeMask].LightSource
+    Result := c.fBlocks[x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask].LightSource
   else
     Result := 0;
 end;
@@ -1603,7 +1591,7 @@ begin
     else if (z = ChunkSize - 1) and (Neightbors[tmEast] <> nil) then
       include(Neightbors[tmEast].NeedModelLightUpdate, tmWest);
   except
-    RaiseException('Neightbor light update error', false);
+    RaiseException('Neightbor light update error', False);
   end;
 end;
 
@@ -1636,8 +1624,8 @@ begin
   NeightborLightUpdate(x, y, z);
 end;
 
-procedure TOurChunk.UpdateSunLight(const x1, z1, x2, z2 : integer;
-  const FromY : integer; const ToY : integer; goDown : boolean);
+procedure TOurChunk.UpdateSunLight(const x1, z1, x2, z2 : integer; const FromY : integer;
+  const ToY : integer; goDown : boolean);
 var
   x, y, z, UpValue, StopLoop, mv, MinY : integer;
   c : TOurChunk;
@@ -1664,8 +1652,7 @@ begin
       for y := FromY downto 0 do
       begin
         {$define NewValue := UpValue}
-        NewValue := max(0, UpValue - MAX_BLOCK_TRANSPARENCY +
-          fBlocks[x, y, z].Transparency);
+        NewValue := max(0, UpValue - MAX_BLOCK_TRANSPARENCY + fBlocks[x, y, z].Transparency);
         if (fSunLight[x, y, z] = NewValue) and (y < ToY) then
         begin
           StopLoop := y + 1;
@@ -1702,22 +1689,18 @@ begin
   y := floor(v[axisY]);
   z := floor(v[axisZ]);
 
-  if (x > 0) and (x < ChunkSize) and (y > 0) and (y < ChunkSize) and
-    (z > 0) and (z < ChunkSize) then
+  if (x > 0) and (x < ChunkSize) and (y > 0) and (y < ChunkSize) and (z > 0) and (z < ChunkSize) then
     fx := @GetLightLevel
   else
     fx := @GetExtLightLevel;
 
-  cv := max(max(max(fx(x, y, z), fx(x - 1, y, z)),
-    max(fx(x, y - 1, z), fx(x, y, z - 1))),
-    max(max(fx(x - 1, y - 1, z), fx(x - 1, y, z - 1)),
-    max(fx(x, y - 1, z - 1), fx(x - 1, y - 1, z - 1))));
+  cv := max(max(max(fx(x, y, z), fx(x - 1, y, z)), max(fx(x, y - 1, z), fx(x, y, z - 1))),
+    max(max(fx(x - 1, y - 1, z), fx(x - 1, y, z - 1)), max(fx(x, y - 1, z - 1), fx(x - 1, y - 1, z - 1))));
 
   Result := LightLevelToFloat(cv);
 end;
 
-function TOurChunk.GetSmoothLightLevel(const v : TVector3;
-  const side : TTextureMode) : double;
+function TOurChunk.GetSmoothLightLevel(const v : TVector3; const side : TTextureMode) : double;
 var
   cv, i : integer;
   x, y, z : integer;
@@ -1728,29 +1711,25 @@ begin
   y := floor(v[axisY]);
   z := floor(v[axisZ]);
 
-  if (x > 0) and (x < ChunkSize) and (y > 0) and (y < ChunkSize) and
-    (z > 0) and (z < ChunkSize) then
+  if (x > 0) and (x < ChunkSize) and (y > 0) and (y < ChunkSize) and (z > 0) and (z < ChunkSize) then
     fx := @GetLightLevel
   else
     fx := @GetExtLightLevel;
 
   cv := 0;
   for i := 0 to 3 do
-    cv := max(cv, fx(trunc(x + TextureStandardModeCoord[side, i, axisX]) -
-      1, trunc(y + TextureStandardModeCoord[side, i, axisY]) - 1,
-      trunc(z + TextureStandardModeCoord[side, i, axisZ]) - 1));
+    cv := max(cv, fx(trunc(x + TextureStandardModeCoord[side, i, axisX]) - 1,
+      trunc(y + TextureStandardModeCoord[side, i, axisY]) - 1, trunc(z + TextureStandardModeCoord[side, i, axisZ]) - 1));
 
   Result := LightLevelToFloat(cv);
 end;
 
-function TOurChunk.GetLightedSide(const Coord : TBlockCoord;
-  const mode : TTextureMode) : TLightedSide;
+function TOurChunk.GetLightedSide(const Coord : TBlockCoord; const mode : TTextureMode) : TLightedSide;
 var
   i : integer;
 begin
   for i := 0 to 3 do
-    Result[i] := GetSmoothLightLevel(TIntVector3(Coord) +
-      TextureStandardModeCoord[mode][i], mode);
+    Result[i] := GetSmoothLightLevel(TIntVector3(Coord) + TextureStandardModeCoord[mode][i], mode);
 end;
 
 procedure TOurChunk.UpdateModelLight; //smoothlight shadown
@@ -1794,8 +1773,7 @@ begin
   World.Queues.AddMethod(@UpdateModelLight);
 end;
 
-procedure TOurChunk.RelightArea(const x1, y1, z1, x2, y2, z2 : integer;
-  const LightMode : TLightFunctionKind);
+procedure TOurChunk.RelightArea(const x1, y1, z1, x2, y2, z2 : integer; const LightMode : TLightFunctionKind);
 var
   buf : TThreeDimensionalSignedArrayOfBoolean;
   minX, minY, minZ, maxX, maxY, maxZ : integer;
@@ -1806,9 +1784,8 @@ var
     side : TTextureMode;
     c : TOurChunk;
   begin
-    if buf.DataByVector[Coord] or ((Coord[axisX] > x1) and (Coord[axisX] < x2) and
-      (Coord[axisY] > y1) and (Coord[axisY] < y2) and (Coord[axisZ] > z1) and
-      (Coord[axisZ] < z2)) then
+    if buf.DataByVector[Coord] or ((Coord[axisX] > x1) and (Coord[axisX] < x2) and (Coord[axisY] > y1) and
+      (Coord[axisY] < y2) and (Coord[axisZ] > z1) and (Coord[axisZ] < z2)) then
       exit;
     c := GetNeightborFromBlockCoord(Coord[axisX], Coord[axisY], Coord[axisZ]);
     if (c = nil) then
@@ -1821,8 +1798,8 @@ var
     UpdateIfLesser(minY, Coord[axisY]);
     UpdateIfLesser(minZ, Coord[axisZ]);
 
-    OldLight := c.LightFunctions[LightMode].GetLight(Coord[axisX] and
-      ChunkSizeMask, Coord[axisY] and ChunkSizeMask, Coord[axisZ] and ChunkSizeMask);
+    OldLight := c.LightFunctions[LightMode].GetLight(Coord[axisX] and ChunkSizeMask, Coord[axisY] and
+      ChunkSizeMask, Coord[axisZ] and ChunkSizeMask);
     if (OldLight > LightLevel) then
       exit;
 
@@ -1851,8 +1828,7 @@ begin
   for x := x1 to x2 do
     for y := y1 to y2 do
       for z := z1 to z2 do
-        if ((x > x1) and (x < x2) and (y > y1) and (y < y2) and
-          (z > z1) and (z < z2)) then
+        if ((x > x1) and (x < x2) and (y > y1) and (y < y2) and (z > z1) and (z < z2)) then
         begin
           LightFunctions[LightMode].SetExtLight(x, y, z, 0);
           buf[x, y, z] := True;
@@ -1878,8 +1854,7 @@ begin
               Continue;
             UpdateIfGreater(v, LightFunctions[LightMode].GetExtLight(nx, ny, nz));
           end;
-          c.AddLight(x and ChunkSizeMask, y and ChunkSizeMask, z and
-            ChunkSizeMask, v - 1, LightMode, 32, True);
+          c.AddLight(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, v - 1, LightMode, 32, True);
         end;
 
   buf.Free;
@@ -1914,13 +1889,13 @@ begin
             d := GetBlockDirect(x, y, z);
             if (d.NeedDraw) then
             begin
-              if (x = 0) or (x = ChunkSize - 1) or (y = 0) or
-                (y = ChunkSize - 1) or (z = 0) or (z = ChunkSize - 1) then
+              if (x = 0) or (x = ChunkSize - 1) or (y = 0) or (y = ChunkSize - 1) or
+                (z = 0) or (z = ChunkSize - 1) then
                 BlockFunction := @GetBlock
               else
                 BlockFunction := @GetBlockDirect;
-              b := BlockFunction(x + TextureModeSidesI[side][axisX],
-                y + TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
+              b := BlockFunction(x + TextureModeSidesI[side][axisX], y +
+                TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
 
               if (b <> nil) and (b.Transparency > 0) then
                 d.DrawModel(self, side, BlockCoord(x, y, z));
@@ -1936,7 +1911,7 @@ end;
 procedure TOurChunk.UpdateUnsolidModel;
 var
   coord : TBlockCoord;
-  i : Integer;
+  i : integer;
 begin
   fUnsolidModel.Clear;
   i := 0;
@@ -1947,7 +1922,7 @@ end;
 procedure TOurChunk.UpdateAnimationModel;
 var
   coord : TBlockCoord;
-  i : Integer;
+  i : integer;
 begin
   fAnimationModels.Clear;
   i := 0;
@@ -1958,9 +1933,11 @@ end;
 
 procedure TOurChunk.Tick;
 var
-  coord : TBlockCoord; 
-  i : Integer;
-begin                     
+  coord : TBlockCoord;
+  i : integer;
+begin
+  if (not Loaded) or Finishing then
+    Exit;
   i := 0;
   while BlocksForTick.GetNext(i, coord{%H-}) do
     GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord);
@@ -1970,7 +1947,9 @@ procedure TOurChunk.RandomTick(const Count : integer);
 var
   coord : TBlockCoord;
   i : integer;
-begin
+begin          
+  if not Loaded then
+    Exit;
   if (BlocksForRandomTick.Count = 0) or Finishing then
     exit;
   for i := 0 to Count - 1 do
@@ -1985,11 +1964,10 @@ procedure TOurChunk.UpdateNeightbors(Ignore : TOurChunk);
 var
   side : TTextureMode;
 begin
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
   begin
-    fNeightbors[side] := World.GetChunk(Position[axisX] +
-      TextureModeSidesI[side][axisX], Position[axisY] +
-      TextureModeSidesI[side][axisY], Position[axisZ] + TextureModeSidesI[side][axisZ]);
+    fNeightbors[side] := World.GetChunk(Position[axisX] + TextureModeSidesI[side][axisX],
+      Position[axisY] + TextureModeSidesI[side][axisY], Position[axisZ] + TextureModeSidesI[side][axisZ]);
     if fNeightbors[side] = Ignore then
       fNeightbors[side] := nil;
     if fNeightbors[side] <> nil then
@@ -2058,7 +2036,7 @@ begin
   Result := nil;
 end;
 
-function TOurChunk.GetEnvironment: TEnvironment;
+function TOurChunk.GetEnvironment : TEnvironment;
 begin
   Result := World.Environment;
 end;
@@ -2102,87 +2080,109 @@ begin
     Animated.RemoveItem(BlockCoord(x, y, z));
 end;
 
-procedure TOurChunk.SaveToStream(Stream: TStream);
+procedure TOurChunk.SaveToStream(Stream : TStream);
 var
-  x, y, z : Integer;
+  x, y, z : integer;
 begin
   Stream.WriteByte(0);
   Stream.WriteBuffer(FPosition, SizeOf(FPosition));
-  for x := 0 to ChunkSize-1 do
-    for y := 0 to ChunkSize-1 do
-      for z := 0 to ChunkSize-1 do
+  for x := 0 to ChunkSize - 1 do
+    for y := 0 to ChunkSize - 1 do
+      for z := 0 to ChunkSize - 1 do
         DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
   ChangedBlocks.Clear;
 end;
 
-procedure TOurChunk.SaveChangesToStream(Stream: TStream);
+procedure TOurChunk.SaveChangesToStream(Stream : TStream);
 var
-  i : Integer;
+  i : integer;
   c : TBlockCoord;
 begin
   if ChangedBlocks.GetCount > MaxDynamicBlockChanged then
-     SaveToStream(Stream)
-     else
-     begin
-       if ChangedBlocks.GetCount = 0 then
-          exit;
-       Stream.WriteByte(1); 
-       Stream.WriteBuffer(FPosition, SizeOf(FPosition));
-       i := 0;
-       while ChangedBlocks.GetNext(i, c{%H-}) do
-       begin
-          Stream.WriteBuffer(c, SizeOf(c));
-          DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(Stream, Self, c);
-       end;
-       ChangedBlocks.Clear;
-     end;
+    SaveToStream(Stream)
+  else
+  begin
+    if ChangedBlocks.GetCount = 0 then
+      exit;
+    Stream.WriteByte(1);
+    Stream.WriteBuffer(FPosition, SizeOf(FPosition));
+    i := 0;
+    while ChangedBlocks.GetNext(i, c{%H-}) do
+    begin
+      Stream.WriteBuffer(c, SizeOf(c));
+      DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(Stream, Self, c);
+    end;
+    ChangedBlocks.Clear;
+  end;
   c := NilBlockCoord;
   Stream.WriteBuffer(c, SizeOf(c));
 end;
 
-procedure TOurChunk.LoadFromStream(Stream: TStream);  
+procedure TOurChunk.LoadEverything(Stream : TStream);
 var
-  x, y, z : Integer;
-  mode : Integer;
+  x, y, z : integer;
+begin
+  AutoLightUpdate := False;
+  for x := 0 to ChunkSize - 1 do
+    for y := 0 to ChunkSize - 1 do
+      for z := 0 to ChunkSize - 1 do
+        DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
+  AutoLightUpdate := True;
+  RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+end;
+
+procedure TOurChunk.LoadChanges(Stream : TStream);
+var
   c : TBlockCoord;
+  MinCoords, MaxCoords : TIntVector3;
+  a : TAxis;
+begin
+  AutoLightUpdate := False;
+  MinCoords := IntVector3(ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+  MaxCoords := IntVector3(0, 0, 0);
+  while True do
+  begin
+    Stream.ReadBuffer(c{%H-}, SizeOf(c));
+    if c = NilBlockCoord then
+      break;
+    DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(Stream, Self, c);
+    for a := Low(TAxis) to High(TAxis) do
+    begin
+      UpdateIfGreater(MaxCoords[a], c[a]);
+      UpdateIfLesser(MinCoords[a], c[a]);
+    end;
+  end;
+  AutoLightUpdate := True;
+  RelightArea(MinCoords.X, MinCoords.Y, MinCoords.Z, MaxCoords.X, MaxCoords.Y, MaxCoords.Z);
+end;
+
+procedure TOurChunk.LoadFromStream(Stream : TStream);
+var
+  mode : integer;
 begin
   mode := Stream.ReadByte;
   Stream.ReadBuffer(FPosition, SizeOf(FPosition));
   if mode = 0 then
-  begin
-    for x := 0 to ChunkSize-1 do
-      for y := 0 to ChunkSize-1 do
-        for z := 0 to ChunkSize-1 do
-          DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
-  end
+    LoadEverything(Stream)
   else
-  begin
-    while true do
-    begin
-        Stream.ReadBuffer(c{%H-}, SizeOf(c));
-        if c = NilBlockCoord then
-           break;
-        DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(Stream, Self, c);
-    end;
-  end;
+    LoadChanges(Stream);
 end;
 
-function TOurChunk.GetDataHashCode: PtrInt;
+function TOurChunk.GetDataHashCode : PtrInt;
 var
-  buf : array[0..ChunkSize*ChunkSize*ChunkSize] of QWord;
-  i, x, y, z : Integer;
+  buf : array[0..ChunkSize * ChunkSize * ChunkSize] of QWord;
+  i, x, y, z : integer;
 begin
   i := 0;
-  for x := 0 to ChunkSize-1 do
-    for y := 0 to ChunkSize-1 do
-      for z := 0 to ChunkSize-1 do
-          buf[PostInc(i)] := GetBlockDirect(x, y, z).GetDataHashCode;
+  for x := 0 to ChunkSize - 1 do
+    for y := 0 to ChunkSize - 1 do
+      for z := 0 to ChunkSize - 1 do
+        buf[PostInc(i)] := GetBlockDirect(x, y, z).GetDataHashCode;
   buf[High(buf)] := inherited GetHashCode;
-  Result:=ModuloBuf(@buf[0], sizeof(buf), 1);
+  Result := ModuloBuf(@buf[0], SizeOf(buf), 1);
 end;
 
-constructor TOurChunk.Create(defaultBlock : TBlockCreator;
-  const MyPosition : TIntVector3; const OurWorld : TOurWorld);
+constructor TOurChunk.Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
 var
   x, y, z : integer;
   c : TOurChunk;
@@ -2223,7 +2223,7 @@ begin
 
   fRenderAreaCollection := TRenderAreaCollection.Create;
 
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
     fModels[side] := TVertexModel.Create;
 
   for x := 0 to ChunkSize - 1 do
@@ -2241,8 +2241,7 @@ begin
     for y := -1 to 1 do
       for z := -1 to 1 do
       begin
-        c := GetNeightborFromBlockCoord(x * ChunkSize + 1, y *
-          ChunkSize + 1, z * ChunkSize + 1);
+        c := GetNeightborFromBlockCoord(x * ChunkSize + 1, y * ChunkSize + 1, z * ChunkSize + 1);
         if (c <> nil) then
         begin
           c.NeedModelLightUpdate := AllTextureSides;
@@ -2272,7 +2271,7 @@ begin
       for z := 0 to ChunkSize - 1 do
         fBlocks[x, y, z].Free;
 
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
     fModels[side].Free;
   fUnsolidModel.Free;
   fAnimationModels.Free;
@@ -2287,25 +2286,24 @@ end;
 
 { TBlockCreator }
 
-function TBlockCreator.GetType: TElementType;
+function TBlockCreator.GetType : TElementType;
 begin
   Result := etBlock;
 end;
 
-function TBlockCreator.CreateBlock(const Coord: TIntVector3;
-  const SubID: Integer): TBlock;
+function TBlockCreator.CreateBlock(const Coord : TIntVector3; const SubID : integer) : TBlock;
 begin
   Result := CreateElement(Coord, SubID) as TBlock;
 end;
 
 { TBlock }
 
-function TBlock.GetBlockCreator: TBlockCreator;
+function TBlock.GetBlockCreator : TBlockCreator;
 begin
   Result := Creator as TBlockCreator;
 end;
 
-function TBlock.GetTag: PBlockDataTag;
+function TBlock.GetTag : PBlockDataTag;
 begin
   Result := nil;
 end;
@@ -2335,7 +2333,7 @@ begin
   Result := False;
 end;
 
-function TBlock.NeedAfterPut: boolean;
+function TBlock.NeedAfterPut : boolean;
 begin
   Result := False;
 end;
@@ -2345,33 +2343,31 @@ begin
   Result := False;
 end;
 
-procedure TBlock.SaveToStream(Stream: TStream; Chunk: TOurChunk;
-  const Coord: TBlockCoord);
+procedure TBlock.SaveToStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord);
 begin
   Stream.WriteDWord(GetID);
   Stream.WriteDWord(GetSubID);
 end;
 
-function TBlock.LoadFromStream(Stream: TStream; Chunk: TOurChunk;
-  const Coord: TBlockCoord): Boolean;
+function TBlock.LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean;
 var
-  StreamPosition : Integer;
-  ReadedID, ReadedSubID : Integer;
+  StreamPosition : integer;
+  ReadedID, ReadedSubID : integer;
 begin
   StreamPosition := Stream.Position;
   ReadedID := Stream.ReadDWord;
-  ReadedSubID:=Stream.ReadDWord;
+  ReadedSubID := Stream.ReadDWord;
   if (ReadedID <> GetID) or (ReadedSubID <> GetSubID) then
   begin
-     Stream.Position:=StreamPosition;
-     //warning: this class could be destroyed after this line
-     if not Chunk.SetBlockDirectAuto(Coord[axisX], Coord[axisY], Coord[axisZ], ReadedID, ReadedSubID) then
-        RaiseException('Invalid ID in stream', True);
-     Chunk.GetBlockDirect(Coord[axisX], Coord[axisY], Coord[axisZ]).LoadFromStream(Stream, Chunk, Coord);
-     Result := False;
+    Stream.Position := StreamPosition;
+    //warning: this class could be destroyed after this line
+    if not Chunk.SetBlockDirectAuto(Coord[axisX], Coord[axisY], Coord[axisZ], ReadedID, ReadedSubID) then
+      RaiseException('Invalid ID in stream', True);
+    Chunk.GetBlockDirect(Coord[axisX], Coord[axisY], Coord[axisZ]).LoadFromStream(Stream, Chunk, Coord);
+    Result := False;
   end
   else
-     Result := True;
+    Result := True;
 end;
 
 function TBlock.Transparency : integer;
@@ -2384,55 +2380,60 @@ begin
   Result := 0;
 end;
 
-function TBlock.Clone(const NewCoord: TIntVector3): TBlock;
+function TBlock.Clone(const NewCoord : TIntVector3) : TBlock;
 begin
   Result := Creator.CreateElement(NewCoord, getSubID) as TBlock;
 end;
 
-function TBlock.GetDataHashCode: PtrInt;
+function TBlock.GetDataHashCode : PtrInt;
 var
   buf : array[0..1] of QWord;
 begin
   buf[0] := GetID;
   buf[1] := GetSubID;
-  Result:= ModuloBuf(@buf[0], SizeOf(buf), 1);
+  Result := ModuloBuf(@buf[0], SizeOf(buf), 1);
 end;
 
 { TEntity }
 
-procedure TEntity.SetModel(AValue: TModel);
+procedure TEntity.SetModel(AValue : TModel);
 begin
-  if FModel=AValue then Exit;
-  FModel:=AValue;
+  if FModel = AValue then
+    Exit;
+  FModel := AValue;
 end;
 
-procedure TEntity.SetPosition(AValue: TVector3);
+procedure TEntity.SetPosition(AValue : TVector3);
 begin
-  if FPosition=AValue then Exit;
-  FPosition:=AValue;
+  if FPosition = AValue then
+    Exit;
+  FPosition := AValue;
 end;
 
-procedure TEntity.SetRotate(AValue: TRotationVector);
+procedure TEntity.SetRotate(AValue : TRotationVector);
 begin
-  if FRotate=AValue then Exit;
-  FRotate:=AValue;
+  if FRotate = AValue then
+    Exit;
+  FRotate := AValue;
 end;
 
-procedure TEntity.SetRotateVelocity(AValue: TRotationVector);
+procedure TEntity.SetRotateVelocity(AValue : TRotationVector);
 begin
-  if FRotateVelocity=AValue then Exit;
-  FRotateVelocity:=AValue;
+  if FRotateVelocity = AValue then
+    Exit;
+  FRotateVelocity := AValue;
 end;
 
-procedure TEntity.SetVelocity(AValue: TVector3);
+procedure TEntity.SetVelocity(AValue : TVector3);
 begin
-  if FVelocity=AValue then Exit;
-  FVelocity:=AValue;
+  if FVelocity = AValue then
+    Exit;
+  FVelocity := AValue;
 end;
 
 procedure TEntity.UpdateChunk;
 var
-  x, y, z : Integer;
+  x, y, z : integer;
 begin
   x := floor(FPosition[axisX]);
   y := floor(FPosition[axisY]);
@@ -2440,7 +2441,7 @@ begin
   World.GetChunkFromBlockCoors(x, y, z);
 end;
 
-constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator);
+constructor TEntity.Create(TheWorld : TOurWorld; MyCreator : TElementCreator);
 begin
   fWorld := TheWorld;
   inherited Create(MyCreator);
@@ -2458,7 +2459,7 @@ begin
 
   c := EntityShapeToTexturedCuboid(fShape);
 
-  for side := low(TTextureMode) to High(TTextureMode) do
+  for side := Low(TTextureMode) to High(TTextureMode) do
     vm.AddWall(fShape.Position, c.Corners[side], c.Textures[side],
       fShape.Texture, LightLevel);
   Result := vm;
@@ -2506,7 +2507,7 @@ constructor TModel.Create();
 begin
   inherited Create;
   fShapeCount := 0;
-  setlength(fShapes, 0);
+  SetLength(fShapes, 0);
 end;
 
 destructor TModel.Destroy;
@@ -2516,7 +2517,7 @@ begin
   for i := 0 to fShapeCount - 1 do
     fShapes[i].Free;
   fShapeCount := 0;
-  setlength(fShapes, 0);
+  SetLength(fShapes, 0);
   inherited Destroy;
 end;
 

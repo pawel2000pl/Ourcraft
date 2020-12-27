@@ -6,6 +6,7 @@ interface
 
 const
   ChunkPath = 'chunks';
+  EntityPath = 'entity';
 
 implementation
 

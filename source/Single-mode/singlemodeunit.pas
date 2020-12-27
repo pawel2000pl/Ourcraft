@@ -69,6 +69,7 @@ begin
   begin
     Game := TOurGame.Create;
     World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
+    World.SaveAllChunks:=True;
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;

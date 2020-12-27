@@ -18,7 +18,10 @@ type
   public
     function Exists(const Path: array of AnsiString): Boolean; override;
     procedure Load(const Path: array of AnsiString; Stream: TStream); override; overload;
+    procedure Load(const Path: array of AnsiString; Method: TSaveMethod); override; overload;
+    procedure Load(const Path: array of AnsiString); override; overload;
     procedure Save(const Path: array of AnsiString; Stream: TStream); override;
+    procedure Save(const Path: array of AnsiString; Method : TSaveMethod); override;
 
     constructor Create(const APath : AnsiString);
     destructor Destroy; override;
@@ -49,7 +52,28 @@ var
   FS : TFileStream;
 begin
   FS := TFileStream.Create(ArrayPathToSystemPath(Path), fmOpenRead);
+  FS.Position:=0;
   Stream.CopyFrom(FS, FS.Size);
+  FS.Free;
+end;
+
+procedure TFileSaver.Load(const Path: array of AnsiString; Method: TSaveMethod);
+var
+  FS : TFileStream;
+begin
+  FS := TFileStream.Create(ArrayPathToSystemPath(Path), fmOpenRead);  
+  FS.Position:=0;
+  Method(FS);
+  FS.Free;
+end;
+
+procedure TFileSaver.Load(const Path: array of AnsiString);
+var
+  FS : TFileStream;
+begin
+  FS := TFileStream.Create(ArrayPathToSystemPath(Path), fmOpenRead);
+  FS.Position:=0;
+  DoLoadEvent(Path, FS);
   FS.Free;
 end;
 
@@ -57,8 +81,18 @@ procedure TFileSaver.Save(const Path: array of AnsiString; Stream: TStream);
 var
   FS : TFileStream;
 begin
+  Stream.Position:=0;
   FS := TFileStream.Create(ArrayPathToSystemPath(Path), fmCreate);
   FS.CopyFrom(Stream, Stream.Size);
+  FS.Free;
+end;
+
+procedure TFileSaver.Save(const Path: array of AnsiString; Method: TSaveMethod);
+var
+  FS : TFileStream;
+begin
+  FS := TFileStream.Create(ArrayPathToSystemPath(Path), fmCreate);
+  Method(FS);
   FS.Free;
 end;
 
