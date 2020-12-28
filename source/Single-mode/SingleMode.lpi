@@ -106,7 +106,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="22">
+    <Units Count="26">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -213,6 +213,25 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="CustomSaver"/>
       </Unit21>
+      <Unit22>
+        <Filename Value="../fastcmem.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="../filesaver.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="FileSaver"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="../saverpaths.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SaverPaths"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="../lighttypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LightTypes"/>
+      </Unit25>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

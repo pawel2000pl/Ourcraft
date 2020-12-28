@@ -6,7 +6,7 @@ interface
 uses
   OurUtils,
   OurGame,
-  CalcUtils;
+  CalcUtils, LightTypes;
 
 type
 
@@ -14,7 +14,7 @@ type
 
   TAir = class(TBlock)
   public
-    function Transparency : Integer; override;
+    function Transparency: TLight; override;
     function NeedDraw: boolean; override;
   end;
 
@@ -51,9 +51,9 @@ end;
 
 { TAir }
 
-function TAir.Transparency : Integer;
+function TAir.Transparency: TLight;
 begin
-  Result := MAX_BLOCK_TRANSPARENCY;
+  Result := AsLight(MAX_BLOCK_TRANSPARENCY);
 end;
 
 function TAir.NeedDraw: boolean;

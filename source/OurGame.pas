@@ -290,6 +290,8 @@ begin
   {$include Preprocesor/EnvironmentRegister.inc}
   TCreatorSort.Merge(fIDList);
   for i := 0 to fIDCount-1 do
+    fIDList[i].ID:=i;
+  for i := 0 to fIDCount-1 do
     fIDList[i].AfterLoading;
 end;
 
@@ -336,7 +338,7 @@ end;
 
 constructor TElementCreator.Create(AnEnvironment: TEnvironment);
 begin
-  fID:=0;
+  fID:=-1;
   fEnvironment:=AnEnvironment;
 end;
 
