@@ -1,0 +1,293 @@
+unit LightTypes;
+
+{$mode objfpc}{$H+}
+{$ModeSwitch typehelpers}
+
+interface
+
+const
+  MAX_LIGHT_LEVEL = 15;
+
+type
+  TLightColor = (lcRed, lcGreen, lcBlue);
+  TLight = packed array[TLightColor] of byte;
+  TRealLight = array[TLightColor] of Single;
+
+  { TLightHelper }
+
+  TLightHelper = type helper for TLight
+  private
+    function GetBlue : byte;
+    function GetGreen : byte;
+    function GetRed : byte;
+
+    procedure SetBlue(AValue : byte);
+    procedure SetGreen(AValue : byte);
+    procedure SetRed(AValue : byte);
+  public
+    property Red : byte read GetRed write SetRed;
+    property Green : byte read GetGreen write SetGreen;
+    property Blue : byte read GetBlue write SetBlue;
+    function Value : integer;
+    function White : TLight;
+
+    procedure RangeCheck;
+    function RangeChecked : TLight;
+
+    procedure Init(AValue : integer); overload;
+    procedure Init(const RedValue, GreenValue, BlueValue : integer); overload;
+  end;
+
+operator +(const a, b : TLight) : TLight; inline;
+operator -(const a, b : TLight) : TLight; inline;
+operator +(const a : TLight; const b : integer) : TLight; inline;
+operator +(const a : integer; const b : TLight) : TLight; inline;
+operator -(const a : TLight; const b : integer) : TLight; inline;
+operator > (const a, b : TLight) : boolean; inline;
+operator < (const a, b : TLight) : boolean; inline;
+operator = (const a, b : TLight) : boolean; inline;
+operator <> (const a, b : TLight) : boolean; inline;
+operator >= (const a, b : TLight) : boolean; inline;
+operator <= (const a, b : TLight) : boolean; inline;
+
+
+procedure UpdateIfGreater(var a : TLight; const b : TLight); overload;
+procedure UpdateIfLesser(var a : TLight; const b : TLight); overload;
+
+function AsLight(const AValue : integer) : TLight; inline; overload;
+function AsLight(const RedValue, GreenValue, BlueValue : integer) : TLight; inline; overload;
+
+function Max(const a, b : TLight) : TLight; overload;
+function Min(const a, b : TLight) : TLight; overload;
+
+function LightMultiple(const Light : TLight; const k : Double) : TLight;
+
+function LightLevelToFloat(const AverageLevel : Single) : Single; inline; overload;
+function LightLevelToFloat(const Value : TLight) : TRealLight; overload;
+
+const
+  AsLightZero : TLight = (0, 0, 0);
+  AsLightMax : TLight = (MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL);
+
+implementation
+
+uses
+  SysUtils, Math;
+
+function LightLevelToFloat(const AverageLevel: Single): Single; inline;
+begin
+  Result := sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4);
+end;
+
+operator +(const a, b : TLight) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := integer(a[c]) + integer(b[c]);
+end;
+
+operator -(const a, b : TLight) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := max(integer(a[c]) - integer(b[c]), 0);
+end;
+
+operator +(const a : TLight; const b : integer) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := integer(a[c]) + integer(b);
+end;
+
+operator +(const a : integer; const b : TLight) : TLight;
+begin
+  Result := b + a;
+end;
+
+operator -(const a : TLight; const b : integer) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := max(integer(a[c]) - integer(b), 0);
+end;
+
+operator > (const a, b : TLight) : boolean;
+begin
+  Result := (a>=b) and ((a[lcRed] > b[lcRed]) or (a[lcGreen] > b[lcGreen]) or (a[lcBlue] > b[lcBlue]));
+end;
+
+operator < (const a, b : TLight) : boolean;
+begin
+  Result := b>a;
+end;
+
+operator = (const a, b : TLight) : boolean;
+begin
+  Result := (a[lcRed] = b[lcRed]) and (a[lcGreen] = b[lcGreen]) and (a[lcBlue] = b[lcBlue]);
+end;
+
+operator <> (const a, b: TLight): boolean;
+begin
+  Result := not (a=b);
+end;
+
+operator >= (const a, b : TLight) : boolean;
+begin
+    Result := (a[lcRed] >= b[lcRed]) and (a[lcGreen] >= b[lcGreen]) and (a[lcBlue] >= b[lcBlue]);
+end;
+
+operator <= (const a, b : TLight) : boolean;
+begin
+    Result := b>=a;
+end;
+
+function LightLevelToFloat(const Value: TLight): TRealLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      Result[c] := LightLevelToFloat(Value[c]);
+end;
+
+function LightLevelToFloat(const AverageValue: TRealLight): TRealLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      Result[c] := sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageValue[c]) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageValue[c] + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4);
+end;
+
+procedure UpdateIfGreater(var a: TLight; const b: TLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] > a[c] then
+         a[c] := b[c];
+end;
+
+procedure UpdateIfLesser(var a: TLight; const b: TLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] < a[c] then
+         a[c] := b[c];
+end;
+
+function AsLight(const AValue : integer) : TLight;
+begin
+  Result{%H-}.Init(AValue);
+end;
+
+function AsLight(const RedValue, GreenValue, BlueValue : integer) : TLight;
+begin
+  Result{%H-}.Init(RedValue, GreenValue, BlueValue);
+end;
+
+function Max(const a, b : TLight) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := max(a[c], b[c]);
+end;
+
+function Min(const a, b : TLight) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := min(a[c], b[c]);
+end;
+
+function LightMultiple(const Light: TLight; const k: Double): TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := max(round(Light[c]*k), 0);
+end;
+
+{ TLightHelper }
+
+function TLightHelper.GetRed : byte;
+begin
+  Result := Self[lcRed];
+end;
+
+function TLightHelper.GetGreen : byte;
+begin
+  Result := Self[lcGreen];
+end;
+
+function TLightHelper.GetBlue : byte;
+begin
+  Result := Self[lcBlue];
+end;
+
+procedure TLightHelper.SetBlue(AValue : byte);
+begin
+  if Self[lcBlue] = AValue then
+    Exit;
+  Self[lcBlue] := AValue;
+end;
+
+procedure TLightHelper.SetGreen(AValue : byte);
+begin
+  if Self[lcGreen] = AValue then
+    Exit;
+  Self[lcGreen] := AValue;
+end;
+
+procedure TLightHelper.SetRed(AValue : byte);
+begin
+  if Self[lcRed] = AValue then
+    Exit;
+  Self[lcRed] := AValue;
+end;
+
+function TLightHelper.Value : integer;
+begin
+  Result := max(Self[lcRed], max(Self[lcGreen], Self[lcBlue]));
+end;
+
+function TLightHelper.White: TLight;
+begin
+  Result{%H-}.Init(Value);
+end;
+
+procedure TLightHelper.RangeCheck;
+begin
+  Self := RangeChecked;
+end;
+
+function TLightHelper.RangeChecked: TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := EnsureRange(Self[c], 0, MAX_LIGHT_LEVEL);
+end;
+
+procedure TLightHelper.Init(AValue : integer);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Self[c] := AValue;
+end;
+
+procedure TLightHelper.Init(const RedValue, GreenValue, BlueValue : integer);
+begin
+  Self[lcRed] := RedValue;
+  Self[lcGreen] := GreenValue;
+  Self[lcBlue] := BlueValue;
+end;
+
+end.

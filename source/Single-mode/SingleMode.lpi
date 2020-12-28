@@ -106,7 +106,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="25">
+    <Units Count="26">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -227,6 +227,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="SaverPaths"/>
       </Unit24>
+      <Unit25>
+        <Filename Value="../lighttypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LightTypes"/>
+      </Unit25>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

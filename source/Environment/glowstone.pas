@@ -5,7 +5,7 @@ unit glowstone;
 interface
 
 uses
-  OurUtils, Models, CalcUtils, OurGame;
+  OurUtils, Models, CalcUtils, OurGame, LightTypes;
 
 type
 
@@ -13,7 +13,7 @@ type
 
   TGlowStone = class(TBlock)
     procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
-    function LightSource: integer; override;
+    function LightSource: TLight; override;
   end;
 
   { TGlowStoneCreator }
@@ -66,9 +66,9 @@ begin
   Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightLevel(coord[axisX], coord[axisY], coord[axisZ]));
 end;
 
-function TGlowStone.LightSource: integer;
+function TGlowStone.LightSource: TLight;
 begin
-  Result:=MAX_LIGHT_LEVEL;
+  Result:=AsLight(0, MAX_LIGHT_LEVEL, 0);
 end;
 
 end.

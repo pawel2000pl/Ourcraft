@@ -20,6 +20,9 @@ It's not playable yet. But you can:
 
 Changelog:
 
+* Changed algorithm of light: instead of only gray it is red, green and blue
+* Day-Night cycle (for test 60sec) for block lighting
+* Optimalization of saving
 * Saving and loading blocks (chunks)
 * Still buf fixes
 * Added Perlin Noise algorithm for any count of dimenstion

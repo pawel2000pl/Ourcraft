@@ -6,22 +6,20 @@ interface
 
 uses
   Classes, SysUtils, math, CalcUtils, UniversalImage, Sorts,
-  GLext, gl, strutils, ProcessUtils, Locker;
+  GLext, gl, strutils, ProcessUtils, Locker, LightTypes;
 
 type
   //               +x        -x      +y     -y      +z      -z    See: TextureModeSides
   TTextureMode = (tmNorth, tmSouth, tmUp, tmDown, tmEast, tmWest);
   TTextureDrawSides = set of TTextureMode;
 
-  TColor3f = record
-    r, g, b : single;
-  end;
+  TColor3f = TRealLight;
 
   TColor3b = packed record
     r, g, b : byte;
   end;
 
-  TLightedSide = array[0..3] of Single; //saved with conversion
+  TLightedSide = array[0..3] of TColor3f; //saved with conversion
 
   TTexture2d = array[axisX..axisY] of Single;
 
@@ -113,14 +111,14 @@ type
 
     procedure AddWall(const Position : TVector3;
       const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
-      const Tex : PTextureRect; const LightLevel : integer); overload;
+      const Tex : PTextureRect; const LightLevel : TLight); overload;
 
     procedure AddWall(const Position : TVector3;
       const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
       const Tex : PTextureRect; const LightLevel : TLightedSide); overload;
 
     procedure AddCuboid(const Position : TVector3; const Cuboid : TTexturedCuboid;
-      const Tex : PTextureRect; const LightLevel : integer);
+      const Tex : PTextureRect; const LightLevel : TLight);
 
     procedure AddVertexModel(Model : TVertexModel);
     procedure AddVertexModelAndFree(Model : TVertexModel); //warning: this will not set to nil!
@@ -169,8 +167,6 @@ const
                               
 procedure MakeFog(const fog_Start, fog_end : Integer; const Color : TColor3f);  
 function LightLevelToColor3f(const Level : integer) : TColor3f;
-function LightLevelToFloat(const Level : Integer) : Single; inline; overload;
-function LightLevelToFloat(const AverageLevel : Single) : Single; inline; overload;
 operator := (const a : TColor3f) : TColor3b; inline;
 operator := (const a : TColor3b) : TColor3f; inline;
 function SingleToByte(const s : Single) : byte; inline;
@@ -187,28 +183,18 @@ begin
   glFogf( GL_FOG_END, fog_end);
 end;
 
-function LightLevelToFloat(const Level : Integer) : Single; inline;
-begin
-  Result := sqrt(2/(16-Level) - 1/16) * (Level + 1) / 16 + 1/21;
-end;
-
-function LightLevelToFloat(const AverageLevel: Single): Single; inline;
-begin
-  Result := sqrt(2/(16-AverageLevel) - 1/16) * (AverageLevel + 1) / 16 + 1/21;
-end;
-
 operator:=(const a: TColor3f): TColor3b;
 begin
-  Result.r:=SingleToByte(a.r);
-  Result.g:=SingleToByte(a.g);
-  Result.b:=SingleToByte(a.b);
+  Result.r:=SingleToByte(a[lcRed]);
+  Result.g:=SingleToByte(a[lcGreen]);
+  Result.b:=SingleToByte(a[lcBlue]);
 end;
 
 operator:=(const a: TColor3b): TColor3f;
 begin
-  Result.r := a.r/255;
-  Result.g := a.g/255;
-  Result.b := a.b/255;
+  Result[lcRed] := a.r/255;
+  Result[lcGreen] := a.g/255;
+  Result[lcBlue] := a.b/255;
 end;
 
 function SingleToByte(const s: Single): byte;
@@ -226,9 +212,9 @@ var
   s : single;
 begin
   s := LightLevelToFloat(Level);
-  Result.r := s;
-  Result.g := s;
-  Result.b := s;
+  Result[lcRed] := s;
+  Result[lcGreen] := s;
+  Result[lcBlue] := s;
 end;
 
 { TVertexModel }
@@ -333,9 +319,9 @@ begin
     Result := fCount * (sizeof(fColor[0]) + sizeof(fVertex[0]) + sizeof(fTexture[0]));
 end;
 
-procedure TVertexModel.AddWall(const Position : TVector3;
-  const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
-  const Tex : PTextureRect; const LightLevel : integer);
+procedure TVertexModel.AddWall(const Position: TVector3;
+  const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners;
+  const Tex: PTextureRect; const LightLevel: TLight);
 var
   i, j : integer;
 begin
@@ -348,7 +334,9 @@ begin
       fTexture[j, axisX] := TextureCorners[i, axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
       fTexture[j, axisY] := TextureCorners[i, axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
       fVertex[j] := WallCornersCoords[i] + Position;
-      fColor[j] := LightLevelToColor3f(LightLevel);
+      fColor[j].r := SingleToByte(LightLevelToFloat(LightLevel.Red));
+      fColor[j].g := SingleToByte(LightLevelToFloat(LightLevel.Green));
+      fColor[j].b := SingleToByte(LightLevelToFloat(LightLevel.Blue));
       Inc(j);
     end;
 end;
@@ -368,16 +356,16 @@ begin
       fTexture[j, axisX] := TextureCorners[i, axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
       fTexture[j, axisY] := TextureCorners[i, axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
       fVertex[j] := WallCornersCoords[i] + Position;
-      fColor[j].r := SingleToByte(LightLevel[i]);
-      fColor[j].g := fColor[j].r;
-      fColor[j].b := fColor[j].g;
+      fColor[j].r := SingleToByte(LightLevel[i][lcRed]);
+      fColor[j].g := SingleToByte(LightLevel[i][lcGreen]);
+      fColor[j].b := SingleToByte(LightLevel[i][lcBlue]);
       Inc(j);
     end;
 end;
 
 procedure TVertexModel.AddCuboid(const Position: TVector3;
   const Cuboid: TTexturedCuboid; const Tex: PTextureRect;
-  const LightLevel: integer);
+  const LightLevel: TLight);
 var
   side : TTextureMode;
 begin

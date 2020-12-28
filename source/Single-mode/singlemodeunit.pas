@@ -69,7 +69,7 @@ begin
   begin
     Game := TOurGame.Create;
     World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
-    World.SaveAllChunks:=True;
+    World.SaveAllChunks:=False;
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;
@@ -179,7 +179,9 @@ begin
   begin
     c := World.GetChunkFromBlockCoors(floor(Camera.Position[axisX]), floor(Camera.Position[axisY]), floor(Camera.Position[axisZ]));
     if c <> nil then
+    begin
       c.ForceUpdateModelLight;
+    end;
   end;
 
   if key = 'v' then

@@ -13,7 +13,7 @@ uses
   Forms, lazopenglcontext, SingleModeUnit, OurData, OurUtils, ProcessUtils,
   Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
   DeterminedRandomGenerator, SimpleCache, ArrayOfNumber, Collections,
-  CustomSaver, FileSaver, SaverPaths;
+  CustomSaver, FileSaver, SaverPaths, LightTypes;
 
 {$R *.res}
 

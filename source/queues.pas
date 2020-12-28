@@ -161,6 +161,7 @@ begin
   fDelayListCount := 0;
   setlength(fDelayList, fDelayListCount);
   inherited Create(AdditionalThreads + 1);
+  AddMethod(@ExecuteDelayMethods);
 end;
 
 destructor TQueueManager2.Destroy;
