@@ -51,15 +51,21 @@ operator <> (const a, b : TLight) : boolean; inline;
 operator >= (const a, b : TLight) : boolean; inline;
 operator <= (const a, b : TLight) : boolean; inline;
 
+operator * (const a : TRealLight; const b : Double) : TRealLight;
 
 procedure UpdateIfGreater(var a : TLight; const b : TLight); overload;
 procedure UpdateIfLesser(var a : TLight; const b : TLight); overload;
+procedure UpdateIfGreater(var a : TRealLight; const b : TRealLight); overload;
+procedure UpdateIfLesser(var a : TRealLight; const b : TRealLight); overload;
 
 function AsLight(const AValue : integer) : TLight; inline; overload;
 function AsLight(const RedValue, GreenValue, BlueValue : integer) : TLight; inline; overload;
 
 function Max(const a, b : TLight) : TLight; overload;
 function Min(const a, b : TLight) : TLight; overload;
+
+function Max(const a, b : TRealLight) : TRealLight; overload;
+function Min(const a, b : TRealLight) : TRealLight; overload;
 
 function LightMultiple(const Light : TLight; const k : Double) : TLight;
 
@@ -77,7 +83,7 @@ uses
 
 function LightLevelToFloat(const AverageLevel: Single): Single; inline;
 begin
-  Result := sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4);
+  Result := (AverageLevel/MAX_LIGHT_LEVEL + sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4))/2;
 end;
 
 operator +(const a, b : TLight) : TLight;
@@ -155,12 +161,12 @@ begin
       Result[c] := LightLevelToFloat(Value[c]);
 end;
 
-function LightLevelToFloat(const AverageValue: TRealLight): TRealLight;
+operator*(const a: TRealLight; const b: Double): TRealLight;
 var
   c : TLightColor;
 begin
   for c := Low(TLightColor) to High(TLightColor) do
-      Result[c] := sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageValue[c]) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageValue[c] + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4);
+    Result[c] := a[c] * b;
 end;
 
 procedure UpdateIfGreater(var a: TLight; const b: TLight);
@@ -173,6 +179,24 @@ begin
 end;
 
 procedure UpdateIfLesser(var a: TLight; const b: TLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] < a[c] then
+         a[c] := b[c];
+end;
+
+procedure UpdateIfGreater(var a: TRealLight; const b: TRealLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] > a[c] then
+         a[c] := b[c];
+end;
+
+procedure UpdateIfLesser(var a: TRealLight; const b: TRealLight);
 var
   c : TLightColor;
 begin
@@ -200,6 +224,22 @@ begin
 end;
 
 function Min(const a, b : TLight) : TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := min(a[c], b[c]);
+end;
+
+function Max(const a, b: TRealLight): TRealLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := max(a[c], b[c]);
+end;
+
+function Min(const a, b: TRealLight): TRealLight;
 var
   c : TLightColor;
 begin

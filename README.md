@@ -16,12 +16,12 @@ It's not playable yet. But you can:
 
 * Fly: WASD, Space (Up) and X (Down)
 * Move camera: IJKL 
-* Edit blocks: N and M (but only in constant, determined distance)
+* Edit blocks: N (air), M (stone), 0-7 (colored lightstone); only in constant and determined distance
 
 Changelog:
 
 * Changed algorithm of light: instead of only gray it is red, green and blue (and mixing of them is possible)
-* Day-Night cycle (for test 600sec) for block lighting
+* Day-Night cycle for block lighting
 * Saving and loading blocks (chunks)
 * Added Perlin Noise algorithm for any count of dimenstion
 * Added simply terrain generator

@@ -317,7 +317,7 @@ type
     procedure RegisterChangedBlock(const Coord : TBlockCoord);
 
     //must be in-chunk Coord
-    function GetLightLevel(const x, y, z : integer) : TLight;
+    function GetLightLevel(const x, y, z : integer) : TRealLight;
     function GetSunLightLevel(const x, y, z : integer) : TLight;
     function GetBlockLightLevel(const x, y, z : integer) : TLight;
     procedure SetSunLightLevel(const x, y, z : Integer; const Value : TLight);
@@ -326,7 +326,7 @@ type
     function GetBlockLightSource(const x, y, z : integer) : TLight;
     function GetSunLightSource(const x, y, z : integer) : TLight;
     //could be extercnal Coord
-    function GetExtLightLevel(const x, y, z : integer) : TLight;
+    function GetExtLightLevel(const x, y, z : integer) : TRealLight;
     function GetExtBlockLightLevel(const x, y, z : integer) : TLight;
     function GetExtSunLightLevel(const x, y, z : integer) : TLight;          
     procedure SetExtBlockLightLevel(const x, y, z : Integer; const Value : TLight);
@@ -371,7 +371,7 @@ type
     function GetEnvironment : TEnvironment;
 
     property Environment : TEnvironment read GetEnvironment;
-    property LightLevel[const x, y, z : integer] : TLight read GetLightLevel;
+    property LightLevel[const x, y, z : integer] : TColor3f read GetLightLevel;
     property World : TOurWorld read fWorld;
     property Position : TIntVector3 read fPosition;
 
@@ -996,7 +996,7 @@ end;
 procedure TOurWorld.AddTime;
 const
   Freq = 1;
-  TicksPerDay = 600;
+  TicksPerDay = 1200;
 var
   k : Double;
 begin
@@ -1557,13 +1557,13 @@ begin
     ChangedBlocks.Add(Coord);
 end;
 
-function TOurChunk.GetExtLightLevel(const x, y, z: integer): TLight;
+function TOurChunk.GetExtLightLevel(const x, y, z: integer): TRealLight;
 var
   c : TOurChunk;
 begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if c = nil then
-    exit(AsLightZero);
+    exit(LightLevelToFloat(AsLightZero));
   Result := c.GetLightLevel(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
 end;
 
@@ -1654,9 +1654,9 @@ begin
   end;
 end;
 
-function TOurChunk.GetLightLevel(const x, y, z: integer): TLight;
+function TOurChunk.GetLightLevel(const x, y, z: integer): TRealLight;
 begin
-  Result := max(LightMultiple(GetSunLightLevel(x, y, z), World.LightTime), GetBlockLightLevel(x, y, z));
+  Result := max(LightLevelToFloat(GetSunLightLevel(x, y, z))*World.LightTime, LightLevelToFloat(GetBlockLightLevel(x, y, z)));
 end;
 
 function TOurChunk.GetSunLightLevel(const x, y, z: integer): TLight;
@@ -1740,11 +1740,11 @@ end;
 
 function TOurChunk.GetSmoothLightLevel(const v: TVector3): TRealLight;
 var
-  cv : TLight;
+  cv : TRealLight;
   x, y, z : integer;
-  fx : function(const x, y, z : integer) : TLight of object;
+  fx : function(const x, y, z : integer) : TRealLight of object;
 begin
-  cv := AsLightZero;
+  cv := LightLevelToFloat(AsLightZero);
   x := floor(v[axisX]);
   y := floor(v[axisY]);
   z := floor(v[axisZ]);
@@ -1757,7 +1757,7 @@ begin
   cv := max(max(max(fx(x, y, z), fx(x - 1, y, z)), max(fx(x, y - 1, z), fx(x, y, z - 1))),
     max(max(fx(x - 1, y - 1, z), fx(x - 1, y, z - 1)), max(fx(x, y - 1, z - 1), fx(x - 1, y - 1, z - 1))));
 
-  Result := LightLevelToFloat(cv);
+  Result := cv;
 end;
 
 function TOurChunk.GetSmoothLightLevel(const v: TVector3;
@@ -1765,10 +1765,10 @@ function TOurChunk.GetSmoothLightLevel(const v: TVector3;
 var
   i : integer;
   x, y, z : integer;
-  fx : function(const x, y, z : integer) : TLight of object;
-  cv : TLight;
+  fx : function(const x, y, z : integer) : TRealLight of object;
+  cv : TRealLight;
 begin
-  cv := AsLightZero;
+  cv := LightLevelToFloat(AsLightZero);
   x := floor(v[axisX]);
   y := floor(v[axisY]);
   z := floor(v[axisZ]);
@@ -1778,12 +1778,12 @@ begin
   else
     fx := @GetExtLightLevel;
 
-  cv := AsLightZero;
+  cv := LightLevelToFloat(AsLightZero);
   for i := 0 to 3 do
     UpdateIfGreater(cv, fx(trunc(x + TextureStandardModeCoord[side, i, axisX]) - 1,
       trunc(y + TextureStandardModeCoord[side, i, axisY]) - 1, trunc(z + TextureStandardModeCoord[side, i, axisZ]) - 1));
 
-  Result := LightLevelToFloat(cv);
+  Result := cv;
 end;
 
 function TOurChunk.GetLightedSide(const Coord : TBlockCoord; const mode : TTextureMode) : TLightedSide;
@@ -1848,7 +1848,6 @@ var
   procedure DoIt(const Coord : TIntVector3; const LightLevel : TLight; Colors : TLightColors);
   var
     OldLight : TLight;
-    zero : TLight;
     lc : TLightColor;
     side : TTextureMode;
     c : TOurChunk;
@@ -1870,17 +1869,9 @@ var
     OldLight := c.LightFunctions[LightMode].GetLight(Coord[axisX] and ChunkSizeMask, Coord[axisY] and
       ChunkSizeMask, Coord[axisZ] and ChunkSizeMask);
 
-    zero := OldLight;
-
     for lc in Colors do
-    begin
       if OldLight[lc] > LightLevel[lc] then
-      begin
         Exclude(Colors, lc);
-        Continue;
-      end;
-      zero[lc] := 0;
-    end;
 
     if Colors = [] then
       exit
@@ -1888,7 +1879,7 @@ var
       buf.DataByVector[Coord] := True;
 
     c.LightFunctions[LightMode].SetLight(Coord[axisX] and ChunkSizeMask,
-      Coord[axisY] and ChunkSizeMask, Coord[axisZ] and ChunkSizeMask, zero);
+      Coord[axisY] and ChunkSizeMask, Coord[axisZ] and ChunkSizeMask, AsLightZero);
 
     for lc := low(TLightColor) to High(TLightColor) do
       if OldLight[lc] = 0 then
