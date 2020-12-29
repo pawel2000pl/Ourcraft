@@ -9,7 +9,7 @@ uses
   GLext, gl, strutils, ProcessUtils, Locker, LightTypes;
 
 type
-  //               +x        -x      +y     -y      +z      -z    See: TextureModeSides
+  //tmNorth: +x tmSouth: -x tmUp: +y tmDown: -y tmEast: +z tmWest: -z See: TextureModeSides
   TTextureMode = (tmNorth, tmSouth, tmUp, tmDown, tmEast, tmWest);
   TTextureDrawSides = set of TTextureMode;
 

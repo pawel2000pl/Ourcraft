@@ -208,7 +208,7 @@ begin
             l := 0;
             for y := l to h do
                   if y mod 8 = 0 then
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateElement(Vector3(x, y, z), 0) as TBlock)
+                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateElement(Vector3(x, y, z), (Chunk.Position[axisY] and 3) shl 1 + y shr 3) as TBlock)
                   else
                   SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateElement(Vector3(x, y, z), 0) as TBlock);
           end;

@@ -204,6 +204,12 @@ begin
     World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(v, 0) as TBlock);
   end;
 
+  if key in ['0'..'7'] then
+  begin
+    v := Camera.Position + Camera.ForwardVector*4;
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, StrToInt(key)) as TBlock);
+  end;
+
   RenderArea.SetPosition(IntVector3(floor(Camera.Position[axisX] / ChunkSize),
     floor(Camera.Position[axisY] / ChunkSize), floor(Camera.Position[axisZ] / ChunkSize)));
 

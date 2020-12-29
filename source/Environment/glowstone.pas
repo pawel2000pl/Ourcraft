@@ -12,8 +12,13 @@ type
   { TGlowStone }
 
   TGlowStone = class(TBlock)
+  private
+    FSubID : LongWord;
+  public
+    function GetSubID: integer; override;
     procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
     function LightSource: TLight; override;
+    constructor Create(MyCreator: TElementCreator);
   end;
 
   { TGlowStoneCreator }
@@ -54,11 +59,20 @@ end;
 
 function TGlowStoneCreator.CreateElement(const Coords: TVector3;
   const SubID: integer): TEnvironmentElement;
+var
+  g : TGlowStone;
 begin
-   Result := TGlowStone.Create(self);
+   g := TGlowStone.Create(self);
+   g.FSubID:=SubID;
+   Exit(g);
 end;
 
 { TGlowStone }
+
+function TGlowStone.GetSubID: integer;
+begin
+  Result:=FSubID;
+end;
 
 procedure TGlowStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
   const Coord: TBlockCoord);
@@ -68,7 +82,13 @@ end;
 
 function TGlowStone.LightSource: TLight;
 begin
-  Result:=AsLight(0, MAX_LIGHT_LEVEL, 0);
+  Result:=AsLight(MAX_LIGHT_LEVEL * (1 - (FSubID and 1)), MAX_LIGHT_LEVEL * (1 - ((FSubID and 2) shr 1)), MAX_LIGHT_LEVEL * (1 - ((FSubID and 4) shr 2)));
+end;
+
+constructor TGlowStone.Create(MyCreator: TElementCreator);
+begin
+  inherited Create(MyCreator);
+  FSubID:=0;
 end;
 
 end.
