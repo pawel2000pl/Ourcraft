@@ -10,7 +10,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 1. [+] There is no height limit
 2. [-] Levels instead of other worlds (as Nether or End)
 3. [-] More 3D GUI (during the gameplay)
-4. [+] It is not executed by Java Virtual Machine (JVM), but it is executable file, so there is more FPS
+4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
      
 It's not playable yet. But you can: 
 
@@ -20,11 +20,9 @@ It's not playable yet. But you can:
 
 Changelog:
 
-* Changed algorithm of light: instead of only gray it is red, green and blue
-* Day-Night cycle (for test 60sec) for block lighting
-* Optimalization of saving
+* Changed algorithm of light: instead of only gray it is red, green and blue (and mixing of them is possible)
+* Day-Night cycle (for test 600sec) for block lighting
 * Saving and loading blocks (chunks)
-* Still buf fixes
 * Added Perlin Noise algorithm for any count of dimenstion
 * Added simply terrain generator
 * Bug fixes and optimalization
@@ -43,6 +41,7 @@ And then, you can type "make run" (in the console, in main directiry of project)
 
 Screenshots:
 
+![Screenshot](screenshots/Screenshot_20201229_184026.png)
 ![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)
 ![Screenshot](screenshots/Screenshot_20201006_174602.png)

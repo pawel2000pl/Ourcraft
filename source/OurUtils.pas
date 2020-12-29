@@ -996,7 +996,7 @@ end;
 procedure TOurWorld.AddTime;
 const
   Freq = 1;
-  TicksPerDay = 60; //TODO: 600
+  TicksPerDay = 600;
 var
   k : Double;
 begin
@@ -1309,21 +1309,24 @@ const
 var
   Side : TTextureMode;
   nx, ny, nz : integer;
+  OldLight : TLight;
   c : TOurChunk;
 begin
   LightLevel := max(LightLevel - (MaxBlockTransparency - fBlocks[x, y, z].Transparency),
     LightFunctions[Functions].GetLightSource(x, y, z));
 
+  OldLight := LightFunctions[Functions].GetLight(x, y, z);
+
   if Force then
-    UpdateIfGreater(LightLevel, LightFunctions[Functions].GetLight(x, y, z))
+    UpdateIfGreater(LightLevel, OldLight)
   else
-    if (maxDepth < 0) or (LightLevel <= LightFunctions[Functions].GetLight(x, y, z)) then
+    if (maxDepth < 0) or (OldLight >= LightLevel) then
       exit;
 
-  LightFunctions[Functions].SetLight(x, y, z, LightLevel);
+  LightFunctions[Functions].SetLight(x, y, z, max(OldLight, LightLevel));
 
   LightLevel := LightLevel-1;
-  if LightLevel.Value> 0 then
+  if LightLevel.Value > 0 then
   for side := Low(TTextureMode) to High(TTextureMode) do
   begin
     nx := x + TextureModeSidesI[side][axisX];
@@ -1835,13 +1838,18 @@ begin
 end;
 
 procedure TOurChunk.RelightArea(const x1, y1, z1, x2, y2, z2 : integer; const LightMode : TLightFunctionKind);
+type
+    TLightColors = set of TLightColor;
+
 var
   buf : TThreeDimensionalSignedArrayOfBoolean;
   minX, minY, minZ, maxX, maxY, maxZ : integer;
 
-  procedure DoIt(const Coord : TIntVector3; const LightLevel : TLight);
+  procedure DoIt(const Coord : TIntVector3; const LightLevel : TLight; Colors : TLightColors);
   var
     OldLight : TLight;
+    zero : TLight;
+    lc : TLightColor;
     side : TTextureMode;
     c : TOurChunk;
   begin
@@ -1861,16 +1869,34 @@ var
 
     OldLight := c.LightFunctions[LightMode].GetLight(Coord[axisX] and ChunkSizeMask, Coord[axisY] and
       ChunkSizeMask, Coord[axisZ] and ChunkSizeMask);
-    if (OldLight > LightLevel) then
-      exit;
 
-    buf.DataByVector[Coord] := True;
+    zero := OldLight;
+
+    for lc in Colors do
+    begin
+      if OldLight[lc] > LightLevel[lc] then
+      begin
+        Exclude(Colors, lc);
+        Continue;
+      end;
+      zero[lc] := 0;
+    end;
+
+    if Colors = [] then
+      exit
+      else
+      buf.DataByVector[Coord] := True;
+
     c.LightFunctions[LightMode].SetLight(Coord[axisX] and ChunkSizeMask,
-      Coord[axisY] and ChunkSizeMask, Coord[axisZ] and ChunkSizeMask, AsLightZero);
+      Coord[axisY] and ChunkSizeMask, Coord[axisZ] and ChunkSizeMask, zero);
 
-    if OldLight.Value <> 0 then
+    for lc := low(TLightColor) to High(TLightColor) do
+      if OldLight[lc] = 0 then
+        Exclude(Colors, lc);
+
+    if Colors <> [] then
       for side := Low(TTextureMode) to High(TTextureMode) do
-        DoIt(Coord + TextureModeSidesI[side], OldLight - 1);
+        DoIt(Coord + TextureModeSidesI[side], OldLight-1, Colors);
   end;
 
 var
@@ -1896,7 +1922,7 @@ begin
           buf[x, y, z] := True;
         end
         else
-          DoIt(IntVector3(x, y, z), AsLight(MAX_LIGHT_LEVEL + 1));
+          DoIt(IntVector3(x, y, z), AsLightMax+1, [lcRed, lcBlue, lcGreen]);
 
   for x := minX to maxX do
     for y := minY to maxY do
