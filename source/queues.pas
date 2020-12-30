@@ -62,18 +62,23 @@ type
     fList : array[word] of TQueueRecord;
     fAddIndex, fExecuteIndex : word;
     Locker : TLocker;
+    FCoreCount : Integer;
 
-    ThreadCount : integer;
+    FThreadCount : integer;
     Threads : array of TQueueThread;
 
     fSuspend : boolean;
   public
+    property ThreadCount : Integer read FThreadCount;
+    property CoreCount : Integer read FCoreCount;
+    function QueueSize : Integer;
+
     procedure Clear; virtual;
     property Suspend : boolean read fSuspend write fSuspend;
     function ExecuteMethod : boolean;
     procedure DequeueObject(obj : TObject); virtual;
     procedure AddMethod(const Method : TQueueMethod); virtual;
-    constructor Create(const AdditionalThreads : integer = 0);
+    constructor Create(const ThreadsPerCore : Integer = 1; const AdditionalThreads : integer = 0);
     destructor Destroy; override;
   end;
 
@@ -88,7 +93,7 @@ type
   public
     procedure Clear; override;
     procedure AddMethodDelay(const Method : TQueueMethod; const DelayMilliseconds : QWord);
-    constructor Create(const AdditionalThreads : integer = 0);
+    constructor Create(const ThreadsPerCore : Integer = 1; const AdditionalThreads : integer = 0);
     destructor Destroy; override;
   end;
                 
@@ -155,12 +160,13 @@ begin
   end;
 end;
 
-constructor TQueueManager2.Create(const AdditionalThreads : integer);
+constructor TQueueManager2.Create(const ThreadsPerCore: Integer;
+  const AdditionalThreads: integer);
 begin                    
   DelayLocker := TLocker.Create;
   fDelayListCount := 0;
   setlength(fDelayList, fDelayListCount);
-  inherited Create(AdditionalThreads + 1);
+  inherited Create(max(0, ThreadsPerCore), max(AdditionalThreads, 0) + 1);
   AddMethod(@ExecuteDelayMethods);
 end;
 
@@ -172,6 +178,11 @@ begin
 end;
 
 { TQueueManager }
+
+function TQueueManager.QueueSize: Integer;
+begin
+  Result := ($100 + fAddIndex - fExecuteIndex) and $FF;
+end;
 
 procedure TQueueManager.Clear;
 var
@@ -191,15 +202,14 @@ var
   q : TQueueRecord;
   i : word;
 begin
-  Result := False;
   if Suspend then
-    exit;
+    Exit(False);
   Locker.Lock;
   try
     repeat
       q := fList[PostInc(fExecuteIndex)];
       if fExecuteIndex = fAddIndex then
-        exit;
+        Exit(False);
     until (q.Method <> nil);
 
     i := fExecuteIndex - 1;
@@ -248,7 +258,8 @@ begin
   end;
 end;
 
-constructor TQueueManager.Create(const AdditionalThreads : integer);
+constructor TQueueManager.Create(const ThreadsPerCore: Integer;
+  const AdditionalThreads: integer);
 var
   i : integer;
 begin
@@ -256,7 +267,8 @@ begin
   fAddIndex := 0;
   fExecuteIndex := 0;
   Locker := TLocker.Create;
-  ThreadCount := max(1, AdditionalThreads + GetCoreCount);
+  FCoreCount := GetCoreCount;
+  FThreadCount := max(1, AdditionalThreads + ThreadsPerCore*CoreCount);
   setlength(Threads, ThreadCount);     
   Clear;
   for i := 0 to ThreadCount - 1 do
@@ -290,6 +302,7 @@ begin
   fTerminating := False;
   fManager := Manager;
   inherited Create(False);
+  Priority:=tpHigher;
 end;
 
 destructor TQueueThread.Destroy;

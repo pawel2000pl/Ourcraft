@@ -115,6 +115,10 @@ type
 
     procedure AddWall(const Position : TVector3;
       const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
+      const Tex : PTextureRect; const LightLevel : TRealLight); overload;
+
+    procedure AddWall(const Position : TVector3;
+      const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
       const Tex : PTextureRect; const LightLevel : TLightedSide); overload;
 
     procedure AddCuboid(const Position : TVector3; const Cuboid : TTexturedCuboid;
@@ -319,26 +323,24 @@ begin
     Result := fCount * (sizeof(fColor[0]) + sizeof(fVertex[0]) + sizeof(fTexture[0]));
 end;
 
-procedure TVertexModel.AddWall(const Position: TVector3;
-  const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners;
-  const Tex: PTextureRect; const LightLevel: TLight);
-var
-  i, j : integer;
+procedure TVertexModel.AddWall(const Position: TVector3; const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners; const Tex: PTextureRect; const LightLevel: TLight);
 begin
-    j := fCount;
-    Inc(fCount, 4);
-    UpdateLength;
+  AddWall(Position, WallCornersCoords, TextureCorners, Tex, LightLevelToFloat(LightLevel));
+end;
 
-    for i := 0 to 3 do
-    begin
-      fTexture[j, axisX] := TextureCorners[i, axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
-      fTexture[j, axisY] := TextureCorners[i, axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
-      fVertex[j] := WallCornersCoords[i] + Position;
-      fColor[j].r := SingleToByte(LightLevelToFloat(LightLevel.Red));
-      fColor[j].g := SingleToByte(LightLevelToFloat(LightLevel.Green));
-      fColor[j].b := SingleToByte(LightLevelToFloat(LightLevel.Blue));
-      Inc(j);
-    end;
+procedure TVertexModel.AddWall(const Position: TVector3; const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners; const Tex: PTextureRect; const LightLevel: TColor3f);
+var
+  side : TLightedSide;
+begin
+  side[0][lcRed] := LightLevel[lcRed];
+  side[0][lcGreen] := LightLevel[lcGreen];
+  side[0][lcBlue]:= LightLevel[lcBlue];
+
+  side[1] := side[0];
+  side[2] := side[0];
+  side[3] := side[0];
+
+  AddWall(Position, WallCornersCoords, TextureCorners, Tex, side);
 end;
 
 procedure TVertexModel.AddWall(const Position: TVector3;
