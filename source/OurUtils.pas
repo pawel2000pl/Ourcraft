@@ -517,7 +517,10 @@ type
     procedure UpdateTableLengths;
     procedure RemoveOrphanChunks;
 
-    function AddRenderArea(const x, y, z, ray : integer) : TRenderArea;
+    ///Automatically create single-player area
+    function AddRenderArea(const x, y, z, ray : integer) : TRenderArea; overload;
+    ///add custom area
+    procedure AddRenderArea(const Area : TRenderArea); overload;
 
     procedure Tick;
     procedure RandomTickAuto;
@@ -1150,7 +1153,10 @@ begin
     fChunks[x, y, z].Locker.Unlock;
   end;
 
-  Result.Load;
+  if Queues.QueueSize < Queues.ThreadCount-1 then
+    Queues.AddMethod(@Result.Load)
+    else
+    Result.Load;
 end;
 
 procedure TOurWorld.UpdateTableLengths;
@@ -1175,8 +1181,13 @@ begin
   Area.SetPosition(IntVector3(x, y, z));
   Area.ray := ray;
   Area.OnChage := @UpdateRenderArea;
-  RenderAreaSet.Add(Area);
   Result := Area;
+  AddRenderArea(Area);
+end;
+
+procedure TOurWorld.AddRenderArea(const Area: TRenderArea);
+begin
+  RenderAreaSet.Add(Area);
   Queues.AddMethod(@Area.OnChangeEvent);
 end;
 
@@ -1256,7 +1267,7 @@ begin
         fChunks[x, y, z].Count := 0;
         fChunks[x, y, z].Locker := TLocker.Create;
       end;
-  fQueues := TQueueManager2.Create(1);
+  fQueues := TQueueManager2.Create(1, 2);
   fDefaultBlock := defaultBlock;
   fTickDelay := 50;
   fRandomTickSpeed := 3;
@@ -2216,9 +2227,18 @@ var
   MinCoords, MaxCoords : TIntVector3;
   a : TAxis;
 begin
+  if fGenerated then
+  begin
+    MinCoords := IntVector3(ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+    MaxCoords := IntVector3(0, 0, 0);
+  end
+  else
+  begin                                                               
+    MinCoords := IntVector3(0, 0, 0);
+    MaxCoords := IntVector3(ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+    Generate;
+  end;
   AutoLightUpdate := False;
-  MinCoords := IntVector3(ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
-  MaxCoords := IntVector3(0, 0, 0);
   while True do
   begin
     Stream.ReadBuffer(c{%H-}, SizeOf(c));
