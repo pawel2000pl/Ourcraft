@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, blcksock,
   OurGame, OurUtils,
   FileSaver, SaverPaths,
-  Queues, Collections;
+  Queues, Collections, Locker;
 
 type
   TServerService = class;
@@ -38,7 +38,8 @@ type
     FPort : Word;
     ListenerSocket : TTCPBlockSocket;
 
-    FAreaSet : TSetOfServerSideRenderArea;
+    FAreaSet : TSetOfServerSideRenderArea;   
+    FLock : TLocker;
 
     procedure InitListening;
     procedure FinitListening;
@@ -49,6 +50,7 @@ type
     property Queue : TQueueManager2 read FQueue;
     property Port : Word read FPort;
     property AreaSet : TSetOfServerSideRenderArea read FAreaSet;
+    property Lock : TLocker read FLock;
 
     constructor Create(AWorld : TOurWorld; const APort : Word; const ExpectedClientsCount : Integer = 8);
     destructor Destroy; override;
@@ -67,6 +69,13 @@ begin
   FServer:=AServer;
   ConnectionSocket := TTCPBlockSocket.Create;
   ConnectionSocket.Socket:=ASocket;
+  try
+    Server.Lock.Lock;
+    Server.AreaSet.Add(Self);
+  finally
+    Server.Lock.Unlock;
+  end;
+
   //todo: working
 end;
 
@@ -75,7 +84,12 @@ begin
   ConnectionSocket.CloseSocket;
   ConnectionSocket.Free;      
   FServer.Queue.DequeueObject(Self);
-  FServer.AreaSet.RemoveItem(Self);
+  try
+    FServer.Lock.Lock;
+    FServer.AreaSet.RemoveItem(Self);
+  finally        
+    FServer.Lock.Unlock;
+  end;
   inherited Destroy;
 end;
 
@@ -99,15 +113,9 @@ begin
 end;
 
 procedure TServerService.Listen;
-var
-  r : TServerSideRenderArea;
 begin
   if ListenerSocket.canread(ListeningTime) then
-  begin
-    r := TServerSideRenderArea.Create(ListenerSocket.Accept, Self, World);
-    AreaSet.Add(r);
-    World.AddRenderArea(r);
-  end;
+    World.AddRenderArea(TServerSideRenderArea.Create(ListenerSocket.Accept, Self, World));
   Queue.AddMethod(@Listen);
 end;
 
@@ -122,6 +130,7 @@ constructor TServerService.Create(AWorld: TOurWorld; const APort: Word;
 begin
   FWorld := AWorld;
   FPort:=APort;
+  FLock := TLocker.Create;
   FAreaSet := TSetOfServerSideRenderArea.Create;
   FQueue := TQueueManager2.Create(1, ExpectedClientsCount+1);
   ListenerSocket := nil;
@@ -134,6 +143,7 @@ begin
   DisconnectAll;
   FAreaSet.Free;
   FQueue.Free;
+  FLock.Free;
   inherited Destroy;
 end;
 

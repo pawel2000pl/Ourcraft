@@ -106,7 +106,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="28">
+    <Units Count="30">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -241,6 +241,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="ServerService"/>
       </Unit27>
+      <Unit28>
+        <Filename Value="../clientservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ClientService"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="../socketcommands.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SocketCommands"/>
+      </Unit29>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

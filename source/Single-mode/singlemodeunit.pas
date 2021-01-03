@@ -65,6 +65,8 @@ begin
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_FOG);
 
+  glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL,GL_SEPARATE_SPECULAR_COLOR{ or GL_SINGLE_COLOR});
+
   if Game = nil then
   begin
     Game := TOurGame.Create;
