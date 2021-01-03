@@ -6,11 +6,12 @@ unit LightTypes;
 interface
 
 const
-  MAX_LIGHT_LEVEL = 15;
+  MAX_LIGHT_LEVEL = 255;//15;
 
 type
   TLightColor = (lcRed, lcGreen, lcBlue);
-  TLight = packed array[TLightColor] of byte;
+  TLight = packed array[TLightColor] of Byte;
+  TLongLight = array[TLightColor] of Integer;
   TRealLight = array[TLightColor] of Single;
 
   { TLightHelper }
@@ -39,35 +40,63 @@ type
     procedure Init(const RedValue, GreenValue, BlueValue : integer); overload;
   end;
 
-operator +(const a, b : TLight) : TLight; inline;
-operator -(const a, b : TLight) : TLight; inline;
-operator +(const a : TLight; const b : integer) : TLight; inline;
-operator +(const a : integer; const b : TLight) : TLight; inline;
-operator -(const a : TLight; const b : integer) : TLight; inline;
-operator > (const a, b : TLight) : boolean; inline;
-operator < (const a, b : TLight) : boolean; inline;
-operator = (const a, b : TLight) : boolean; inline;
-operator <> (const a, b : TLight) : boolean; inline;
-operator >= (const a, b : TLight) : boolean; inline;
-operator <= (const a, b : TLight) : boolean; inline;
+  { TLongLightHelper }
+
+  TLongLightHelper = type helper for TLongLight
+  private
+    function GetBlue : Integer;
+    function GetGreen : Integer;
+    function GetRed : Integer;
+
+    procedure SetBlue(const AValue : Integer);
+    procedure SetGreen(const AValue : Integer);
+    procedure SetRed(const AValue : Integer);
+  public
+    property Red : Integer read GetRed write SetRed;
+    property Green : Integer read GetGreen write SetGreen;
+    property Blue : Integer read GetBlue write SetBlue;
+    function Value : integer;
+    function MinValue : integer;
+    function White : TLongLight;
+
+    procedure Init(const AValue : integer); overload;
+    procedure Init(const RedValue, GreenValue, BlueValue : integer); overload;
+  end;
+
+operator +(const a, b : TLongLight) : TLongLight; inline;
+operator -(const a, b : TLongLight) : TLongLight; inline;
+operator +(const a : TLongLight; const b : integer) : TLongLight; inline;
+operator +(const a : integer; const b : TLongLight) : TLongLight; inline;
+operator -(const a : TLongLight; const b : integer) : TLongLight; inline;
+operator > (const a, b : TLongLight) : boolean; inline;
+operator < (const a, b : TLongLight) : boolean; inline;
+operator = (const a, b : TLongLight) : boolean; inline;
+operator <> (const a, b : TLongLight) : boolean; inline;
+operator >= (const a, b : TLongLight) : boolean; inline;
+operator <= (const a, b : TLongLight) : boolean; inline;
+
+operator := (const a : TLongLight) : TLight;
+operator := (const a : TLight) : TLongLight;
 
 operator * (const a : TRealLight; const b : Double) : TRealLight;
 
-procedure UpdateIfGreater(var a : TLight; const b : TLight); overload;
-procedure UpdateIfLesser(var a : TLight; const b : TLight); overload;
+procedure UpdateIfGreater(var a : TLongLight; const b : TLongLight); overload;
+procedure UpdateIfLesser(var a : TLongLight; const b : TLongLight); overload;
 procedure UpdateIfGreater(var a : TRealLight; const b : TRealLight); overload;
 procedure UpdateIfLesser(var a : TRealLight; const b : TRealLight); overload;
 
 function AsLight(const AValue : integer) : TLight; inline; overload;
 function AsLight(const RedValue, GreenValue, BlueValue : integer) : TLight; inline; overload;
 
-function Max(const a, b : TLight) : TLight; overload;
-function Min(const a, b : TLight) : TLight; overload;
+function Max(const a, b : TLongLight) : TLongLight; overload;
+function Min(const a, b : TLongLight) : TLongLight; overload;
 
 function Max(const a, b : TRealLight) : TRealLight; overload;
 function Min(const a, b : TRealLight) : TRealLight; overload;
 
 function LightMultiple(const Light : TLight; const k : Double) : TLight;
+function ScaleLightChannels(const Light : TLight; const k : TRealLight) : TLight; overload;
+function ScaleLightChannels(const Light : TRealLight; const k : TRealLight) : TRealLight; overload;
 
 function LightLevelToFloat(const AverageLevel : Single) : Single; inline; overload;
 function LightLevelToFloat(const Value : TLight) : TRealLight; overload;
@@ -76,6 +105,9 @@ const
   AsLightZero : TLight = (0, 0, 0);
   AsLightMax : TLight = (MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL);
 
+
+  WarmSunLight : TRealLight = (0.98, 0.97, 0.95);
+
 implementation
 
 uses
@@ -83,10 +115,10 @@ uses
 
 function LightLevelToFloat(const AverageLevel: Single): Single; inline;
 begin
-  Result := (AverageLevel/MAX_LIGHT_LEVEL + sqrt(2/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4))/2;
+  Result := (AverageLevel/MAX_LIGHT_LEVEL + sqrt(MAX_LIGHT_LEVEL/8/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4))/2;
 end;
 
-operator +(const a, b : TLight) : TLight;
+operator+(const a, b: TLongLight): TLongLight;
 var
   c : TLightColor;
 begin
@@ -94,7 +126,7 @@ begin
     Result[c] := integer(a[c]) + integer(b[c]);
 end;
 
-operator -(const a, b : TLight) : TLight;
+operator-(const a, b: TLongLight): TLongLight;
 var
   c : TLightColor;
 begin
@@ -102,7 +134,7 @@ begin
     Result[c] := max(integer(a[c]) - integer(b[c]), 0);
 end;
 
-operator +(const a : TLight; const b : integer) : TLight;
+operator+(const a: TLongLight; const b: integer): TLongLight;
 var
   c : TLightColor;
 begin
@@ -110,12 +142,12 @@ begin
     Result[c] := integer(a[c]) + integer(b);
 end;
 
-operator +(const a : integer; const b : TLight) : TLight;
+operator+(const a: integer; const b: TLongLight): TLongLight;
 begin
   Result := b + a;
 end;
 
-operator -(const a : TLight; const b : integer) : TLight;
+operator-(const a: TLongLight; const b: integer): TLongLight;
 var
   c : TLightColor;
 begin
@@ -123,32 +155,32 @@ begin
     Result[c] := max(integer(a[c]) - integer(b), 0);
 end;
 
-operator > (const a, b : TLight) : boolean;
+operator>(const a, b: TLongLight): boolean;
 begin
   Result := (a>=b) and ((a[lcRed] > b[lcRed]) or (a[lcGreen] > b[lcGreen]) or (a[lcBlue] > b[lcBlue]));
 end;
 
-operator < (const a, b : TLight) : boolean;
+operator<(const a, b: TLongLight): boolean;
 begin
   Result := b>a;
 end;
 
-operator = (const a, b : TLight) : boolean;
+operator=(const a, b: TLongLight): boolean;
 begin
   Result := (a[lcRed] = b[lcRed]) and (a[lcGreen] = b[lcGreen]) and (a[lcBlue] = b[lcBlue]);
 end;
 
-operator <> (const a, b: TLight): boolean;
+operator<>(const a, b: TLongLight): boolean;
 begin
   Result := not (a=b);
 end;
 
-operator >= (const a, b : TLight) : boolean;
+operator>=(const a, b: TLongLight): boolean;
 begin
     Result := (a[lcRed] >= b[lcRed]) and (a[lcGreen] >= b[lcGreen]) and (a[lcBlue] >= b[lcBlue]);
 end;
 
-operator <= (const a, b : TLight) : boolean;
+operator<=(const a, b: TLongLight): boolean;
 begin
     Result := b>=a;
 end;
@@ -161,6 +193,22 @@ begin
       Result[c] := LightLevelToFloat(Value[c]);
 end;
 
+operator:=(const a: TLongLight): TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      Result[c] := EnsureRange(a[c], 0, MAX_LIGHT_LEVEL);
+end;
+
+operator:=(const a: TLight): TLongLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      Result[c] := a[c];
+end;
+
 operator*(const a: TRealLight; const b: Double): TRealLight;
 var
   c : TLightColor;
@@ -169,7 +217,7 @@ begin
     Result[c] := a[c] * b;
 end;
 
-procedure UpdateIfGreater(var a: TLight; const b: TLight);
+procedure UpdateIfGreater(var a: TLongLight; const b: TLongLight);
 var
   c : TLightColor;
 begin
@@ -178,7 +226,7 @@ begin
          a[c] := b[c];
 end;
 
-procedure UpdateIfLesser(var a: TLight; const b: TLight);
+procedure UpdateIfLesser(var a: TLongLight; const b: TLongLight);
 var
   c : TLightColor;
 begin
@@ -215,7 +263,7 @@ begin
   Result{%H-}.Init(RedValue, GreenValue, BlueValue);
 end;
 
-function Max(const a, b : TLight) : TLight;
+function Max(const a, b: TLongLight): TLongLight;
 var
   c : TLightColor;
 begin
@@ -223,7 +271,7 @@ begin
     Result[c] := max(a[c], b[c]);
 end;
 
-function Min(const a, b : TLight) : TLight;
+function Min(const a, b: TLongLight): TLongLight;
 var
   c : TLightColor;
 begin
@@ -253,6 +301,85 @@ var
 begin
   for c := Low(TLightColor) to High(TLightColor) do
     Result[c] := max(round(Light[c]*k), 0);
+end;
+
+function ScaleLightChannels(const Light: TLight; const k: TRealLight): TLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := EnsureRange(round(Light[c]*k[c]), 0, 1);
+end;
+
+function ScaleLightChannels(const Light: TRealLight; const k: TRealLight): TRealLight;
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+    Result[c] := EnsureRange(Light[c]*k[c], 0, 1);
+end;
+
+{ TLongLightHelper }
+
+function TLongLightHelper.GetBlue: Integer;
+begin
+  Result := Self[lcBlue];
+end;
+
+function TLongLightHelper.GetGreen: Integer;
+begin
+  Result := Self[lcGreen];
+end;
+
+function TLongLightHelper.GetRed: Integer;
+begin
+  Result := Self[lcRed];
+end;
+
+procedure TLongLightHelper.SetBlue(const AValue: Integer);
+begin
+  Self[lcBlue] := AValue;
+end;
+
+procedure TLongLightHelper.SetGreen(const AValue: Integer);
+begin
+  Self[lcGreen] := AValue;
+end;
+
+procedure TLongLightHelper.SetRed(const AValue: Integer);
+begin
+  Self[lcRed] := AValue;
+end;
+
+function TLongLightHelper.Value: integer;
+begin
+  Result := max(Self[lcRed], max(Self[lcBlue], Self[lcGreen]));
+end;
+
+function TLongLightHelper.MinValue: integer;
+begin
+  Result := min(Self[lcRed], min(Self[lcBlue], Self[lcGreen]));
+end;
+
+function TLongLightHelper.White: TLongLight;
+begin
+  Result[lcRed] := Value;
+  Result[lcGreen] := Result[lcRed];
+  Result[lcBlue] := Result[lcRed];
+end;
+
+procedure TLongLightHelper.Init(const AValue: integer);
+begin
+  Self[lcRed] := AValue;
+  Self[lcGreen] := AValue;
+  Self[lcBlue] := AValue;
+end;
+
+procedure TLongLightHelper.Init(const RedValue, GreenValue, BlueValue: integer);
+begin
+  Self[lcRed] := RedValue;
+  Self[lcGreen] := GreenValue;
+  Self[lcBlue] := BlueValue;
 end;
 
 { TLightHelper }

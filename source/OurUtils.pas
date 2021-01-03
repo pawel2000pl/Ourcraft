@@ -20,6 +20,8 @@ const
   WorldSizeMask = WorldSize - 1;
 
   MAX_BLOCK_TRANSPARENCY = MAX_LIGHT_LEVEL;
+  LIGHT_STEPS_UNTIL_BLACK = 15;
+  LENGTH_LIGHT_RESISTANCE = ((1+MAX_LIGHT_LEVEL) div (1+LIGHT_STEPS_UNTIL_BLACK));
 
   MaxBlockTransparency : TLight = (MAX_BLOCK_TRANSPARENCY, MAX_BLOCK_TRANSPARENCY, MAX_BLOCK_TRANSPARENCY);
 
@@ -150,26 +152,26 @@ type
     function GetTag : PBlockDataTag; virtual;
 
     function NeedDraw : boolean; virtual;
-    function IsSolid : boolean; virtual; //not draw on every frame / regular cube
+    function IsSolid : boolean; virtual; //not draw on every frame and regular cube
     function NeedTick : boolean; virtual;
     function NeedRandomTick : boolean; virtual;
     function HasAnimation : boolean; virtual; //draw on every frame
     function NeedAfterPut : boolean; virtual;
     function NeedNearChangeUpdate : boolean; virtual;
 
-    //TBlockCoord is relative in-chunk coord
-    procedure {%H-}DrawModel(Chunk : TOurChunk; Side : TTextureMode; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}DrawUnsolid(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}DrawAnimation(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}OnTick(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}OnRandomTick(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}AfterPut(Chunk : TOurChunk; const Coord : TBlockCoord); virtual; abstract;
-    procedure {%H-}NearChangeUpdate(Chunk : TOurChunk; const side : TTextureMode; const Coord : TBlockCoord);
-      virtual; abstract;
+    ///TBlockCoord is relative in-chunk coord
+    procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
+    procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure DrawAnimation({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure OnRandomTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure AfterPut({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure NearChangeUpdate({%H-}Chunk : TOurChunk; const {%H-}side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
 
-    procedure SaveToStream(Stream : TStream; {%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual; //inherited first!
+    ///inherited first!
+    procedure SaveToStream(Stream : TStream; {%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    ///inherited first! / retunrs if loading could be continued
     function LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean; virtual;
-    //inherited first! / retunrs if loading could be continued
 
     function Transparency : TLight; virtual;
     function LightSource : TLight; virtual;
@@ -240,7 +242,21 @@ type
   end;
 
   TLightFunctionKind = (lfkBlock, lfkSun);
-  TRenderAreaCollection = specialize TCustomSet<TRenderArea>;
+
+  { TRenderAreaCollection }
+
+  TRenderAreaCollection = class(specialize TCustomSet<TRenderArea>)
+  private
+    FLocker : TLocker;
+  public
+    procedure Remove(const i: Integer); override;
+    procedure Add(Item: TItem); override;
+    procedure Lock;
+    procedure Unlock;
+    function GetNext(var i: integer; var Item: TItem): Boolean; overload; override;
+    constructor Create;
+    destructor Destroy; override;
+  end;
 
   { TOurChunk }
 
@@ -284,7 +300,7 @@ type
 
     LightFunctions : array[TLightFunctionKind] of TLightFunctions;
 
-    procedure AddLight(const x, y, z : integer; LightLevel : TLight; const Functions : TLightFunctionKind;
+    procedure AddLight(const x, y, z : integer; LightLevel : TLongLight; const Functions : TLightFunctionKind;
       const maxDepth : integer = 32; const Force : boolean = False);
     function GetBlock(const x, y, z : integer) : TBlock;
     procedure SetBlock(const x, y, z : integer; AValue : TBlock);
@@ -506,6 +522,8 @@ type
     property Time : Double read fTime;
     property LightTime : Double read fLightTime;
 
+    function Remote : Boolean;
+
     function GetChunk(const ChunkX, ChunkY, ChunkZ : integer) : TOurChunk;
     function GetChunkFromBlockCoors(const x, y, z : integer) : TOurChunk;
     function GetBlock(const x, y, z : integer) : TBlock;
@@ -569,6 +587,52 @@ begin
         v[a] := TextureStandardModeCoord[side][i][a] * EntityShape.Size[a] - EntityShape.Center[a];
       Result.Corners[side][i] := c * v;
     end;
+end;
+
+{ TRenderAreaCollection }
+
+procedure TRenderAreaCollection.Remove(const i: Integer);
+begin
+  Lock;
+  inherited Remove(i);
+  Unlock;
+end;
+
+procedure TRenderAreaCollection.Add(Item: TItem);
+begin
+  Lock;
+  inherited Add(Item);
+  Unlock;
+end;
+
+procedure TRenderAreaCollection.Lock;
+begin
+  FLocker.Lock;
+end;
+
+procedure TRenderAreaCollection.Unlock;
+begin
+  FLocker.Unlock;
+end;
+
+function TRenderAreaCollection.GetNext(var i: integer; var Item: TItem
+  ): Boolean;
+begin
+  Lock;
+  Result:=inherited GetNext(i, Item);
+  Unlock;
+end;
+
+constructor TRenderAreaCollection.Create;
+begin
+  inherited Create;
+  FLocker := TLocker.Create;
+end;
+
+destructor TRenderAreaCollection.Destroy;
+begin
+  FLocker.Free;
+  inherited Destroy;
 end;
 
 { TExtendedBlock }
@@ -1023,6 +1087,11 @@ begin
           fChunks[x, y, z].Table[i].ForceUpdateModelLight;
 end;
 
+function TOurWorld.Remote: Boolean;
+begin
+  Result := Environment.Remote;
+end;
+
 procedure TOurWorld.RemoveOrphanChunks;
 var
   x, y, z, i : integer;
@@ -1311,7 +1380,7 @@ begin
   Result := fNeightbors[Index];
 end;
 
-procedure TOurChunk.AddLight(const x, y, z: integer; LightLevel: TLight;
+procedure TOurChunk.AddLight(const x, y, z: integer; LightLevel: TLongLight;
   const Functions: TLightFunctionKind; const maxDepth: integer;
   const Force: boolean);
 const
@@ -1320,7 +1389,7 @@ const
 var
   Side : TTextureMode;
   nx, ny, nz : integer;
-  OldLight : TLight;
+  OldLight : TLongLight;
   c : TOurChunk;
 begin
   LightLevel := max(LightLevel - (MaxBlockTransparency - fBlocks[x, y, z].Transparency),
@@ -1336,7 +1405,7 @@ begin
 
   LightFunctions[Functions].SetLight(x, y, z, max(OldLight, LightLevel));
 
-  LightLevel := LightLevel-1;
+  LightLevel := LightLevel-LENGTH_LIGHT_RESISTANCE;
   if LightLevel.Value > 0 then
   for side := Low(TTextureMode) to High(TTextureMode) do
   begin
@@ -1426,8 +1495,9 @@ end;
 
 procedure TOurChunk.Save(const Force: Boolean);
 begin
-  if fModifiedAfterLoading or Force then
-    World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], @SaveToStream);
+  if not World.Remote then
+    if fModifiedAfterLoading or Force then
+      World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], @SaveToStream);
   fModifiedAfterLoading := False;
 end;
 
@@ -1666,8 +1736,8 @@ begin
 end;
 
 function TOurChunk.GetLightLevel(const x, y, z: integer): TRealLight;
-begin
-  Result := max(LightLevelToFloat(GetSunLightLevel(x, y, z))*World.LightTime, LightLevelToFloat(GetBlockLightLevel(x, y, z)));
+begin                                                                          //todo: chunk temperature
+  Result := max(LightLevelToFloat(ScaleLightChannels(GetSunLightLevel(x, y, z), WarmSunLight))*World.LightTime, LightLevelToFloat(GetBlockLightLevel(x, y, z)));
 end;
 
 function TOurChunk.GetSunLightLevel(const x, y, z: integer): TLight;
@@ -1856,9 +1926,9 @@ var
   buf : TThreeDimensionalSignedArrayOfBoolean;
   minX, minY, minZ, maxX, maxY, maxZ : integer;
 
-  procedure DoIt(const Coord : TIntVector3; const LightLevel : TLight; Colors : TLightColors);
+  procedure DoIt(const Coord : TIntVector3; const LightLevel : TLongLight; Colors : TLightColors);
   var
-    OldLight : TLight;
+    OldLight : TLongLight;
     lc : TLightColor;
     side : TTextureMode;
     c : TOurChunk;
@@ -1903,8 +1973,8 @@ var
 
 var
   side : TTextureMode;
-  x, y, z, nx, ny, nz : integer;
-  v : TLight;
+  x, y, z, nx, ny, nz, d : integer;
+  v : TLongLight;
   c : TOurChunk;
 begin
   buf := TThreeDimensionalSignedArrayOfBoolean.Create(x1, y1, z1);
@@ -1926,6 +1996,7 @@ begin
         else
           DoIt(IntVector3(x, y, z), AsLightMax+1, [lcRed, lcBlue, lcGreen]);
 
+  d := max(32, maxX+maxY+maxZ-minX-minY-minZ);
   for x := minX to maxX do
     for y := minY to maxY do
       for z := minZ to maxZ do
@@ -1934,7 +2005,7 @@ begin
           c := GetNeightborFromBlockCoord(x, y, z);
           if c = nil then
             Continue;
-          v := AsLight(1);
+          v := AsLight(LENGTH_LIGHT_RESISTANCE);
           for side := Low(TTextureMode) to High(TTextureMode) do
           begin
             nx := x + TextureModeSidesI[side][axisX];
@@ -1944,7 +2015,7 @@ begin
               Continue;
             UpdateIfGreater(v, LightFunctions[LightMode].GetExtLight(nx, ny, nz));
           end;
-          c.AddLight(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, v - 1, LightMode, 32, True);
+          c.AddLight(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, v - LENGTH_LIGHT_RESISTANCE, LightMode, d, True);
         end;
 
   buf.Free;
@@ -1995,7 +2066,7 @@ begin
       fModels[side].Unlock;
     end;
   end;
-  ForceUpdateModelLight;
+  //ForceUpdateModelLight;
 end;
 
 procedure TOurChunk.UpdateUnsolidModel;
@@ -2218,7 +2289,8 @@ begin
       for z := 0 to ChunkSize - 1 do
         DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
   AutoLightUpdate := True;
-  RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
+  RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1); 
+  ChangedBlocks.Clear;
 end;
 
 procedure TOurChunk.LoadChanges(Stream : TStream);
@@ -2252,6 +2324,7 @@ begin
     end;
   end;
   AutoLightUpdate := True;
+  ChangedBlocks.Clear;
   RelightArea(MinCoords.X, MinCoords.Y, MinCoords.Z, MaxCoords.X, MaxCoords.Y, MaxCoords.Z);
 end;
 
@@ -2441,6 +2514,43 @@ end;
 function TBlock.NeedNearChangeUpdate : boolean;
 begin
   Result := False;
+end;
+
+procedure TBlock.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
+  const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.DrawUnsolid(Chunk: TOurChunk; const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.DrawAnimation(Chunk: TOurChunk; const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.OnTick(Chunk: TOurChunk; const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.OnRandomTick(Chunk: TOurChunk; const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.AfterPut(Chunk: TOurChunk; const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.NearChangeUpdate(Chunk: TOurChunk; const side: TTextureMode;
+  const Coord: TBlockCoord);
+begin
+  //do nothing: this is only to provide abstract error
 end;
 
 procedure TBlock.SaveToStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord);

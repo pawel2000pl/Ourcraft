@@ -77,7 +77,7 @@ end;
 procedure TGlowStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
   const Coord: TBlockCoord);
 begin
-  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightLevel(coord[axisX], coord[axisY], coord[axisZ]));
+  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightedSide(coord, side));
 end;
 
 function TGlowStone.LightSource: TLight;

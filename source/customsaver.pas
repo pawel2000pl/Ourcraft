@@ -19,10 +19,9 @@ type
   private
     FDestroyWithOwner: Boolean;
     FOnLoad: TSaverEvent;
-    procedure SetOnLoad(AValue: TSaverEvent);
-  protected
+    procedure SetOnLoad(const AValue: TSaverEvent);
+  public                                              
     procedure DoLoadEvent(const Path : array of AnsiString; Stream : TStream);
-  public
     property OnLoad : TSaverEvent read FOnLoad write SetOnLoad;
     property DestroyWithOwner : Boolean read FDestroyWithOwner write FDestroyWithOwner;
                                                                             
@@ -39,7 +38,6 @@ type
   end;
 
 implementation
-
 
 { TCustomSaver }
 
@@ -71,12 +69,13 @@ begin
   MS.Free;
 end;
 
-procedure TCustomSaver.SetOnLoad(AValue: TSaverEvent);
+procedure TCustomSaver.SetOnLoad(const AValue: TSaverEvent);
 begin
   if FOnLoad=AValue then Exit;
   if (not Assigned(AValue)) then
-    AValue := nil;
-  FOnLoad:=AValue;
+    FOnLoad := nil
+  else
+    FOnLoad:=AValue;
 end;
 
 procedure TCustomSaver.Load(const Path: array of AnsiString);
