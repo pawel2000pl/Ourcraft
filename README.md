@@ -11,8 +11,10 @@ Warning: this is project, some (almost all) of this features haven't been implem
 2. [-] Levels instead of other worlds (as Nether or End)
 3. [-] More 3D GUI (during the gameplay)
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
+5. [+] Three channels for light (red, green, blue)
+6. [+] Light with 256 levels (but light-resistance is 16/block)
      
-It's not playable yet. But you can: 
+It's not playable yet (but almost). But you can: 
 
 * Fly: WASD, Space (Up) and X (Down)
 * Move camera: IJKL 
