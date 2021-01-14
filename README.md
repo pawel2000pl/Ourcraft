@@ -43,7 +43,7 @@ And then, you can type "make run" (in the console, in main directiry of project)
 
 Screenshots:
 
-![Screenshot](screenshots/Screenshot_20201229_184026.png)
+![Screenshot](screenshots/Screenshot_20201230_215039.png)
 ![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)
 ![Screenshot](screenshots/Screenshot_20201006_174602.png)
