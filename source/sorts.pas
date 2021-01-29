@@ -43,6 +43,10 @@ type
   { TMemoryBSearch }
 
   generic TMemoryBSearch<TValue> = class(specialize TStaticBSearch<TValue, TValue>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TKey = TValue;
+  {$ENDIF}
   public
     class function Compare(const a: TValue; const b: TKey): integer; override;
   end;
@@ -50,6 +54,10 @@ type
   { TIntegerSort }
 
   TIntegerSort = class(specialize TStaticSort<integer>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = Integer;
+  {$ENDIF}
   public
     //TValue is now Integer
     class function Compare(const a, b : TValue) : integer; override;

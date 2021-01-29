@@ -108,11 +108,19 @@ type
 
   generic TCustomOrderArray<TItem> = class(specialize TCustomArray<TItem>)
   type      
-    TStaticSorter = class(specialize TStaticSort<TItem>)
+    TStaticSorter = class(specialize TStaticSort<TItem>) 
+    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+    type
+        TValue = TItem;
+    {$ENDIF}
     public
       class function Compare(const a, b: TValue): integer; override;
     end;
-    TSorter = class(specialize TSort<PtrUInt>)
+    TSorter = class(specialize TSort<PtrUInt>)   
+    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+    type
+        TValue = PtrUInt;
+    {$ENDIF}
     public
       function Compare(const a, b: TValue): integer; override;
     end;

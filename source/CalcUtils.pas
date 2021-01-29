@@ -181,6 +181,10 @@ type
   { TIntVector3Sort }
 
   TIntVector3Sort = class(specialize TStaticSort<TIntVector3>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TIntVector3;
+  {$ENDIF}
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;

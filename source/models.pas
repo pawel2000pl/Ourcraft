@@ -42,6 +42,10 @@ type
   { TTextureRectSorter }
 
   TTextureRectSorter = class(specialize TStaticSort<TTextureRect>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TTextureRect;
+  {$ENDIF}
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
@@ -49,6 +53,11 @@ type
   { TTextureRectSearcher }
 
   TTextureRectSearcher = class(specialize TStaticBSearch<TTextureRect, ansistring>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TTextureRect;
+      TKey = AnsiString;
+  {$ENDIF}
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;

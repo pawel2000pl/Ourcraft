@@ -25,7 +25,7 @@ type
     destructor Destroy; override;
   end;
 
-  TSetOfServerSideRenderArea = specialize Collections.TCustomSet<TServerSideRenderArea>;
+  TSetOfServerSideRenderArea = specialize TCustomSet<TServerSideRenderArea>;
 
   { TServerService }
 
