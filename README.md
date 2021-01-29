@@ -22,6 +22,8 @@ It's not playable yet (but almost). But you can:
 
 Changelog:
 
+* Update to FPC 3.2 (but it should be compatible with 3.0)
+* Update for newer kernels (fastcmem was deactivated)
 * Changed algorithm of light: instead of only gray it is red, green and blue (and mixing of them is possible)
 * Day-Night cycle for block lighting
 * Saving and loading blocks (chunks)
@@ -43,7 +45,7 @@ And then, you can type "make run" (in the console, in main directiry of project)
 
 Screenshots:
 
-![Screenshot](screenshots/Screenshot_20201229_184026.png)
+![Screenshot](screenshots/Screenshot_20201230_215039.png)
 ![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)
 ![Screenshot](screenshots/Screenshot_20201006_174602.png)

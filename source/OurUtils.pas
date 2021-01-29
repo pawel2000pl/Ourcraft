@@ -200,7 +200,11 @@ type
 
   { TBlockList }
 
-  TBlockList = class(specialize TCustomSet<TBlockCoord>)
+  TBlockList = class(specialize TCustomSet<TBlockCoord>)   
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TItem = TBlockCoord;
+  {$ENDIF}
   private
     FLocker : TLocker;
   public
@@ -221,13 +225,22 @@ type
   { TRenderAreaSort }
 
   TRenderAreaSort = class(specialize TStaticSort<TRenderArea>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TRenderArea;
+  {$ENDIF}
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
 
   { TRenderAreaSearcher }
 
-  TRenderAreaSearcher = class(specialize TStaticBSearch<TRenderArea, TRenderArea>)
+  TRenderAreaSearcher = class(specialize TStaticBSearch<TRenderArea, TRenderArea>) 
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TRenderArea;
+      TKey = TValue;
+  {$ENDIF}
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;
@@ -246,6 +259,10 @@ type
   { TRenderAreaCollection }
 
   TRenderAreaCollection = class(specialize TCustomSet<TRenderArea>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TItem = TRenderArea;
+  {$ENDIF}
   private
     FLocker : TLocker;
   public
