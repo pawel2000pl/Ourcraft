@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, math, CalcUtils, UniversalImage, Sorts,
-  GLext, gl, strutils, ProcessUtils, Locker, LightTypes;
+  GLext, gl, strutils, Locker, LightTypes;
 
 type
   //tmNorth: +x tmSouth: -x tmUp: +y tmDown: -y tmEast: +z tmWest: -z See: TextureModeSides

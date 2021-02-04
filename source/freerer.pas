@@ -5,7 +5,7 @@ unit Freerer;
 interface
 
 uses
-  cThreads, Classes, SysUtils, Locker, CalcUtils, Incrementations;
+  cThreads, Classes, SysUtils, Locker, Incrementations;
 
 type
 

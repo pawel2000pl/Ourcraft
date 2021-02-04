@@ -13,7 +13,6 @@ type
     MemAvailable : int64;
   end;
 
-
 function RunProcess(const FileName : ansistring; const Params : array of ansistring;
   const Async : boolean = False) : TPid;
 procedure RunCommand(const s : ansistring);
@@ -29,8 +28,6 @@ function StrToUnsigned(const s : ansistring) : integer;
 function GetMicroseconds : qword;
 procedure SleepMicroseconds(const Delay : QWord);     
 procedure SleepNanoseconds(const Delay : QWord);
-
-procedure SetToMainOurcraftDirectory;
 
 implementation
 
@@ -179,14 +176,6 @@ begin
   until FpNanoSleep(@req, @rem) = 0;
 end;
 
-procedure SetToMainOurcraftDirectory;
-const
-  CheckFile = '.OURCRAFT_MAIN_DIRECTORY_DO_NOT_DELETE_THIS_FILE';
-begin
-  while (GetCurrentDir <> '/') and (not fileexists(CheckFile)) do
-    SetCurrentDir('..');
-end;
-
 function StrToIntE(const s : ansistring) : integer;
 begin
   if not TryStrToInt(s, Result) then
@@ -236,7 +225,7 @@ begin
     if FileExists(FileName) then
       ExeFileName := FileName
     else
-      ExeFileName := ExeSearch(FileName, fpgetenv('PATH'));
+      ExeFileName := ExeSearch(FileName, {%H-}fpgetenv('PATH'));
 
     l := length(Params) + 2;
     ArgV := AllocMem(l * SizeOf(PChar));
@@ -271,15 +260,12 @@ begin
   Child := fpFork();
   if Child = 0 then
   begin
-    ArgV := CreateShellArgV(s);
+    ArgV := {%H-}CreateShellArgV(s);
     fpExecv(ArgV[0], ArgV);
     fpExit(0);
   end
   else
     fpWaitpid(Child, nil, 0);
 end;
-
-initialization
-  SetToMainOurcraftDirectory;
 
 end.

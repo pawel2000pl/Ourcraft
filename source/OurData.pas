@@ -111,7 +111,7 @@ function BinaryToString(const P; const Size : integer) : ansistring;
 var
   i : integer;
 begin
-  setlength(Result, 2 * Size);
+  setlength(Result{%H-}, 2 * Size);
   for i := 0 to Size - 1 do
   begin
     Result[2 * i + 1] := IToH(PByte(@P)[i] shr 4);

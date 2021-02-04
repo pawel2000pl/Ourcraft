@@ -9,7 +9,7 @@ interface
 uses
   SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Collections,
-  OurGame, Incrementations, CustomSaver, SaverPaths, LightTypes;
+  OurGame, Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors;
 
 const
   ChunkSizeLog2 = 4;

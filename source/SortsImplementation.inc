@@ -132,7 +132,7 @@ begin
   i := 0;
   ia := a;
   ib := half + 1;
-  SetLength(tmp, b - a + 1);
+  SetLength(tmp{%H-}, b - a + 1);
   while (ia <= half) and (ib <= b) do
   begin
     if Compare(Tab[ia], Tab[ib]) < 0 then
