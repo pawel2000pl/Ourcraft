@@ -40,6 +40,9 @@
             </Options>
           </Linking>
           <Other>
+            <CompilerMessages>
+              <IgnoredMessages idx6058="True"/>
+            </CompilerMessages>
             <CustomOptions Value="-B
 -dUseCThreads 
 -Sc 
@@ -106,7 +109,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="30">
+    <Units Count="32">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -251,6 +254,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="SocketCommands"/>
       </Unit29>
+      <Unit30>
+        <Filename Value="../nearestvectors.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="NearestVectors"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="../mainourcraftdirectory.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MainOurcraftDirectory"/>
+      </Unit31>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
