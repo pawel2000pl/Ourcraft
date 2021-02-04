@@ -11,5 +11,6 @@ fi
 if [ "$CHOICE" = "y" ];
 then
     echo Installating requires...
-    sudo apt install fpc lazarus libcoin80c libopenal-data libopenal-dev libopenal1 libopengl-dev libopengl0 freeglut3-dev
+    sudo apt install fpc lazarus libopenal-data libopenal-dev libopenal1 libgl-dev freeglut3-dev freeglut3 
+    #libopengl-dev libopengl0 libcoin80c
 fi

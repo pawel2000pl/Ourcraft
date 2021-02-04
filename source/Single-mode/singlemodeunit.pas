@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl, glu, Glut,
-  CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator;
+  CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator, FileSaver;
 
 type
 
@@ -65,10 +65,13 @@ begin
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_FOG);
 
+  glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL,GL_SEPARATE_SPECULAR_COLOR{ or GL_SINGLE_COLOR});
+
   if Game = nil then
   begin
     Game := TOurGame.Create;
-    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000));
+    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
+    World.SaveAllChunks:=False;
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;
@@ -178,7 +181,9 @@ begin
   begin
     c := World.GetChunkFromBlockCoors(floor(Camera.Position[axisX]), floor(Camera.Position[axisY]), floor(Camera.Position[axisZ]));
     if c <> nil then
+    begin
       c.ForceUpdateModelLight;
+    end;
   end;
 
   if key = 'v' then
@@ -199,6 +204,12 @@ begin
   begin
     v := Camera.Position + Camera.ForwardVector*4;
     World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(v, 0) as TBlock);
+  end;
+
+  if key in ['0'..'7'] then
+  begin
+    v := Camera.Position + Camera.ForwardVector*4;
+    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, StrToInt(key)) as TBlock);
   end;
 
   RenderArea.SetPosition(IntVector3(floor(Camera.Position[axisX] / ChunkSize),

@@ -58,7 +58,11 @@ type
 
   { TOurDataSort }
 
-  TOurDataSort = class(specialize TStaticSort<TOurData>)
+  TOurDataSort = class(specialize TStaticSort<TOurData>)   
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TOurData;
+  {$ENDIF}
   public
     class function Compare(const a, b : TValue) : integer; override;
   end;
@@ -66,6 +70,11 @@ type
   { TOurDataSearcher }
 
   TOurDataSearcher = class(specialize TStaticBSearch<TOurData, ansistring>)
+  {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+  type
+      TValue = TOurData;
+      TKey = AnsiString;
+  {$ENDIF}
   public
     class function Compare(const a : TValue; const b : TKey) : integer; override;
   end;
@@ -102,7 +111,7 @@ function BinaryToString(const P; const Size : integer) : ansistring;
 var
   i : integer;
 begin
-  setlength(Result, 2 * Size);
+  setlength(Result{%H-}, 2 * Size);
   for i := 0 to Size - 1 do
   begin
     Result[2 * i + 1] := IToH(PByte(@P)[i] shr 4);

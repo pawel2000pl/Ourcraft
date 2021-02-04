@@ -136,8 +136,8 @@ var
   d, r : double;
 begin
   c := Length(Dim);
-  SetLength(x0, c);
-  SetLength(fx, c);
+  SetLength(x0{%H-}, c);
+  SetLength(fx{%H-}, c);
   for i := 0 to c - 1 do
   begin
     x0[i] := floor(Dim[i]);
@@ -183,8 +183,8 @@ var
     Gradient : array of Double;
     Coords2 : array of Integer;
   begin
-    SetLength(Gradient, c);
-    SetLength(Coords2, c);
+    SetLength(Gradient{%H-}, c);
+    SetLength(Coords2{%H-}, c);
     pqs := Pointer(@Mask);
     for i := 0 to c-1 do
       Coords2[i] := Coords[i] + ifthen(i in pqs^, 1, 0);
@@ -220,8 +220,8 @@ var
   i : Integer;
 begin
   c := Length(Dim);
-  SetLength(Coords, c);
-  SetLength(fraqs, c);
+  SetLength(Coords{%H-}, c);
+  SetLength(fraqs{%H-}, c);
 
   for i := 0 to c-1 do
   begin

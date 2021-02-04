@@ -20,7 +20,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="..;../Environment"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -40,6 +40,9 @@
             </Options>
           </Linking>
           <Other>
+            <CompilerMessages>
+              <IgnoredMessages idx6058="True"/>
+            </CompilerMessages>
             <CustomOptions Value="-B
 -dUseCThreads 
 -Sc 
@@ -58,7 +61,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="..;../Environment"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -106,7 +109,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="22">
+    <Units Count="32">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -213,6 +216,54 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="CustomSaver"/>
       </Unit21>
+      <Unit22>
+        <Filename Value="../fastcmem.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="../filesaver.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="FileSaver"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="../saverpaths.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SaverPaths"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="../lighttypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="LightTypes"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="../lib/Synapse/source/lib/blcksock.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="../serverservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ServerService"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="../clientservice.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ClientService"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="../socketcommands.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SocketCommands"/>
+      </Unit29>
+      <Unit30>
+        <Filename Value="../nearestvectors.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="NearestVectors"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="../mainourcraftdirectory.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MainOurcraftDirectory"/>
+      </Unit31>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -222,7 +273,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..;../Environment"/>
+      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
       <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

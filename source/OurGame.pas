@@ -70,15 +70,29 @@ type
 
   TEnvironment = class
   type
-    TCreatorSort = class(specialize TStaticSort<TElementCreator>)
+    TCreatorSort = class(specialize TStaticSort<TElementCreator>)  
+    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+    type
+        TValue = TElementCreator;
+    {$ENDIF}
     public
       class function Compare(const a, b: TValue): integer; override;
     end;
-    TCreatorBSearch = class(specialize TStaticBSearch<TElementCreator, AnsiString>)
+    TCreatorBSearch = class(specialize TStaticBSearch<TElementCreator, AnsiString>)  
+    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+    type
+        TValue = TElementCreator;
+        TKey = AnsiString;
+    {$ENDIF}
     public
       class function Compare(const a: TValue; const b: TKey): integer; override;
     end;
-    TAttributeSearcher = class(specialize TStaticBSearch<TEnvironmentElementAttribute, AnsiString>)
+    TAttributeSearcher = class(specialize TStaticBSearch<TEnvironmentElementAttribute, AnsiString>)   
+    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
+    type
+        TValue = TEnvironmentElementAttribute;
+        TKey = AnsiString;
+    {$ENDIF}
     public
       class function Compare(const a: TValue; const b: TKey): integer; override;
     end;
@@ -291,6 +305,8 @@ begin
   {$include Preprocesor/EnvironmentRegister.inc}
   TCreatorSort.Merge(fIDList);
   for i := 0 to fIDCount-1 do
+    fIDList[i].ID:=i;
+  for i := 0 to fIDCount-1 do
     fIDList[i].AfterLoading;
 end;
 
@@ -337,7 +353,7 @@ end;
 
 constructor TElementCreator.Create(AnEnvironment: TEnvironment);
 begin
-  fID:=0;
+  fID:=-1;
   fEnvironment:=AnEnvironment;
 end;
 

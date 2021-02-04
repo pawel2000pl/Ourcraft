@@ -25,7 +25,7 @@ unit CalcUtils;
 interface
 
 uses
-  Classes, Math, Sorts, Incrementations;
+  Classes, Math;
 
 type
   TAxis = (AxisX = 0, AxisY = 1, AxisZ = 2);
@@ -149,13 +149,10 @@ function VectorProduct(const a, b : TVector3) : TVector3; inline; //iloczyn wekt
 function ScalarProduct(const a, b : TVector3) : double; inline; //iloczyn skalarny
 function det(const a : TMatrix3x3) : double; inline; //wyznacznik macierzy
 
-function CreateRotateMatrix(const Angle : double; const axis : TAxis) : TMatrix3x3;
-  overload;
+function CreateRotateMatrix(const Angle : double; const axis : TAxis) : TMatrix3x3; overload;
 function CreateRotateMatrix(const Rotate : TRotationVector) : TMatrix3x3; overload; //zyx
-function CreateRotateMatrixZXY(const Rotate : TRotationVector) : TMatrix3x3;
-//zxy (Ourcraft default)
-function CreateRotateMatrix(const Rotate : TRotationVector;
-  const FirstAxis, SecondAxis, ThirdAxis : TAxis) : TMatrix3x3; overload;
+function CreateRotateMatrixZXY(const Rotate : TRotationVector) : TMatrix3x3; //zxy (Ourcraft default)
+function CreateRotateMatrix(const Rotate : TRotationVector; const FirstAxis, SecondAxis, ThirdAxis : TAxis) : TMatrix3x3; overload;
 function IntVector3(const x, y, z : integer) : TIntVector3; inline;
 function Vector3(const x, y, z : double) : TVector3; inline;
 function BlockCoord(const x, y, z : byte) : TBlockCoord; inline;
@@ -165,37 +162,15 @@ function Hypot3(const vector : TVector3) : double; overload; inline;
 
 function FlatVector(v : TVector3; const axis : TAxisSet) : TVector3;
 
-function GetCoordPriorityByDistanceCount : integer; inline;
-function GetCoordPriorityByDistance(const i : integer) : TIntVector3; inline;      
-function GetCoordPriorityByDistanceLength(const i : integer) : Double; inline;
-function GetInverseCoordPriorityByDistance(const x, y, z : integer) : Integer; inline;
-
 function Q_rsqrt(const number : single) : single; inline;
 function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
 
 
 implementation
 
-type
-
-  { TIntVector3Sort }
-
-  TIntVector3Sort = class(specialize TStaticSort<TIntVector3>)
-  public
-    class function Compare(const a, b : TValue) : integer; override;
-  end;
-
 const
-  NearPrioritySide = 64;
   AToI : array[TAxis] of integer = (0, 1, 2);
   IToA : array[0..5] of TAxis = (axisX, axisY, axisZ, axisX, axisY, axisZ);
-
-var
-  NearPriority : array[0..(2 * NearPrioritySide + 1) * (2 * NearPrioritySide + 1) *
-    (2 * NearPrioritySide + 1) - 1] of TIntVector3;
-  NearPriorityLengths : array[0..(2 * NearPrioritySide + 1) * (2 * NearPrioritySide + 1) *
-    (2 * NearPrioritySide + 1) - 1] of Double;
-  NearPriorityInverse : array[-NearPrioritySide..NearPrioritySide, -NearPrioritySide..NearPrioritySide, -NearPrioritySide..NearPrioritySide] of uint32;
 
 operator +(const a, b : TIntVector3) : TIntVector3; inline;
 begin
@@ -358,6 +333,16 @@ begin
   end;
 end;
 
+function Hypot3(const a, b, c : double) : double; inline;
+begin
+  Result := sqrt(sqr(a) + sqr(b) + sqr(c));
+end;
+
+function Hypot3(const vector : TVector3) : double;
+begin
+  Result := Hypot3(vector[axisX], vector[axisY], vector[axisZ]);
+end;
+
 function floor(const v: TVector3): TIntVector3;
 begin
   Result[axisX] := floor(v[axisX]);
@@ -407,6 +392,16 @@ begin
     m[IToA[AToI[col] + 2], IToA[AToI[row] + 1]];
 end;
 
+function det(const a : TMatrix3x3) : double; inline; //wyznacznik
+begin
+  Result := (a[axisX, axisX] * a[axisY, axisY] * a[axisZ, axisZ]) +
+    (a[axisY, axisX] * a[axisZ, axisY] * a[axisX, axisZ]) +
+    (a[axisZ, axisX] * a[axisX, axisY] * a[axisY, axisZ]) -
+    (a[axisZ, axisX] * a[axisY, axisY] * a[axisX, axisZ]) -
+    (a[axisY, axisX] * a[axisX, axisY] * a[axisZ, axisZ]) -
+    (a[axisX, axisX] * a[axisZ, axisY] * a[axisY, axisZ]);
+end;
+
 function ReverseMatrix(const m : TMatrix3x3) : TMatrix3x3;
 var
   d : double;
@@ -447,16 +442,6 @@ end;
 function ScalarProduct(const a, b : TVector3) : double;  //iloczyn skalarny
 begin
   Result := a[axisX] * b[axisX] + a[axisY] * b[axisY] + a[axisZ] * b[axisZ];
-end;
-
-function det(const a : TMatrix3x3) : double; inline; //wyznacznik
-begin
-  Result := (a[axisX, axisX] * a[axisY, axisY] * a[axisZ, axisZ]) +
-    (a[axisY, axisX] * a[axisZ, axisY] * a[axisX, axisZ]) +
-    (a[axisZ, axisX] * a[axisX, axisY] * a[axisY, axisZ]) -
-    (a[axisZ, axisX] * a[axisY, axisY] * a[axisX, axisZ]) -
-    (a[axisY, axisX] * a[axisX, axisY] * a[axisZ, axisZ]) -
-    (a[axisX, axisX] * a[axisZ, axisY] * a[axisY, axisZ]);
 end;
 
 function CreateRotateMatrix(const Angle : double; const axis : TAxis) : TMatrix3x3;
@@ -501,48 +486,6 @@ begin
   Result := CreateRotateMatrix(Rotate, axisZ, axisY, axisX);
 end;
 
-function Hypot3(const a, b, c : double) : double; inline;
-begin
-  Result := sqrt(sqr(a) + sqr(b) + sqr(c));
-end;
-
-function Hypot3(const vector : TVector3) : double;
-begin
-  Result := Hypot3(vector[axisX], vector[axisY], vector[axisZ]);
-end;
-
-procedure InitNearPriority;
-var
-  x, y, z, i : integer;
-begin
-  i := 0;
-  for x := -NearPrioritySide to NearPrioritySide do
-    for y := -NearPrioritySide to NearPrioritySide do
-      for z := -NearPrioritySide to NearPrioritySide do
-        NearPriority[PostInc(i)] := IntVector3(x, y, z);
-  TIntVector3Sort.InsertComb(NearPriority);
-  for i := 0 to GetCoordPriorityByDistanceCount -1 do
-  begin
-    NearPriorityInverse[NearPriority[i][axisX], NearPriority[i][axisY], NearPriority[i][axisZ]] := i;
-    NearPriorityLengths[i] := hypot3(NearPriority[i]);
-  end;
-end;
-
-function GetCoordPriorityByDistance(const i : integer) : TIntVector3; inline;
-begin
-  Result := NearPriority[i]; // mod length(NearPriority) ?
-end;
-
-function GetCoordPriorityByDistanceLength(const i : integer) : Double; inline;
-begin
-  Result := NearPriorityLengths[i]; // mod length(NearPriority) ?
-end;
-
-function GetInverseCoordPriorityByDistance(const x, y, z : integer) : Integer; inline;
-begin
-  Result := NearPriorityInverse[x, y, z];
-end;
-
 function FlatVector(v : TVector3; const axis : TAxisSet) : TVector3;
 var
   a : TAxis;
@@ -551,11 +494,6 @@ begin
     if not (a in axis) then
       v[a] := 0;
   Result := Normalize(v);
-end;
-
-function GetCoordPriorityByDistanceCount : integer; inline;
-begin
-  Result := Length(NearPriority);
 end;
 
 function Q_rsqrt(const number : single) : single; inline;
@@ -697,16 +635,5 @@ procedure TVector3Helper.SetZ(const AValue: Double);
 begin
   Self[AxisZ] := AValue;
 end;
-
-{ TIntVector3Sort }
-
-class function TIntVector3Sort.Compare(const a, b : TValue) : integer;
-begin
-  Result := sign(Hypot3(a[axisX], a[axisY], a[axisZ]) -
-    Hypot3(b[axisX], b[axisY], b[axisZ]));
-end;
-
-initialization
-  InitNearPriority;
 
 end.

@@ -8,19 +8,25 @@ Better, bigger and more communist than Minecraft; Predicted official release: 08
 Warning: this is project, some (almost all) of this features haven't been implemented yet.
 
 1. [+] There is no height limit
-2. [-] Levels (as in SAO) instead of other worlds (as Nether or End)
+2. [-] Levels instead of other worlds (as Nether or End)
 3. [-] More 3D GUI (during the gameplay)
-4. [+] It is not executed by Java Virtual Machine (JVM), but it is executable file, so there is more FPS
+4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
+5. [+] Three channels for light (red, green, blue)
+6. [+] Light with 256 levels (but light-resistance is 16/block)
      
-It's not playable yet. But you can: 
+It's not playable yet (but almost). But you can: 
 
 * Fly: WASD, Space (Up) and X (Down)
 * Move camera: IJKL 
-* Edit blocks: N and M (but only in constant, determined distance)
+* Edit blocks: N (air), M (stone), 0-7 (colored lightstone); only in constant and determined distance
 
 Changelog:
 
-* Still buf fixes
+* Update to FPC 3.2 (but it should be compatible with 3.0)
+* Update for newer kernels (fastcmem was deactivated)
+* Changed algorithm of light: instead of only gray it is red, green and blue (and mixing of them is possible)
+* Day-Night cycle for block lighting
+* Saving and loading blocks (chunks)
 * Added Perlin Noise algorithm for any count of dimenstion
 * Added simply terrain generator
 * Bug fixes and optimalization
@@ -39,6 +45,7 @@ And then, you can type "make run" (in the console, in main directiry of project)
 
 Screenshots:
 
+![Screenshot](screenshots/Screenshot_20201230_215039.png)
 ![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)
 ![Screenshot](screenshots/Screenshot_20201006_174602.png)
