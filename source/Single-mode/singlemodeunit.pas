@@ -65,7 +65,8 @@ begin
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_FOG);
 
-  glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL,GL_SEPARATE_SPECULAR_COLOR{ or GL_SINGLE_COLOR});
+  glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SINGLE_COLOR);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
 
   if Game = nil then
   begin

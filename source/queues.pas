@@ -84,7 +84,7 @@ type
 
   { TQueueManager2 }
 
-  TQueueManager2 = class(TQueueManager)
+  TQueueManagerWithDelays = class(TQueueManager)
   private
     fDelayList : array of TQueueDelayRecord;
     fDelayListCount : integer;
@@ -110,7 +110,7 @@ end;
 
 { TQueueManager2 }
 
-procedure TQueueManager2.ExecuteDelayMethods;
+procedure TQueueManagerWithDelays.ExecuteDelayMethods;
 var
   i : integer;
   CurrTime : QWord;
@@ -135,7 +135,7 @@ begin
   end;
 end;
 
-procedure TQueueManager2.Clear;
+procedure TQueueManagerWithDelays.Clear;
 begin
   DelayLocker.Lock;
   try
@@ -147,7 +147,7 @@ begin
   inherited Clear;
 end;
 
-procedure TQueueManager2.AddMethodDelay(const Method: TQueueMethod;
+procedure TQueueManagerWithDelays.AddMethodDelay(const Method: TQueueMethod;
   const DelayMilliseconds: QWord);
 begin
   DelayLocker.Lock;
@@ -160,7 +160,7 @@ begin
   end;
 end;
 
-constructor TQueueManager2.Create(const ThreadsPerCore: Integer;
+constructor TQueueManagerWithDelays.Create(const ThreadsPerCore: Integer;
   const AdditionalThreads: integer);
 begin                    
   DelayLocker := TLocker.Create;
@@ -170,7 +170,7 @@ begin
   AddMethod(@ExecuteDelayMethods);
 end;
 
-destructor TQueueManager2.Destroy;
+destructor TQueueManagerWithDelays.Destroy;
 begin
   Clear;
   DelayLocker.Free;

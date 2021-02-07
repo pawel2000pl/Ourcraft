@@ -510,7 +510,7 @@ type
     fLightTime : Double;
 
     fFreeThread : TFree;
-    fQueues : TQueueManager2;
+    fQueues : TQueueManagerWithDelays;
     fRenderAreaSet : TRenderAreaCollection;
     FSaveAllChunks : boolean;
 
@@ -534,7 +534,7 @@ type
     property TickDelay : Qword read fTickDelay write fTickDelay;
     property RandomTickSpeed : Qword read fRandomTickSpeed write fRandomTickSpeed;
     property OurGame : TOurGame read fOurGame;
-    property Queues : TQueueManager2 read fQueues;
+    property Queues : TQueueManagerWithDelays read fQueues;
     property FreeThread : TFree read fFreeThread;
     property Time : Double read fTime;
     property LightTime : Double read fLightTime;
@@ -1353,7 +1353,7 @@ begin
         fChunks[x, y, z].Count := 0;
         fChunks[x, y, z].Locker := TLocker.Create;
       end;
-  fQueues := TQueueManager2.Create(1, 2);
+  fQueues := TQueueManagerWithDelays.Create(1, 2);
   fDefaultBlock := defaultBlock;
   fTickDelay := 50;
   fRandomTickSpeed := 3;
@@ -1498,11 +1498,11 @@ begin
   end
   else
   begin
-    Generate;
+    Generate;  
+    fLoaded := True;
     if World.SaveAllChunks then
        Save(True);
   end;
-  fLoaded := True;
   RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
   ChangedBlocks.Clear;
   fModifiedAfterLoading := False;
@@ -1513,8 +1513,10 @@ end;
 procedure TOurChunk.Save(const Force: Boolean);
 begin
   if not World.Remote then
-    if fModifiedAfterLoading or Force then
+  begin
+    if fModifiedAfterLoading or (Force and Loaded and Generated) then
       World.Saver.Save([SaverPaths.ChunkPath, GetStringCoordinatesForSaver], @SaveToStream);
+  end;
   fModifiedAfterLoading := False;
 end;
 
@@ -2351,10 +2353,11 @@ var
 begin
   mode := Stream.ReadByte;
   Stream.ReadBuffer(FPosition, SizeOf(FPosition));
-  if mode = 0 then
-    LoadEverything(Stream)
-  else
-    LoadChanges(Stream);
+  case mode of
+   0: LoadEverything(Stream);
+   1: LoadChanges(Stream);
+  end;
+  fLoaded:=True;
 end;
 
 function TOurChunk.GetDataHashCode : PtrInt;

@@ -3,6 +3,7 @@ program TextureCompiler;
 {$Mode objfpc}
 
 uses
+  mainourcraftdirectory,
   SysUtils,
   Classes,
   UniversalImage,

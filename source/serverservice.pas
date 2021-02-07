@@ -34,7 +34,7 @@ type
     ListeningTime = 10;
   private
     FWorld : TOurWorld;
-    FQueue : TQueueManager2;
+    FQueue : TQueueManagerWithDelays;
     FPort : Word;
     ListenerSocket : TTCPBlockSocket;
 
@@ -47,7 +47,7 @@ type
     procedure DisconnectAll;
   public
     property World : TOurWorld read FWorld;
-    property Queue : TQueueManager2 read FQueue;
+    property Queue : TQueueManagerWithDelays read FQueue;
     property Port : Word read FPort;
     property AreaSet : TSetOfServerSideRenderArea read FAreaSet;
     property Lock : TLocker read FLock;
@@ -132,7 +132,7 @@ begin
   FPort:=APort;
   FLock := TLocker.Create;
   FAreaSet := TSetOfServerSideRenderArea.Create;
-  FQueue := TQueueManager2.Create(1, ExpectedClientsCount+1);
+  FQueue := TQueueManagerWithDelays.Create(1, ExpectedClientsCount+1);
   ListenerSocket := nil;
   InitListening;
 end;

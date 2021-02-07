@@ -4,7 +4,7 @@ unit OurGame;
 interface
 
 uses
-  SetToMainOurcraftDirectory,
+  MainOurcraftDirectory,
   SysUtils, Classes, Sorts, CalcUtils,
   Models, ProcessUtils;
 

@@ -7,11 +7,11 @@ object MainForm: TMainForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyPress = FormKeyPress
-  LCLVersion = '2.0.6.0'
+  LCLVersion = '2.0.10.0'
   object Timer1: TTimer
     Interval = 10
     OnTimer = Timer1Timer
-    left = 10
-    top = 10
+    Left = 10
+    Top = 10
   end
 end
