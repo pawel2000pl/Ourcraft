@@ -304,6 +304,10 @@ begin
   SetLength(fIDList, fIDCount);
   {$include Preprocesor/EnvironmentRegister.inc}
   TCreatorSort.Merge(fIDList);
+  
+  for i := 0 to fIDCount-1 do
+    writeln(fIDList[i].getTextID);
+
   for i := 0 to fIDCount-1 do
     fIDList[i].ID:=i;
   for i := 0 to fIDCount-1 do

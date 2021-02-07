@@ -43,7 +43,7 @@ end;
 
 function TStoneCreator.getTextID: ansistring;
 begin
-  Result:='stone';
+  Result:='Stone';
 end;
 
 procedure TStoneCreator.AfterLoading;

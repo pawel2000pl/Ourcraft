@@ -124,7 +124,7 @@ var
   i, ia, ib : integer;
   tmp : array of TValue;
 begin
-  if (b - a) <= 1 then
+  if a >= b then
     exit;
   half := (a + b) div 2;
   Merge(Tab, a, half);
@@ -134,34 +134,16 @@ begin
   ib := half + 1;
   SetLength(tmp{%H-}, b - a + 1);
   while (ia <= half) and (ib <= b) do
-  begin
     if Compare(Tab[ia], Tab[ib]) < 0 then
-    begin
-      tmp[i] := Tab[ia];
-      Inc(ia);
-    end
+      tmp[PostInc(i)] := Tab[PostInc(ia)]
     else
-    begin
-      tmp[i] := Tab[ib];
-      Inc(ib);
-    end;
-    Inc(i);
-  end;
+      tmp[PostInc(i)] := Tab[PostInc(ib)];
   while (ia <= half) do
-  begin
-    tmp[i] := Tab[ia];
-    Inc(ia);
-    Inc(i);
-  end;
+    tmp[PostInc(i)] := Tab[PostInc(ia)];
   while (ib <= b) do
-  begin
-    tmp[i] := Tab[ib];
-    Inc(ib);
-    Inc(i);
-  end;
+    tmp[PostInc(i)] := Tab[PostInc(ib)];
   for i := 0 to b - a do
-    Tab[i + a] := tmp[i];
-  SetLength(tmp, 0);
+    Tab[a + i] := tmp[i];
 end;
 
 {$ifdef StaticSort} class {$endif} procedure TClassSortName.InsertComb(var tab : array of TValue);

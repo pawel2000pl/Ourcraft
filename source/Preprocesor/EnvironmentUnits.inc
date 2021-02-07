@@ -1,1 +1,1 @@
-glowstone, stone, air
+stone, air, glowstone
