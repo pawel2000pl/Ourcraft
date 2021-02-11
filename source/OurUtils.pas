@@ -3,6 +3,7 @@ unit OurUtils;
 {$mode objfpc}
 {$RangeChecks off}
 {$ModeSwitch advancedrecords}
+{$Interfaces CORBA}
 
 interface
 

@@ -33,8 +33,12 @@ type
     RenderArea : TRenderArea;
     Camera : TGlCamera;
 
+    FrameCount : QWord;
 
+    procedure QRepaint;
+    procedure QProcess({%H-}Data:PtrInt);
   public
+    procedure InitGame;
 
   end;
 
@@ -54,24 +58,58 @@ begin
 end;
 
 procedure TMainForm.OpenGLControl1Paint(Sender : TObject);
-var
-  t, dt : Qword;
-begin            
-  Application.ProcessMessages;
+begin
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_FOG);
+                      
+  InitGame;
 
   glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SINGLE_COLOR);
   glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
 
+  Camera.Width := Width;
+  Camera.Height := Height;
+
+  Camera.SetMatrix;
+  Game.Textures.SelectTextures;
+  RenderArea.DrawBlocks;
+
+  GLBox.SwapBuffers;
+end;
+
+procedure TMainForm.Timer1Timer(Sender : TObject);
+begin
+  Writeln(FrameCount);
+  FrameCount := 0;
+end;
+
+procedure TMainForm.Timer2Timer(Sender : TObject);
+begin
+end;
+
+procedure TMainForm.QRepaint;
+begin
+  Application.QueueAsyncCall(@QProcess, 0);
+  World.Queues.AddMethod(@QRepaint);
+end;
+
+procedure TMainForm.QProcess(Data: PtrInt);
+begin
+  GLBox.Repaint;
+  Inc(FrameCount);
+end;
+
+procedure TMainForm.InitGame;
+begin
   if Game = nil then
   begin
     Game := TOurGame.Create;
-    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator, Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
+    World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator,
+      Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
     World.SaveAllChunks:=False;
     writeln('Generating world');
     RenderArea := World.AddRenderArea(0, 0, 0, 10);
@@ -80,30 +118,8 @@ begin
     writeln('Modeling world');
     RenderArea.IsVisibledPointFunction := @Camera.IsVisibled;
     World.Queues.AddMethod(@RenderArea.RepaintBlocks);
+    World.Queues.AddMethod(@QRepaint);
   end;
-
-  Camera.Width := Width;
-  Camera.Height := Height;
-
-  t := GetMicroseconds;
-
-  Camera.SetMatrix;
-  Game.Textures.SelectTextures;
-  RenderArea.DrawBlocks;
-
-  dt := GetMicroseconds - t;
-  writeln('T=', dt, #9, 1000000 / dt: 3: 2);
-
-  GLBox.SwapBuffers;
-end;
-
-procedure TMainForm.Timer1Timer(Sender : TObject);
-begin
-  GLBox.Repaint;
-end;
-
-procedure TMainForm.Timer2Timer(Sender : TObject);
-begin
 end;
 
 procedure TMainForm.FormCreate(Sender : TObject);
@@ -120,6 +136,8 @@ begin
     OnPaint := @OpenGLControl1Paint;
     OnKeyPress := @FormKeyPress;
     AutoResizeViewport := True;
+    Options:=[ocoRenderAtDesignTime];
+    Invalidate;
   end;
 
   Writeln('Available memory: ', GetMemInfo.MemAvailable);
@@ -127,6 +145,7 @@ begin
   angleX := 0;
   angleY := 0;
   angleZ := 0;
+  FrameCount := 0;
 
   WriteLn(GetCurrentDir);
 
