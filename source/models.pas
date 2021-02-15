@@ -196,6 +196,16 @@ begin
   glFogf( GL_FOG_END, fog_end);
 end;
 
+function SingleToByte(const s: Single): byte;
+begin
+  if s >= 1 then
+    Result := 255
+    else if s <= 0 then
+    Result := 0
+    else
+    Result := trunc(255*s);
+end;
+
 operator:=(const a: TColor3f): TColor3b;
 begin
   Result.r:=SingleToByte(a[lcRed]);
@@ -208,16 +218,6 @@ begin
   Result[lcRed] := a.r/255;
   Result[lcGreen] := a.g/255;
   Result[lcBlue] := a.b/255;
-end;
-
-function SingleToByte(const s: Single): byte;
-begin
-  if s >= 1 then
-    Result := 255
-    else if s <= 0 then
-    Result := 0
-    else
-    Result := trunc(255*s);
 end;
 
 function LightLevelToColor3f(const Level : integer) : TColor3f; inline;
