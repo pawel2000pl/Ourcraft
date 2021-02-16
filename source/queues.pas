@@ -226,7 +226,9 @@ begin
         if q = fList[i] then
           fList[i].Method := nil;
       until PostInc(i) = fAddIndex;
-    end;
+    end
+    else
+      fList[fExecuteIndex-1].Method:=nil;
   finally
     Locker.Unlock;
   end;
