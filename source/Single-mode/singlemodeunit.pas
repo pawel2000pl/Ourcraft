@@ -140,8 +140,6 @@ begin
     Invalidate;
   end;
 
-  Writeln('Available memory: ', GetMemInfo.MemAvailable);
-
   angleX := 0;
   angleY := 0;
   angleZ := 0;

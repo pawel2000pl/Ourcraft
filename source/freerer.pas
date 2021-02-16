@@ -1,11 +1,16 @@
 unit Freerer;
 
 {$mode objfpc}{$H+}
+{$Interfaces CORBA}
 
 interface
 
 uses
   cThreads, Classes, SysUtils, Locker, Incrementations;
+
+const
+  SimpleFreeInterfaceGUID = '{AA6DF291-4739-469A-9A88-EA09DAE0670E}';
+  FreeInterfaceGUID = '{EAC41D3E-F7D0-467C-BAAC-A1EB5C04802C}';
 
 type
 
@@ -25,6 +30,16 @@ type
     property Finishing : boolean read fFinishing;
     constructor Create;
   end;
+
+  ISimpleFreeInterface = interface
+    [SimpleFreeInterfaceGUID]
+    procedure Finalize(const DelayTime : QWord); virtual;
+  end;
+
+  IFreeInterface = interface(ISimpleFreeInterface)
+    [FreeInterfaceGUID]
+    property Finishing : boolean;
+  end;
           
   TFreeRecord = record
     Obj : TObject;
@@ -39,6 +54,7 @@ type
     objs : array of TFreeRecord;
     time : QWord;
     fCriticalCestion : TLocker;
+    procedure Finalize(Obj : TObject; const Delay : QWord);
   protected
     terminating : boolean;
   public
@@ -66,10 +82,19 @@ end;
 
 { TFree }
 
-procedure TFree.FreeObject(Obj: TObject; const Delay: QWord);
-begin                     
+procedure TFree.Finalize(Obj: TObject; const Delay: QWord);
+var
+  fi : ISimpleFreeInterface;
+begin
   if Obj is TSimpleFreeObject then
     (Obj as TSimpleFreeObject).Finalize(Delay);
+  if Obj.GetInterface(SimpleFreeInterfaceGUID, fi) then
+    fi.Finalize(Delay);
+end;
+
+procedure TFree.FreeObject(Obj: TObject; const Delay: QWord);
+begin
+  Finalize(Obj, Delay);
   fCriticalCestion.Lock;
   try
     setlength(objs, PreInc(n));

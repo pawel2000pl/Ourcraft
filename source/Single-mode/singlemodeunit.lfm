@@ -1,10 +1,10 @@
 object MainForm: TMainForm
   Left = 238
-  Height = 340
+  Height = 327
   Top = 139
-  Width = 510
+  Width = 490
   Caption = 'OurCraft'
-  DesignTimePPI = 102
+  DesignTimePPI = 98
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyPress = FormKeyPress

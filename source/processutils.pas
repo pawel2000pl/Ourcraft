@@ -16,7 +16,6 @@ type
 function RunProcess(const FileName : ansistring; const Params : array of ansistring;
   const Async : boolean = False) : TPid;
 procedure RunCommand(const s : ansistring);
-function GetMemInfo : TMemoryInfo;
 
 procedure RaiseException(const msg : ansistring; const Terminate : boolean = True);
 function DumpCallStack : ansistring;
@@ -42,66 +41,6 @@ begin
   {$else}
   Result := GetCPUCount;
   {$endif}
-end;
-
-function GetMemInfo : TMemoryInfo;  //TODO: Windows version
-const
-  bufSize = 256;
-  strA = 'MemTotal:';
-  strB = 'MemAvailable:';
-var
-  F : cint;
-  p, k : integer;
-  buf : array[0..bufSize - 1] of char;
-begin
-  try
-    try
-      F := FpOpen('/proc/meminfo', Open_RdOnly);
-      FpRead(F, @buf[0], bufSize);
-
-    finally
-      fpClose(F);
-    end;
-
-    p := Pos(strA, buf);
-    if p > 0 then
-    begin
-      p += length(strA);
-      while not (buf[p] in ['0'..'9']) do
-        Inc(p);
-      k := p;
-      while (buf[k] in ['0'..'9']) do
-        Inc(k);
-      Result.MemTotal := StrToInt(Copy(buf, p, k - p + 1));
-      case buf[k + 1] of
-        'k': Result.MemTotal *= 1024;
-        'M': Result.MemTotal *= 1024 * 1024;
-        'G': Result.MemTotal *= 1024 * 1024 * 1024;
-      end;
-
-    end;
-
-    p := Pos(strB, buf);
-    if p > 0 then
-    begin
-      p += length(strB);
-      while not (buf[p] in ['0'..'9']) do
-        Inc(p);
-      k := p;
-      while (buf[k] in ['0'..'9']) do
-        Inc(k);
-      Result.MemAvailable := StrToInt(Copy(buf, p, k - p + 1));
-      case buf[k + 1] of
-        'k': Result.MemAvailable *= 1024;
-        'M': Result.MemAvailable *= 1024 * 1024;
-        'G': Result.MemAvailable *= 1024 * 1024 * 1024;
-      end;
-    end;
-
-  except
-    Result.MemAvailable := -1;
-    Result.MemTotal := -1;
-  end;
 end;
 
 function DumpCallStack : ansistring;

@@ -6,7 +6,7 @@ interface
 uses
   MainOurcraftDirectory,
   SysUtils, Classes, Sorts, CalcUtils,
-  Models, ProcessUtils;
+  Models;
 
 type
 
@@ -17,12 +17,6 @@ type
   TEnvironment = class;
   TElementCreator = class;
 
-  TEnvironmentElementAttribute = record
-    ID : PtrUInt;
-    Name : AnsiString;
-    DefaultValue : PtrInt;
-  end;
-
   { TEnvironmentElement }
                                 //TODO: replace TOurGame with TEnvironment
   TEnvironmentElement = class abstract
@@ -30,12 +24,7 @@ type
     fCreator : TElementCreator;
   protected
     function GetEnvironment : TEnvironment;
-  public              {TODO}
-    function GetAttributeID(const Name : AnsiString) : Integer; virtual;
-    function GetAttributeValue(const {%H-}ID : PtrUInt) : PtrInt; virtual;
-    function GetAttributeAsObject(const {%H-}ID : PtrUInt) : TObject; virtual;
-    function HasAttribute(const {%H-}ID : PtrUInt) : Boolean; virtual;
-
+  public
     function GetID : integer;       
     property ID : integer read getID;
     function GetTextID : AnsiString;      
@@ -87,23 +76,11 @@ type
     public
       class function Compare(const a: TValue; const b: TKey): integer; override;
     end;
-    TAttributeSearcher = class(specialize TStaticBSearch<TEnvironmentElementAttribute, AnsiString>)   
-    {$if (FPC_VERSION >= 3) and (FPC_RELEASE >= 2)}
-    type
-        TValue = TEnvironmentElementAttribute;
-        TKey = AnsiString;
-    {$ENDIF}
-    public
-      class function Compare(const a: TValue; const b: TKey): integer; override;
-    end;
-  const
-    {$Include Preprocesor/AttributeList.inc}
   private                  
     FRemote : Boolean;
     fIDList : array of TElementCreator;
     fIDCount : Integer;
     fGame : TOurGame;
-    class var NullAttribute : TEnvironmentElementAttribute;
     function GetElement(const ID : Integer): TElementCreator;
     procedure RegisterCreator(Creator : TElementCreator);
   public
@@ -112,16 +89,10 @@ type
     property IDCount : Integer read fIDCount;
     property Elements[const ID : Integer] : TElementCreator read GetElement;
 
-    class function GetAttribute(const Name : AnsiString) : TEnvironmentElementAttribute; overload;
-    class function GetAttribute(const ID : PtrUInt) : TEnvironmentElementAttribute; overload;
-    class function ExistsAttribute(const Name : AnsiString) : Boolean; overload;
-    class function ExistsAttribute(const ID : PtrUInt) : Boolean; overload;
-
     function GetCreator(const ID : integer) : TElementCreator;
     function GetID(const Name: AnsiString): Integer;
     function GetIDCount: Integer;
 
-    class constructor Create;
     constructor Create(TheGame : TOurGame);
     destructor Destroy; override;
   end;
@@ -156,39 +127,11 @@ begin
   end;
 end;
 
-{ TEnvironment.TAttributeSearcher }
-
-class function TEnvironment.TAttributeSearcher.Compare(const a: TValue;
-  const b: TKey): integer;
-begin
-  Result := AnsiCompareText(a.Name, b);
-end;
-
 { TEnvironmentElement }
 
 function TEnvironmentElement.GetEnvironment: TEnvironment;
 begin
   Result := fCreator.Environment;
-end;
-
-function TEnvironmentElement.GetAttributeID(const Name: AnsiString): Integer;
-begin
-  Result := GetEnvironment.GetAttribute(Name).ID;
-end;
-
-function TEnvironmentElement.GetAttributeValue(const ID: PtrUInt): PtrInt;
-begin
-  Result := GetEnvironment.GetAttribute(ID).DefaultValue;
-end;
-
-function TEnvironmentElement.GetAttributeAsObject(const ID: PtrUInt): TObject;
-begin
-  Result := TObject(GetAttributeValue(ID));
-end;
-
-function TEnvironmentElement.HasAttribute(const ID: PtrUInt): Boolean;
-begin
-  Result := False;
 end;
 
 function TEnvironmentElement.GetID : integer;
@@ -243,36 +186,6 @@ begin
   writeln('Loading: ', Creator.getTextID);
 end;
 
-class function TEnvironment.GetAttribute(const Name: AnsiString
-  ): TEnvironmentElementAttribute;
-var
-  i : Integer;
-begin
-  i := TAttributeSearcher.BSearch(AttributeList, Name);
-  if ExistsAttribute(i) then
-    Result := AttributeList[i]
-    else
-    Result := NullAttribute;
-end;
-
-class function TEnvironment.GetAttribute(const ID: PtrUInt): TEnvironmentElementAttribute;
-begin
-   if ExistsAttribute(ID) then
-     Result := AttributeList[ID]
-     else
-     Result := NullAttribute;
-end;
-
-class function TEnvironment.ExistsAttribute(const Name: AnsiString): Boolean;
-begin
-  Result := ExistsAttribute(TAttributeSearcher.BSearch(AttributeList, Name));
-end;
-
-class function TEnvironment.ExistsAttribute(const ID: PtrUInt): Boolean;
-begin
-  Result := (ID {%H-}>= Low(AttributeList)) and (ID <= High(AttributeList));
-end;
-
 function TEnvironment.GetCreator(const ID: integer): TElementCreator;
 begin
   Result := GetElement(ID);
@@ -288,13 +201,6 @@ begin
   Result := fIDCount;
 end;
 
-class constructor TEnvironment.Create;
-begin
-  if not ExistsAttribute('NullAttribute') then
-    RaiseException('Cannot find "NullAttribute"');
-  NullAttribute := GetAttribute('NullAttribute');
-end;
-
 constructor TEnvironment.Create(TheGame: TOurGame);
 var
   i : Integer;
@@ -304,9 +210,6 @@ begin
   SetLength(fIDList, fIDCount);
   {$include Preprocesor/EnvironmentRegister.inc}
   TCreatorSort.Merge(fIDList);
-  
-  for i := 0 to fIDCount-1 do
-    writeln(fIDList[i].getTextID);
 
   for i := 0 to fIDCount-1 do
     fIDList[i].ID:=i;
