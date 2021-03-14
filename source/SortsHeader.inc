@@ -21,6 +21,9 @@
     //best for random less than 127
     {$ifdef StaticSort} class {$endif} procedure InsertComb(var tab : array of TValue); overload;
     {$ifdef StaticSort} class {$endif} procedure InsertComb(var tab : array of TValue; const offset, n : integer); overload;
+    //10% faster than the upper one (untested yet)
+    {$ifdef StaticSort} class {$endif} procedure InsertCombF(var tab : array of TValue);
+    {$ifdef StaticSort} class {$endif} procedure InsertCombF(var tab : array of TValue; const offset, n : integer);
     //better for completly random       
     {$ifdef StaticSort} class {$endif} procedure Quick(var A : array of TValue); overload;
     {$ifdef StaticSort} class {$endif} procedure Quick(var A : array of TValue; const l, r : integer; const MaxDepth : UIntPtr = 32); overload;

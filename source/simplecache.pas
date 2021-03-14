@@ -23,10 +23,10 @@ type
   private
     Count : integer;
     fData : array of TRecord;
-    function CreateRecord(const Key : TKey; const Value : TValue) : TRecord; inline;
+    class function CreateRecord(const Key : TKey; const Value : TValue) : TRecord; inline;
   protected
-    function GetHash(const Key : TKey) : UInt32; virtual;
-    function SameKeys(const a, b : TKey) : Boolean; virtual;
+    class function GetHash(const Key : TKey) : UInt32; virtual;
+    class function SameKeys(const a, b : TKey) : Boolean; virtual;
   public
     function GetIndex(const Key : TKey) : PtrUInt; inline;
     procedure AddItem(const Key : TKey; const Value : TValue);
@@ -39,19 +39,19 @@ implementation
 
 { TSimpleCache }
 
-function TSimpleCache.CreateRecord(const Key : TKey; const Value : TValue) : TRecord;
+class function TSimpleCache.CreateRecord(const Key: TKey; const Value: TValue): TRecord;
 begin
   Result.Key := Key;
   Result.Value := Value;
   Result.Exists := True;
 end;
 
-function TSimpleCache.GetHash(const Key: TKey): UInt32;
+class function TSimpleCache.GetHash(const Key: TKey): UInt32;
 begin
   Result := ModuloBuf(@Key, Sizeof(TKey));
 end;
 
-function TSimpleCache.SameKeys(const a, b: TKey): Boolean;
+class function TSimpleCache.SameKeys(const a, b: TKey): Boolean;
 begin
   Result := CompareMem(@a, @b, SizeOf(TKey));
 end;

@@ -112,7 +112,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="32">
+    <Units Count="34">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -267,6 +267,16 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="MainOurcraftDirectory"/>
       </Unit31>
+      <Unit32>
+        <Filename Value="../collosionboxes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="CollosionBoxes"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="../texturemode.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="TextureMode"/>
+      </Unit33>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

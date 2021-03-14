@@ -4,7 +4,7 @@ unit stone;
 interface
 
 uses
-  OurUtils, Models, CalcUtils, OurGame;
+  OurUtils, Models, CalcUtils, OurGame, TextureMode;
 
 type
 

@@ -228,7 +228,7 @@ begin
       until PostInc(i) = fAddIndex;
     end
     else
-      fList[fExecuteIndex-1].Method:=nil;
+      fList[Word(fExecuteIndex-1)].Method:=nil;
   finally
     Locker.Unlock;
   end;

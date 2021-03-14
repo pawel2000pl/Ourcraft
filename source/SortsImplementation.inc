@@ -43,6 +43,37 @@ begin
   end;
 end;
 
+
+
+{$ifdef StaticSort} class {$endif} procedure TClassSortName.InsertCombF(var tab : array of TValue; const offset, n : integer);
+const  {Warning: Wherever you put this algorithm, remember write the author: Paweł Bielecki}
+  d = 9 / 23;
+var
+  gap, i, j : integer;
+  x : TValue;
+begin
+  gap := round(d ** round(logn(d, n)));
+  while gap > 1 do
+  begin
+    gap := round(gap * d);
+    for i := gap to n - 1 do
+    begin
+      if Compare(tab[i + Offset], tab[i - gap + Offset]) < 0 then
+      begin
+        x := tab[i + Offset];
+        tab[i + Offset] := tab[i-gap + Offset];
+        j := i-gap;
+        while ((j >= gap) and (Compare(x, tab[j - gap + Offset]) < 0)) do
+        begin
+            tab[j + Offset] := tab[j - gap + Offset];
+            dec(j, gap);
+        end;
+        tab[j + Offset] := x;
+      end;
+    end;
+  end;
+end;
+
 {$ifdef StaticSort} class {$endif} procedure TClassSortName.Insert(var tab : array of TValue; const offset, n : integer);
 var
   x : TValue;
@@ -149,6 +180,11 @@ end;
 {$ifdef StaticSort} class {$endif} procedure TClassSortName.InsertComb(var tab : array of TValue);
 begin
   InsertComb(tab, low(tab), length(tab));
+end;
+
+{$ifdef StaticSort} class {$endif} procedure TClassSortName.InsertCombF(var tab : array of TValue);
+begin
+  InsertCombF(tab, low(tab), length(tab));
 end;
 
 {$ifdef StaticSort} class {$endif} procedure TClassSortName.Insert(var tab : array of TValue);

@@ -5,7 +5,7 @@ unit glowstone;
 interface
 
 uses
-  OurUtils, Models, CalcUtils, OurGame, LightTypes;
+  OurUtils, Models, CalcUtils, OurGame, LightTypes, TextureMode;
 
 type
 

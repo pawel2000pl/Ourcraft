@@ -47,6 +47,8 @@ const
   SizeHeight = axisY;
   SizeDepth = axisZ;
 
+  NextAxis : array[TAxis] of TAxis = (AxisY, AxisZ, AxisX);
+
 type
   TRotationVector = TVector3;
   TSizeVector = TVector3;
@@ -76,6 +78,8 @@ type
     property Width : Double read GetX write SetX;
     property Height : Double read GetY write SetY;
     property Depth : Double read GetZ write SetZ;
+    function Min : Double; overload;
+    function Max : Double; overload;
   end;
 
   { TIntVector3Helper }
@@ -95,7 +99,9 @@ type
     property Width : Integer read GetX write SetX;
     property Height : Integer read GetY write SetY;
     property Depth : Integer read GetZ write SetZ;
-    function Mask(const BitMask : PtrUInt) : TIntVector3; inline;
+    function Mask(const BitMask : PtrUInt) : TIntVector3; inline; 
+    function Min : Double; overload;
+    function Max : Double; overload;
   end;
 
   { TBlockCoordHelper }
@@ -604,6 +610,16 @@ begin
      Result[a] := Self[a] and BitMask;
 end;
 
+function TIntVector3Helper.Min: Double;
+begin
+  Result := Math.Min(X, Math.Min(Y, Z));
+end;
+
+function TIntVector3Helper.Max: Double;
+begin
+  Result := Math.Max(X, Math.Max(Y, Z));
+end;
+
 { TVector3Helper }
 
 function TVector3Helper.GetX: Double;
@@ -634,6 +650,16 @@ end;
 procedure TVector3Helper.SetZ(const AValue: Double);
 begin
   Self[AxisZ] := AValue;
+end;
+
+function TVector3Helper.Min: Double;
+begin
+  Result := Math.Min(X, Math.Min(Y, Z))
+end;
+
+function TVector3Helper.Max: Double;
+begin
+  Result := Math.Max(X, Math.Max(Y, Z))
 end;
 
 end.
