@@ -174,6 +174,8 @@ type
     ///inherited first! / retunrs if loading could be continued
     function LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean; virtual;
 
+    //dentisty for resistance (from velocity)
+    function Dentisy : Double; virtual;
     function Transparency : TLight; virtual;
     function LightSource : TLight; virtual;
     function Clone(const NewCoord : TIntVector3) : TBlock; virtual;
@@ -2599,6 +2601,11 @@ begin
   end
   else
     Result := True;
+end;
+
+function TBlock.Dentisy: Double;
+begin
+  Result := 1e9;
 end;
 
 function TBlock.Transparency: TLight;

@@ -16,6 +16,7 @@ type
   public
     function Transparency: TLight; override;
     function NeedDraw: boolean; override;
+    function Dentisy: Double; override;
   end;
 
   { TAirCreator }
@@ -59,6 +60,11 @@ end;
 function TAir.NeedDraw: boolean;
 begin
   Result:=false;
+end;
+
+function TAir.Dentisy: Double;
+begin
+  Result:=1.21;
 end;
 
 end.

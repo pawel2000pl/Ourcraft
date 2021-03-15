@@ -1,4 +1,4 @@
-unit CollosionBoxes;
+unit CollisionBoxes;
 
 {$mode objfpc}{$H+}
 {$ModeSwitch advancedrecords}
@@ -17,7 +17,7 @@ type
     RotationMatrix : TMatrix3x3;
     Size : TSizeVector;
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
-    function GetSide(const Side : TTextureMode) : TCollisionBox;
+    function GetSide(const Side : TTextureMode; const Thickness : Double = 0) : TCollisionBox;
   end;
 
 function CreateCollosionBox(const Position : TVector3; const Rotation : TRotationVector; const Size : TSizeVector) : TCollisionBox; inline;
@@ -73,7 +73,7 @@ begin
      Exit(True);
   end;
   MaxDistance := (Hypot3(A.Size)+Hypot3(B.Size))/2;
-  if Distance > MaxDistance then
+  if (Distance > MaxDistance) or (MaxDepth<=0) then
      Exit(False);
   Result := CheckSubCollision(A, B, Where, MaxDepth-1, NextAxis[CutAxis]);
 end;
@@ -97,12 +97,12 @@ begin
   B.Position := Position - PositionOffset;
 end;
 
-function TCollisionBox.GetSide(const Side: TTextureMode): TCollisionBox;    
+function TCollisionBox.GetSide(const Side: TTextureMode; const Thickness: Double): TCollisionBox;
 var
   PositionOffset : TVector3;
 begin
   Result.Size := Size;    
-  Result.Size[TextureModeSidesAxis[Side].Axis] := 0;
+  Result.Size[TextureModeSidesAxis[Side].Axis] := Thickness;
   Result.RotationMatrix := RotationMatrix;
                                     
   PositionOffset := Vector3(0, 0, 0);

@@ -15,7 +15,7 @@ uses
   Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
   DeterminedRandomGenerator, SimpleCache, ArrayOfNumber, Collections,
   CustomSaver, FileSaver, SaverPaths, LightTypes, ServerService, ClientService,
-  SocketCommands, NearestVectors, CollosionBoxes, TextureMode;
+  SocketCommands, NearestVectors, CollisionBoxes, TextureMode, PhisicalBox;
 
 {$R *.res}
 
