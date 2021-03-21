@@ -17,6 +17,7 @@ type
     function Transparency: TLight; override;
     function NeedDraw: boolean; override;
     function Dentisy: Double; override;
+    function Resilence: Double; override;
   end;
 
   { TAirCreator }
@@ -65,6 +66,11 @@ end;
 function TAir.Dentisy: Double;
 begin
   Result:=1.21;
+end;
+
+function TAir.Resilence: Double;
+begin
+  Result:=0;
 end;
 
 end.

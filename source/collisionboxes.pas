@@ -18,6 +18,7 @@ type
     Size : TSizeVector;
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
     function GetSide(const Side : TTextureMode; const Thickness : Double = 0) : TCollisionBox;
+    function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 256; const CutAxis : TAxis = AxisX) : Boolean;
   end;
 
 function CreateCollosionBox(const Position : TVector3; const Rotation : TRotationVector; const Size : TSizeVector) : TCollisionBox; inline;
@@ -109,6 +110,11 @@ begin
   PositionOffset[TextureModeSidesAxis[Side].Axis] := Size[TextureModeSidesAxis[Side].Axis]/2;
 
   Result.Position := Position + (RotationMatrix*PositionOffset)*TextureModeSidesAxis[Side].Offset ;
+end;
+
+function TCollisionBox.CheckCollision(const B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis: TAxis): Boolean;
+begin
+  Result := CollisionBoxes.CheckCollision(Self, B, Where, MaxDepth, CutAxis);
 end;
 
 end.

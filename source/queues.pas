@@ -50,6 +50,7 @@ type
   private
     fTerminating: boolean;
     fManager: TQueueManager;
+    procedure WaitForNext;
   public
     procedure Execute; override;
     constructor Create(Manager: TQueueManager);
@@ -211,24 +212,27 @@ var
 begin
   if Suspend then
     Exit(False);
-  Locker.Lock;
-  try
+  try      
+    Locker.Lock;
     repeat
       q := fList[PostInc(fExecuteIndex)];
       if fExecuteIndex = fAddIndex then
         Exit(False);
     until (q.Method <> nil);
 
-    if fRemoveRepeated then
+    if q.Method <> nil then
     begin
-      i := fExecuteIndex - 1;
-      repeat
-        if q = fList[i] then
-          fList[i].Method := nil;
-      until PostInc(i) = fAddIndex;
-    end
-    else
-      fList[Word(fExecuteIndex-1)].Method:=nil;
+      if fRemoveRepeated then
+      begin
+        i := fExecuteIndex - 1;
+        repeat
+          if q = fList[i] then
+            fList[i].Method := nil;
+        until PostInc(i) = fAddIndex;
+      end
+      else
+        fList[Word(fExecuteIndex-1)].Method:=nil;
+    end;
   finally
     Locker.Unlock;
   end;
@@ -302,11 +306,16 @@ end;
 
 { TQueueThread }
 
+procedure TQueueThread.WaitForNext;
+begin
+   SleepMicroseconds(10);
+end;
+
 procedure TQueueThread.Execute;
 begin
   repeat
     if not fManager.ExecuteMethod then
-      SleepMicroseconds(10);
+      WaitForNext;
   until fTerminating;
 end;
 

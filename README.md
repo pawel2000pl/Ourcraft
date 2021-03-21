@@ -13,6 +13,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
 5. [+] Three channels for light (red, green, blue)
 6. [+] Light with 256 levels (but light-resistance is 16/block)
+7. [?] More realistic phisics
      
 It's not playable yet (but almost). But you can: 
 

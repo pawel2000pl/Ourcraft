@@ -1,5 +1,5 @@
 #!/bin/bash
 touch "bin/.initialized"
-mkdir "bin" 2> "/dev/null"
-mkdir "worlds" 2> "/dev/null"
-mkdir "compiled-resources" 2> "/dev/null"
+mkdir -p "bin" 2> "/dev/null"
+mkdir -p "worlds" 2> "/dev/null"
+mkdir -p "compiled-resources" 2> "/dev/null"

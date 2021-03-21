@@ -9,8 +9,9 @@ interface
 
 uses
   SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
-  Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Collections,
-  OurGame, Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors, TextureMode;
+  Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Collections, OurGame,
+  Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors,
+  TextureMode, PhisicalBox, CollisionBoxes;
 
 const
   ChunkSizeLog2 = 4;
@@ -95,28 +96,27 @@ type
 
   TEntity = class(TEnvironmentElement)
   private
-    FModel : TModel;
-    FPosition : TVector3;
-    FRotate : TRotationVector;
-    FRotateVelocity : TRotationVector;
-    FVelocity : TVector3;
     FChunk : TOurChunk;
     fWorld : TOurWorld;
-    procedure SetModel(AValue : TModel);
-    procedure SetPosition(AValue : TVector3);
-    procedure SetRotate(AValue : TRotationVector);
-    procedure SetRotateVelocity(AValue : TRotationVector);
-    procedure SetVelocity(AValue : TVector3);
+
+    procedure SwitchChunk(NewChunk : TOurChunk);
+  protected
+    PhisicalBoxes : array of TPhisicalBox;
+    MainCollisionBox : TCollisionBox;
+    function GetPosition : TVector3; virtual; abstract;
+    procedure SetPosition(AValue : TVector3); virtual; abstract;
+    procedure CheckCollisionsWithBlock;
   public
-    property Position : TVector3 read FPosition write SetPosition;
-    property Velocity : TVector3 read FVelocity write SetVelocity;
-    property Rotate : TRotationVector read FRotate write SetRotate;
-    property RotateVelocity : TRotationVector read FRotateVelocity write SetRotateVelocity;
-    property Model : TModel read FModel write SetModel;
+    property Position : TVector3 read GetPosition write SetPosition;
+    //stops every PhisicalBox by default
+    procedure StopMovement; virtual; ///stops every move (v=0)
+
     property Chunk : TOurChunk read FChunk;
     property World : TOurWorld read fWorld;
 
-    procedure UpdateChunk;
+    procedure ComputeCollisions(Entity : TEntity);
+    procedure Tick(const DeltaTime : QWord);
+    function Resilence : Double; virtual;
 
     function GetID : integer; virtual; abstract;
     procedure OnTick(const DeltaTime : QWord); virtual; abstract;
@@ -124,7 +124,8 @@ type
     procedure OnOptions(Entity : TEntity); virtual; abstract; //right click
     procedure UpdateHitBoxes; virtual; abstract;
 
-    constructor Create(TheWorld : TOurWorld; MyCreator : TElementCreator); //TODO: EntityCreator
+    constructor Create(TheWorld : TOurWorld; MyCreator : TElementCreator; const APosition : TVector3); //TODO: EntityCreator
+    destructor Destroy; override;
   end;
 
 type
@@ -160,6 +161,8 @@ type
     function NeedAfterPut : boolean; virtual;
     function NeedNearChangeUpdate : boolean; virtual;
 
+    function GetCollisionBox({%H-}Chunk : TOurChunk; const Coord : TBlockCoord) : TCollisionBox; virtual;
+
     ///TBlockCoord is relative in-chunk coord
     procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
     procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
@@ -175,7 +178,8 @@ type
     function LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean; virtual;
 
     //dentisty for resistance (from velocity)
-    function Dentisy : Double; virtual;
+    function Dentisy : Double; virtual;        
+    function Resilence : Double; virtual;
     function Transparency : TLight; virtual;
     function LightSource : TLight; virtual;
     function Clone(const NewCoord : TIntVector3) : TBlock; virtual;
@@ -278,6 +282,8 @@ type
     destructor Destroy; override;
   end;
 
+  TEntitySet = specialize TCustomSet<TEntity>;
+
   { TOurChunk }
 
   TOurChunk = class(TFreeObject)
@@ -300,7 +306,8 @@ type
     fGenerated : boolean;
     fModifiedAfterLoading : boolean;
     fLighted : boolean; //first lighting up (sun)
-    //Entities : array of TEntity;
+
+    Entities : TEntitySet;
 
     BlocksForTick : TBlockList;
     BlocksForRandomTick : TBlockList;
@@ -390,6 +397,7 @@ type
     property UnsolidModel : TVertexModel read fUnsolidModel;
     property AnimationModel : TVertexModel read fAnimationModels;
 
+    //TODO: externall class (GraphicsChunk)
     procedure UpdateVertexModels;
     procedure UpdateUnsolidModel;
     procedure UpdateAnimationModel;
@@ -427,6 +435,8 @@ type
     constructor Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
     destructor Destroy; override;
   end;
+
+  TOurChunkClass = class of TOurChunk;
 
   TOurChunkTable = record
     Locker : TLocker;
@@ -519,12 +529,17 @@ type
 
     fTickDelay : QWord;
     fRandomTickSpeed : QWord;
+    fEntities : TEntitySet;
 
     TickLocker : TLocker;
     UpdateRenderAreaLocker : TLocker;
     fGenerator : TAbstractGenerator;
 
     fSaver : TCustomSaver;
+
+    procedure CheckCollisions;
+    procedure CheckCollisionsWithBlocks;
+
     procedure LoadFromSaver({%H-}Saver : TCustomSaver; const Path : array of ansistring; Stream : TStream);
     procedure UpdateRenderArea(Area : TRenderArea);
     procedure AddTime;
@@ -541,6 +556,7 @@ type
     property FreeThread : TFree read fFreeThread;
     property Time : Double read fTime;
     property LightTime : Double read fLightTime;
+    property Entities : TEntitySet read fEntities;
 
     function Remote : Boolean;
 
@@ -574,6 +590,7 @@ type
 
 function EntityShapeToTexturedCuboid(const EntityShape : TEntityShape) : TTexturedCuboid;
 function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlockCoord) : TVector3;
+function ChunkCoordToBlockCoord(const ChunkPosition : TIntVector3) : TIntVector3; inline;
 
 implementation
 
@@ -588,6 +605,13 @@ begin
   Result[axisX] := ChunkPosition[axisX] shl ChunkSizeLog2 + BlockPosition[axisX];
   Result[axisY] := ChunkPosition[axisY] shl ChunkSizeLog2 + BlockPosition[axisY];
   Result[axisZ] := ChunkPosition[axisZ] shl ChunkSizeLog2 + BlockPosition[axisZ];
+end;
+
+function ChunkCoordToBlockCoord(const ChunkPosition: TIntVector3): TIntVector3; inline;
+begin
+  Result[axisX] := ChunkPosition[axisX] shl ChunkSizeLog2;
+  Result[axisY] := ChunkPosition[axisY] shl ChunkSizeLog2;
+  Result[axisZ] := ChunkPosition[axisZ] shl ChunkSizeLog2;
 end;
 
 function EntityShapeToTexturedCuboid(const EntityShape : TEntityShape) : TTexturedCuboid;
@@ -1011,6 +1035,22 @@ end;
 
 { TOurWorld }
 
+procedure TOurWorld.CheckCollisions;
+begin
+  CheckCollisionsWithBlocks;
+  Queues.AddMethodDelay(@CheckCollisions, 1);
+end;
+
+procedure TOurWorld.CheckCollisionsWithBlocks;
+var
+  i : Integer;
+  e : TEntity;
+begin
+  i := 0;
+  while Entities.GetNext(i, e{%H-}) do
+      e.CheckCollisionsWithBlock;
+end;
+
 procedure TOurWorld.LoadFromSaver(Saver : TCustomSaver; const Path : array of ansistring; Stream : TStream);
 var
   v : TIntVector3;
@@ -1346,6 +1386,7 @@ begin
   fGenerator := WorldGenerator;
   fSaver := ASaver;
   fSaver.OnLoad := @LoadFromSaver;
+  fEntities := TEntitySet.Create;
   fTime := 0;
   fTimeTicks := 0;
   fLightTime := 0;
@@ -1374,6 +1415,10 @@ begin
     RenderAreaSet.Get(0).Free;
   fRenderAreaSet.Free;
   RemoveOrphanChunks;
+
+  while Entities.GetCount > 0 do
+    Entities.Get(0).Free;
+  fEntities.Free;
 
   fQueues.Clear;
   fFreeThread.Free;
@@ -2415,6 +2460,7 @@ begin
   UnSolid := TBlockList.Create;
   Animated := TBlockList.Create;
   ChangedBlocks := TBlockList.Create;
+  Entities := TEntitySet.Create;
 
   fRenderAreaCollection := TRenderAreaCollection.Create;
 
@@ -2472,6 +2518,7 @@ begin
   fUnsolidModel.Free;
   fAnimationModels.Free;
 
+  Entities.Free;
   ChangedBlocks.Free;
   BlocksForRandomTick.Free;
   BlocksForTick.Free;
@@ -2539,6 +2586,13 @@ begin
   Result := False;
 end;
 
+function TBlock.GetCollisionBox(Chunk: TOurChunk; const Coord: TBlockCoord): TCollisionBox;
+begin
+  Result.Position := ChunkCoordToBlockCoord(Chunk.Position) + Coord;
+  Result.Size := Vector3(1, 1, 1);
+  Result.RotationMatrix := IdentityMatrix;
+end;
+
 procedure TBlock.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
   const Coord: TBlockCoord);
 begin
@@ -2603,6 +2657,11 @@ begin
     Result := True;
 end;
 
+function TBlock.Resilence: Double;
+begin
+  Result := 1e3;
+end;
+
 function TBlock.Dentisy: Double;
 begin
   Result := 1e9;
@@ -2634,55 +2693,115 @@ end;
 
 { TEntity }
 
-procedure TEntity.SetModel(AValue : TModel);
+procedure TEntity.SwitchChunk(NewChunk: TOurChunk);
 begin
-  if FModel = AValue then
-    Exit;
-  FModel := AValue;
+  if FChunk <> nil then
+     FChunk.Entities.RemoveItem(Self);
+   FChunk := NewChunk;
+   if FChunk <> nil then
+      FChunk.Entities.Add(Self);
 end;
 
-procedure TEntity.SetPosition(AValue : TVector3);
-begin
-  if FPosition = AValue then
-    Exit;
-  FPosition := AValue;
-end;
-
-procedure TEntity.SetRotate(AValue : TRotationVector);
-begin
-  if FRotate = AValue then
-    Exit;
-  FRotate := AValue;
-end;
-
-procedure TEntity.SetRotateVelocity(AValue : TRotationVector);
-begin
-  if FRotateVelocity = AValue then
-    Exit;
-  FRotateVelocity := AValue;
-end;
-
-procedure TEntity.SetVelocity(AValue : TVector3);
-begin
-  if FVelocity = AValue then
-    Exit;
-  FVelocity := AValue;
-end;
-
-procedure TEntity.UpdateChunk;
+procedure TEntity.CheckCollisionsWithBlock;
 var
-  x, y, z : integer;
+  a, b : TIntVector3;
+  x, y, z, i : Integer;
+  ChunkCoord : TIntVector3;
+  Block : TBlock;
+  c : TOurChunk;
+  CollisionBox : TCollisionBox;
+  Where : TVector3;
 begin
-  x := floor(FPosition[axisX]);
-  y := floor(FPosition[axisY]);
-  z := floor(FPosition[axisZ]);
-  World.GetChunkFromBlockCoors(x, y, z);
+  a := floor(Position);
+  b := ceil(Position);
+  for i := 0 to Length(PhisicalBoxes)-1 do
+      PhisicalBoxes[i].GetIntegerBorders(a, b);
+
+  ChunkCoord := ChunkCoordToBlockCoord(Chunk.Position);
+  a := a - ChunkCoord;
+
+  for x := a[AxisX] to a[AxisX] do
+    for y := a[AxisY] to a[AxisY] do
+        for z := a[AxisZ] to a[AxisZ] do
+        begin                                            
+          c := Chunk.GetNeightborFromBlockCoord(x, y, z);
+          Block := c.GetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
+          if Block = nil then
+            Continue;
+          CollisionBox := Block.GetCollisionBox(c, BlockCoord(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask));
+          for i := 0 to Length(PhisicalBoxes)-1 do
+          begin
+              PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-});
+              PhisicalBoxes[i].AddGlobalForce(Where, (CollisionBox.Position-Where)*(Block.Resilence+Resilence));
+          end;
+        end;
 end;
 
-constructor TEntity.Create(TheWorld : TOurWorld; MyCreator : TElementCreator);
+procedure TEntity.StopMovement;
+var
+  i : Integer;
+begin
+  for i := 0 to Length(PhisicalBoxes)-1 do
+  begin
+      PhisicalBoxes[i].Velocity := Vector3(0, 0, 0);
+      PhisicalBoxes[i].AngularVelocity := Vector3(0, 0, 0);
+  end;
+end;
+
+procedure TEntity.ComputeCollisions(Entity: TEntity);
+var
+  i, j, ci, cj : Integer;
+  Where : TVector3;
+  r : Double;
+begin
+  if not MainCollisionBox.CheckCollision(Entity.MainCollisionBox, Where{%H-}) then
+     Exit;
+  ci := Length(PhisicalBoxes);
+  cj := Length(Entity.PhisicalBoxes);
+  for i := 0 to ci-1 do        
+    for j := 0 to cj-1 do
+      if PhisicalBoxes[i].CollisionBox.CheckCollision(PhisicalBoxes[j].CollisionBox, Where) then
+      begin                            //todo: test it!!!
+        r := (Entity.Resilence + Resilence)/2;
+        PhisicalBoxes[j].AddGlobalForce(Where, (PhisicalBoxes[j].Position-Where)*r);
+        Entity.PhisicalBoxes[j].AddGlobalForce(Where, (Entity.PhisicalBoxes[j].Position - Where)*r);
+      end;
+end;
+
+procedure TEntity.Tick(const DeltaTime: QWord);
+var
+  PositionB : TIntVector3;
+  c : TOurChunk;
+  i : Integer;
+begin
+  OnTick(DeltaTime);
+  PositionB := floor(GetPosition);
+  c := World.GetChunkFromBlockCoors(PositionB[axisX], PositionB[axisY], PositionB[axisZ]);
+  for i := 0 to Length(PhisicalBoxes)-1 do
+      PhisicalBoxes[i].Tick(DeltaTime);
+  OnTick(DeltaTime);
+  if c <> Chunk then
+    SwitchChunk(c);
+end;
+
+function TEntity.Resilence: Double;
+begin
+  Result := 16;
+end;
+
+constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
 begin
   fWorld := TheWorld;
-  inherited Create(MyCreator);
+  SetPosition(APosition);
+  inherited Create(MyCreator);                                                                 
+  SwitchChunk(World.GetChunkFromBlockCoors(floor(APosition[axisX]), floor(APosition[axisY]), floor(APosition[axisZ])));
+end;
+
+destructor TEntity.Destroy;
+begin
+  SwitchChunk(nil);
+  World.Entities.RemoveItem(Self);
+  inherited Destroy;
 end;
 
 { TMovingShape }

@@ -153,7 +153,7 @@ function ReverseMatrix(const m : TMatrix3x3) : TMatrix3x3;
 function CreateMatrix3x3(const a, b : TVector3) : TMatrix3x3; //iloczyn macierzowy
 function VectorProduct(const a, b : TVector3) : TVector3; inline; //iloczyn wektorowy
 function ScalarProduct(const a, b : TVector3) : double; inline; //iloczyn skalarny
-function det(const a : TMatrix3x3) : double; inline; //wyznacznik macierzy
+function det(const a : TMatrix3x3) : Extended; inline; //wyznacznik macierzy
 
 function CreateRotateMatrix(const Angle : double; const axis : TAxis) : TMatrix3x3; overload;
 function CreateRotateMatrix(const Rotate : TRotationVector) : TMatrix3x3; overload; //zyx
@@ -389,43 +389,47 @@ begin
       Result[i, j] := m[j, i];
 end;
 
-function GetMinorDet(const m : TMatrix3x3; const col, row : TAxis) : double; inline;
+
+function det(const a : TMatrix3x3) : Extended; inline; //wyznacznik
 begin
-  Result :=
-    m[IToA[AToI[col] + 1], IToA[AToI[row] + 1]] *
-    m[IToA[AToI[col] + 2], IToA[AToI[row] + 2]] -
-    m[IToA[AToI[col] + 1], IToA[AToI[row] + 2]] *
-    m[IToA[AToI[col] + 2], IToA[AToI[row] + 1]];
+  Result := (
+            + Extended(a[axisX, axisX] * a[axisY, axisY] * a[axisZ, axisZ])
+            + Extended(a[axisY, axisX] * a[axisZ, axisY] * a[axisX, axisZ])
+            + Extended(a[axisZ, axisX] * a[axisX, axisY] * a[axisY, axisZ])
+            ) - (
+            + Extended(a[axisZ, axisX] * a[axisY, axisY] * a[axisX, axisZ])
+            + Extended(a[axisY, axisX] * a[axisX, axisY] * a[axisZ, axisZ])
+            + Extended(a[axisX, axisX] * a[axisZ, axisY] * a[axisY, axisZ])
+            );
 end;
 
-function det(const a : TMatrix3x3) : double; inline; //wyznacznik
+function GetMinorDet(const m : TMatrix3x3; const col, row : TAxis) : Extended; inline;
 begin
-  Result := (a[axisX, axisX] * a[axisY, axisY] * a[axisZ, axisZ]) +
-    (a[axisY, axisX] * a[axisZ, axisY] * a[axisX, axisZ]) +
-    (a[axisZ, axisX] * a[axisX, axisY] * a[axisY, axisZ]) -
-    (a[axisZ, axisX] * a[axisY, axisY] * a[axisX, axisZ]) -
-    (a[axisY, axisX] * a[axisX, axisY] * a[axisZ, axisZ]) -
-    (a[axisX, axisX] * a[axisZ, axisY] * a[axisY, axisZ]);
+  Result :=
+    Extended(m[IToA[AToI[col] + 1], IToA[AToI[row] + 1]] *
+    m[IToA[AToI[col] + 2], IToA[AToI[row] + 2]]) -
+    Extended(m[IToA[AToI[col] + 1], IToA[AToI[row] + 2]] *
+    m[IToA[AToI[col] + 2], IToA[AToI[row] + 1]]);
 end;
 
 function ReverseMatrix(const m : TMatrix3x3) : TMatrix3x3;
 var
-  d : double;
+  d : Extended;
 begin
   d := det(m);
   if d = 0 then
     exit(m);
 
   Result[axisX, axisX] := GetMinorDet(m, axisX, axisX) / d;
-  Result[axisY, axisX] := -GetMinorDet(m, axisX, axisY) / d;
+  Result[axisY, axisX] := GetMinorDet(m, axisX, axisY) / d;
   Result[axisZ, axisX] := GetMinorDet(m, axisX, axisZ) / d;
 
-  Result[axisX, axisY] := -GetMinorDet(m, axisY, axisX) / d;
+  Result[axisX, axisY] := GetMinorDet(m, axisY, axisX) / d;
   Result[axisY, axisY] := GetMinorDet(m, axisY, axisY) / d;
-  Result[axisZ, axisY] := -GetMinorDet(m, axisY, axisZ) / d;
+  Result[axisZ, axisY] := GetMinorDet(m, axisY, axisZ) / d;
 
   Result[axisX, axisZ] := GetMinorDet(m, axisZ, axisX) / d;
-  Result[axisY, axisZ] := -GetMinorDet(m, axisZ, axisY) / d;
+  Result[axisY, axisZ] := GetMinorDet(m, axisZ, axisY) / d;
   Result[axisZ, axisZ] := GetMinorDet(m, axisZ, axisZ) / d;
 end;
 

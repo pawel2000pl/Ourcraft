@@ -5,9 +5,9 @@ unit SingleModeUnit;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  OpenGLContext, OurGame, OurUtils, GLext, gl, glu, Glut,
-  CalcUtils, ProcessUtils, Math, Models, GlCamera, WorldGenerator, FileSaver;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls,
+  OpenGLContext, OurGame, OurUtils, GLext, gl,
+  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver;
 
 type
 

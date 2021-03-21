@@ -1,1 +1,1 @@
-stone, air, glowstone
+MovingBlock, stone, air, glowstone
