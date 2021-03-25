@@ -5,7 +5,7 @@ unit SimpleCache;
 interface
 
 uses
-  Classes, SysUtils, CalcUtils;
+  Classes, SysUtils, CalcUtils, Locker;
 
 type
 
@@ -23,6 +23,7 @@ type
   private
     Count : integer;
     fData : array of TRecord;
+    Locker : TLocker;
     class function CreateRecord(const Key : TKey; const Value : TValue) : TRecord; inline;
   protected
     class function GetHash(const Key : TKey) : UInt32; virtual;
@@ -63,28 +64,40 @@ end;
 
 procedure TSimpleCache.AddItem(const Key : TKey; const Value : TValue);
 begin
-  fData[GetIndex(Key)] := CreateRecord(Key, Value);
+  try
+    Locker.Lock;
+    fData[GetIndex(Key)] := CreateRecord(Key, Value);
+  finally
+    Locker.Unlock;
+  end;
 end;
 
 function TSimpleCache.GetItem(const Key : TKey; var Value : TValue) : boolean;
 var
   Index : integer;
 begin
-  Index := GetIndex(Key);
-  Result := (fData[Index].Exists and SameKeys(fData[Index].Key, Key));
-  if Result then
-     Value := fData[Index].Value;
+  try
+    Locker.Lock;
+    Index := GetIndex(Key);
+    Result := (fData[Index].Exists and SameKeys(fData[Index].Key, Key));
+    if Result then
+       Value := fData[Index].Value;
+  finally
+    Locker.Unlock;
+  end;
 end;
 
 constructor TSimpleCache.Create(const Size : integer);
 begin
   inherited Create;
   Count := Size;
+  Locker := TLocker.Create;
   setlength(fData, Count);
 end;
 
 destructor TSimpleCache.Destroy;
 begin
+  Locker.Free;
   Setlength(fData, 0);
   inherited Destroy;
 end;
