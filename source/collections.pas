@@ -17,6 +17,9 @@
   Boston, MA 02110-1335, USA.
 }
 
+
+///TODO: Replace with fgl
+
 unit Collections;
 
 {$mode objfpc}{$H+}

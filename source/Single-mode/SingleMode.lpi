@@ -112,7 +112,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="51">
+    <Units Count="49">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -340,14 +340,6 @@
         <Filename Value="../incrementations2.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit48>
-      <Unit49>
-        <Filename Value="../NotUsed.txt"/>
-        <IsPartOfProject Value="True"/>
-      </Unit49>
-      <Unit50>
-        <Filename Value="../OurCraft.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit50>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

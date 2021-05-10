@@ -120,10 +120,12 @@ end;
 function TGlCamera.IsVisibled(const Point : TVector3; const Size : double) : boolean;
 var
   len : double;
+  PointPosition : TVector3;
 begin
+  PointPosition := Point-fPosition;
   try
-    len := Hypot3(Point - fPosition);
-    Result := (Len <= Size*2) or (ScalarProduct(Point - fPosition,
+    len := Hypot3(PointPosition);
+    Result := (Len <= Size*2) or (ScalarProduct(PointPosition,
       fRotateNormalVector) >= len * cos(PerspectiveWidth + Size / len));
   except                            //cos(min(pi, …))  ?
     Result := True;

@@ -26,7 +26,7 @@ type
     function getTextID: ansistring; override;
 
     procedure AfterLoading; override;
-    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TStone; override;
   end;
 
 procedure RegisterElementCreator(Environment : TEnvironment; Register : TRegisterCreatorMethod);
@@ -52,7 +52,7 @@ begin
 end;
 
 function TStoneCreator.CreateElement(const Coords: TVector3;
-  const SubID: integer): TEnvironmentElement;
+  const SubID: integer): TStone;
 begin
   Result := TStone.Create(self);
 end;

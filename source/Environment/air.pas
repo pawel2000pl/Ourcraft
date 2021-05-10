@@ -24,7 +24,7 @@ type
 
   TAirCreator = class(TBlockCreator)
   public
-    function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override;
+    function CreateElement(const Coords: TVector3; const SubID: integer=0): TAir; override;
     function getTextID: ansistring; override;
   end;
 
@@ -41,7 +41,7 @@ end;
 { TAirCreator }
 
 function TAirCreator.CreateElement(const Coords: TVector3; const SubID: integer
-  ): TEnvironmentElement;
+  ): TAir;
 begin
   Result := TAir.Create(self);
 end;

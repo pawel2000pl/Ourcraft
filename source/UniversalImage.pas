@@ -27,7 +27,7 @@ uses
   SysUtils, Classes, Math, FpImage, fpreadbmp, fpwritebmp,
   fpreadjpeg, fpwritejpeg, fpreadpng, fpwritepng, fpreadpnm, fpwritepnm,
   fpreadtga, fpwritetga, fpreadtiff, fpwritetiff, fpreadxpm, fpwritexpm,
-  fpreadpcx, fpwritepcx;
+  fpreadpcx, fpwritepcx, FPImgCanv;
 
 type
   TPoint = record
@@ -41,6 +41,7 @@ type
   TUniversalImage = class(TFPCustomImage)
   protected
     FData : array of array of TFPColor;
+    FCanvas : TFPImageCanvas;
 
     function GetReader(const Ext : ansistring) : TFPCustomImageReader;
     function GetWriter(const Ext : ansistring) : TFPCustomImageWriter;
@@ -49,6 +50,8 @@ type
     function GetInternalPixel(x, y : integer) : integer; override; //Ignore Palette
     procedure SetInternalPixel(x, y : integer; Value : integer); override;
   public
+    property Canvas : TFPImageCanvas read FCanvas;
+  
     //need FreeMem()
     function GetGLBuffer : PLongWord; //RGBA
     function GetGLBuffer16 : PQWord;  //RGBA16
@@ -315,6 +318,7 @@ begin
   end;
   inherited Create(AWidth, AHeight);
   SetUsePalette(False);
+  FCanvas := TFPImageCanvas.Create(Self);
 end;
 
 constructor TUniversalImage.CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); 
@@ -325,13 +329,16 @@ begin
     h := Bottom-Top+1;
     SetLength(FData, w, h);
     inherited Create(w, h);
+    SetUsePalette(False);
+    FCanvas := TFPImageCanvas.Create(Self);
     Draw(-Left, -Top, Image);
 end;
 
 destructor TUniversalImage.Destroy;
 begin
-  SetLength(FData, 0, 0);
-  inherited Destroy;
+    FCanvas.Free;
+    SetLength(FData, 0, 0);
+    inherited Destroy;
 end;
 
 procedure TUniversalImage.SetSize(AWidth, AHeight : integer);

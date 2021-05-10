@@ -25,6 +25,8 @@ const
   LIGHT_STEPS_UNTIL_BLACK = 15;
   LENGTH_LIGHT_RESISTANCE = ((1+MAX_LIGHT_LEVEL) div (1+LIGHT_STEPS_UNTIL_BLACK));
 
+  MAX_TICK_DELTA_TIME = 1000;
+
   MaxBlockTransparency : TLight = (MAX_BLOCK_TRANSPARENCY, MAX_BLOCK_TRANSPARENCY, MAX_BLOCK_TRANSPARENCY);
 
 type
@@ -79,6 +81,7 @@ type
   TBlock = class;
   TOurChunk = class;
   TOurWorld = class;
+  TEntity = class;
 
   { TAbstractGenerator }
 
@@ -92,43 +95,64 @@ type
     constructor Create(const _DestroyWithWorld : boolean = True);
   end;
 
+  { TEntityCreator }
+
+  TEntityCreator = class(TElementCreator)
+    public
+      function GetType: TElementType; override;
+      function CreateElement(const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; override; deprecated;
+      function CreateElement(AWorld : TOurWorld; const Coords: TVector3; const SubID: integer=0): TEnvironmentElement; virtual; abstract; overload;
+  end;
+
   { TEntity }
 
   TEntity = class(TEnvironmentElement)
   private
     FChunk : TOurChunk;
     fWorld : TOurWorld;
+    FPosition : TVector3;  
+    FRotation: TRotationVector;
 
     procedure SwitchChunk(NewChunk : TOurChunk);
   protected
     PhisicalBoxes : array of TPhisicalBox;
     MainCollisionBox : TCollisionBox;
-    function GetPosition : TVector3; virtual; abstract;
-    procedure SetPosition(AValue : TVector3); virtual; abstract;
+    procedure SetWorld(AValue: TOurWorld); virtual;
+    procedure SetPosition(const AValue: TVector3); virtual;
+    procedure SetRotation(const AValue: TRotationVector); virtual;                
+    function GetRotation: TRotationVector;
+    procedure SetRotation(const AValue: TRotationVector; const UpdateBoxes : Boolean);
+    function GetPosition : TVector3; virtual;
+    procedure SetPosition(const AValue : TVector3; const UpdateBoxes : Boolean);
     procedure CheckCollisionsWithBlock;
+    procedure AfterMovement; virtual;
+    function GetLightLevel(const Point : TVector3) : TRealLight;
   public
     property Position : TVector3 read GetPosition write SetPosition;
+    property Rotation : TRotationVector read GetRotation write SetRotation;
     //stops every PhisicalBox by default
-    procedure StopMovement; virtual; ///stops every move (v=0)
+    procedure StopMovement; virtual; ///(v=0)
 
     property Chunk : TOurChunk read FChunk;
-    property World : TOurWorld read fWorld;
+    property World : TOurWorld read fWorld write SetWorld;
 
     procedure ComputeCollisions(Entity : TEntity);
     procedure Tick(const DeltaTime : QWord);
     function Resilence : Double; virtual;
 
-    function GetID : integer; virtual; abstract;
-    procedure OnTick(const DeltaTime : QWord); virtual; abstract;
-    procedure OnHit(Entity : TEntity); virtual; abstract; //left click
-    procedure OnOptions(Entity : TEntity); virtual; abstract; //right click
-    procedure UpdateHitBoxes; virtual; abstract;
+    function GetID : integer; virtual;
+    procedure OnTick(const DeltaTime : QWord); virtual;
+    procedure OnHit(Entity : TEntity); virtual;  //left click
+    procedure OnOptions(Entity : TEntity); virtual; //right click
 
-    constructor Create(TheWorld : TOurWorld; MyCreator : TElementCreator; const APosition : TVector3); //TODO: EntityCreator
+    procedure Render; virtual; abstract;
+
+    constructor Create(TheWorld : TOurWorld; MyCreator : TElementCreator; const APosition : TVector3);
+    constructor Create(MyCreator : TElementCreator; const APosition : TVector3);
     destructor Destroy; override;
   end;
 
-type
+
   TBlockDataTag = record
     Size : integer;
     Buf : PByte;
@@ -167,7 +191,7 @@ type
     procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
     procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure DrawAnimation({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
-    procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; const DeltaTime : QWord); virtual;
     procedure OnRandomTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure AfterPut({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure NearChangeUpdate({%H-}Chunk : TOurChunk; const {%H-}side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
@@ -290,6 +314,7 @@ type
   const
     MaxDynamicBlockChanged = ChunkSize * ChunkSize * ChunkSize div 4; //powyżej tej ilości, musi być wysłany cały chunk
   private
+
     fLockUpdateModelLight : boolean;
     fAutoLightUpdate : boolean;
     fPosition : TIntVector3;  //Coord div ChunkSize
@@ -397,12 +422,14 @@ type
     property UnsolidModel : TVertexModel read fUnsolidModel;
     property AnimationModel : TVertexModel read fAnimationModels;
 
+    procedure RenderEntities;
+
     //TODO: externall class (GraphicsChunk)
     procedure UpdateVertexModels;
     procedure UpdateUnsolidModel;
     procedure UpdateAnimationModel;
 
-    procedure Tick;
+    procedure Tick(const DeltaTime : QWord);
     procedure RandomTick(const Count : integer);
 
     procedure UpdateNeightbors(Ignore : TOurChunk = nil);
@@ -515,6 +542,8 @@ type
   TOurWorld = class
   private
     fChunks : array[0..WorldSize - 1, 0..WorldSize - 1, 0..WorldSize - 1] of TOurChunkTable;
+    PrevTickTime : QWord;
+
     fDefaultBlock : TBlockCreator;
     fOurGame : TOurGame;
     fEnvironment : TEnvironment;     
@@ -545,6 +574,8 @@ type
     procedure AddTime;
     procedure UpdateLightModel;
   public
+    class function GetLastCreatedWorld : TOurWorld;
+
     property SaveAllChunks : boolean read FSaveAllChunks write FSaveAllChunks;
     property Saver : TCustomSaver read fSaver;
     property RenderAreaSet : TRenderAreaCollection read fRenderAreaSet;
@@ -600,6 +631,9 @@ implementation
 const
   NilBlockCoord : TBlockCoord = (255, 255, 255);
 
+var
+  FLastCreatedWorld : TOurWorld = nil; //something like default
+
 function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlockCoord) : TVector3;
 begin
   Result[axisX] := ChunkPosition[axisX] shl ChunkSizeLog2 + BlockPosition[axisX];
@@ -631,6 +665,18 @@ begin
         v[a] := TextureStandardModeCoord[side][i][a] * EntityShape.Size[a] - EntityShape.Center[a];
       Result.Corners[side][i] := c * v;
     end;
+end;
+
+{ TEntityCreator }
+
+function TEntityCreator.GetType: TElementType;
+begin
+  Exit(etEntity);
+end;
+
+function TEntityCreator.CreateElement(const Coords: TVector3; const SubID: integer): TEnvironmentElement;
+begin
+     Exit(CreateElement(nil, Coords, SubID));
 end;
 
 { TRenderAreaCollection }
@@ -981,6 +1027,7 @@ begin
 
       for side in DrawedSides[sign(v[axisX]), sign(v[axisY]), sign(v[axisZ])] do
         c.GetVertexModel(side).JustDraw;
+      c.RenderEntities;
     end;
   finally
     TVertexModel.EndDraw;
@@ -1038,6 +1085,7 @@ end;
 procedure TOurWorld.CheckCollisions;
 begin
   CheckCollisionsWithBlocks;
+  //TODO: Collisions with another entities
   Queues.AddMethodDelay(@CheckCollisions, 1);
 end;
 
@@ -1145,6 +1193,11 @@ begin
         for i := fChunks[x, y, z].Count - 1 downto 0 do
         if fChunks[x, y, z].Table[i] <> nil then
           fChunks[x, y, z].Table[i].ForceUpdateModelLight;
+end;
+
+class function TOurWorld.GetLastCreatedWorld: TOurWorld;
+begin
+  Exit(FLastCreatedWorld);
 end;
 
 function TOurWorld.Remote: Boolean;
@@ -1324,6 +1377,7 @@ procedure TOurWorld.Tick;
 var
   x, y, z, i : integer;
   c : TOurChunk;
+  t : QWord;
 begin
   if (not TickLocker.TryLock) then
   begin
@@ -1331,6 +1385,11 @@ begin
     exit;
   end;
   Queues.AddMethodDelay(@Tick, TickDelay);
+
+  t := PrevTickTime;
+  PrevTickTime := GetTickCount64;
+  t := max(MAX_TICK_DELTA_TIME, PrevTickTime-t);
+
   try
     for x := 0 to WorldSize - 1 do
       for y := 0 to WorldSize - 1 do
@@ -1344,7 +1403,7 @@ begin
             if c.Finishing then
               Continue;
             fChunks[x, y, z].Locker.Unlock;
-            c.Tick;
+            c.Tick(t);
             fChunks[x, y, z].Locker.Lock;
           end;
           fChunks[x, y, z].Locker.Unlock;
@@ -1405,6 +1464,7 @@ begin
   fQueues.AddMethodDelay(@Tick, fTickDelay);
   fQueues.AddMethodDelay(@RandomTickAuto, 1000);
   fQueues.AddMethodDelay(@AddTime, 10);
+  FLastCreatedWorld := Self;
 end;
 
 destructor TOurWorld.Destroy;
@@ -2093,6 +2153,16 @@ begin
   Result := fModels[side];
 end;
 
+procedure TOurChunk.RenderEntities;
+var
+  i : Integer;
+  e : TEntity;
+begin
+  i := 0;
+  while Entities.GetNext(i, e{%H-}) do
+      e.Render;
+end;
+
 procedure TOurChunk.UpdateVertexModels;
 var
   side : TTextureMode;
@@ -2159,16 +2229,20 @@ begin
       coord);
 end;
 
-procedure TOurChunk.Tick;
+procedure TOurChunk.Tick(const DeltaTime: QWord);
 var
   coord : TBlockCoord;
-  i : integer;
+  i : integer;       
+  e : TEntity;
 begin
   if (not Loaded) or Finishing then
     Exit;
   i := 0;
   while BlocksForTick.GetNext(i, coord{%H-}) do
-    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord);
+    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord, DeltaTime);
+  i := 0;
+  while Entities.GetNext(i, e{%H-}) do
+      e.Tick(DeltaTime);
 end;
 
 procedure TOurChunk.RandomTick(const Count : integer);
@@ -2184,7 +2258,7 @@ begin
   begin
     coord := BlocksForRandomTick.Get(random(BlocksForRandomTick.Count));
     if coord <> NilBlockCoord then
-      GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord);
+      GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnRandomTick(self, coord);
   end;
 end;
 
@@ -2609,7 +2683,8 @@ begin
   //do nothing: this is only to provide abstract error
 end;
 
-procedure TBlock.OnTick(Chunk: TOurChunk; const Coord: TBlockCoord);
+procedure TBlock.OnTick(Chunk: TOurChunk; const Coord: TBlockCoord;
+  const DeltaTime: QWord);
 begin
   //do nothing: this is only to provide abstract error
 end;
@@ -2702,6 +2777,56 @@ begin
       FChunk.Entities.Add(Self);
 end;
 
+procedure TEntity.SetWorld(AValue: TOurWorld);
+var
+  p : TVector3;
+begin
+  if fWorld=AValue then Exit;
+  fWorld:=AValue;
+  p := Position;
+  SwitchChunk(World.GetChunkFromBlockCoors(floor(p[axisX]), floor(p[axisY]), floor(p[axisZ])));
+end;
+
+function TEntity.GetRotation: TRotationVector;
+begin
+  Exit(FRotation);
+end;
+
+procedure TEntity.SetPosition(const AValue: TVector3);
+begin      
+  FPosition:=AValue;
+end;
+
+procedure TEntity.SetRotation(const AValue: TRotationVector);
+begin
+  FRotation:=AValue;
+end;
+
+procedure TEntity.SetRotation(const AValue: TRotationVector; const UpdateBoxes: Boolean);
+begin
+  if GetRotation <> AValue then
+  begin
+    SetRotation(AValue);
+    if UpdateBoxes then
+       AfterMovement;
+  end;
+end;
+
+function TEntity.GetPosition: TVector3;
+begin
+  Exit(FPosition);
+end;
+
+procedure TEntity.SetPosition(const AValue: TVector3; const UpdateBoxes: Boolean);
+begin
+  if AValue <> GetPosition then
+  begin
+    SetPosition(AValue);
+    if UpdateBoxes then
+       AfterMovement;
+  end;
+end;
+
 procedure TEntity.CheckCollisionsWithBlock;
 var
   a, b : TIntVector3;
@@ -2735,6 +2860,17 @@ begin
               PhisicalBoxes[i].AddGlobalForce(Where, (CollisionBox.Position-Where)*(Block.Resilence+Resilence));
           end;
         end;
+end;
+
+procedure TEntity.AfterMovement;
+begin
+  MainCollisionBox.Position := GetPosition;
+  MainCollisionBox.RotationMatrix := CreateRotateMatrixZXY(GetRotation);
+end;
+
+function TEntity.GetLightLevel(const Point: TVector3): TRealLight;
+begin
+  Exit(Chunk.GetSmoothLightLevel(Point));
 end;
 
 procedure TEntity.StopMovement;
@@ -2789,12 +2925,37 @@ begin
   Result := 16;
 end;
 
+function TEntity.GetID: integer;
+begin
+  Exit(Creator.GetID);
+end;
+
+procedure TEntity.OnTick(const DeltaTime: QWord);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TEntity.OnHit(Entity: TEntity);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
+procedure TEntity.OnOptions(Entity: TEntity);
+begin
+  //do nothing: this is only to provide abstract error
+end;
+
 constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
 begin
-  fWorld := TheWorld;
   SetPosition(APosition);
-  inherited Create(MyCreator);                                                                 
-  SwitchChunk(World.GetChunkFromBlockCoors(floor(APosition[axisX]), floor(APosition[axisY]), floor(APosition[axisZ])));
+  inherited Create(MyCreator);
+  fWorld := nil;
+  SetWorld(TheWorld);
+end;
+
+constructor TEntity.Create(MyCreator: TElementCreator; const APosition: TVector3);
+begin
+  Create(nil, MyCreator, APosition);
 end;
 
 destructor TEntity.Destroy;
