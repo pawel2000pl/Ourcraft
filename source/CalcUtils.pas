@@ -147,7 +147,8 @@ function floor(const v : TVector3) : TIntVector3; inline; overload;
 function round(const v : TVector3) : TIntVector3; inline; overload;
 function ceil(const v : TVector3) : TIntVector3; inline; overload;
 
-function Normalize(const v : TVector3) : TVector3; inline;
+function Normalize(const v : TVector3) : TVector3; overload; inline;
+function Normalize(const v : TVector3; const Default : TVector3) : TVector3; overload; inline;
 function Transposing(const m : TMatrix3x3) : TMatrix3x3;
 function ReverseMatrix(const m : TMatrix3x3) : TMatrix3x3;
 function CreateMatrix3x3(const a, b : TVector3) : TMatrix3x3; //iloczyn macierzowy
@@ -171,6 +172,7 @@ function FlatVector(v : TVector3; const axis : TAxisSet) : TVector3;
 function Q_rsqrt(const number : single) : single; inline;
 function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
 
+procedure FromZeroTo2Pi(var d : Double);
 
 implementation
 
@@ -371,12 +373,17 @@ begin
 end;
 
 function Normalize(const v : TVector3) : TVector3;
+begin
+  Exit(Normalize(v, Vector3(1, 0, 0)));
+end;
+
+function Normalize(const v: TVector3; const Default: TVector3): TVector3;
 var
   len : double;
 begin
   len := Hypot3(v);
   if len = 0 then
-    exit(Vector3(1, 0, 0));
+    exit(Default);
   Result := v / len;
 end;
 
@@ -532,6 +539,18 @@ begin
     Result := ((QWord(Result) shl 32) or PLongWord(Buf)[i]) mod Base;
   for i := (Size and 3) downto 1 do
     Result := ((QWord(Result) shl 32) or PByte(Buf)[Size-i]) mod Base;
+end;
+
+procedure FromZeroTo2Pi(var d: Double);
+const
+  border = 2*pi;
+var
+  count : Integer;
+begin
+  if (d>=0) and (d<border) then
+     Exit;
+  count := floor(d/border);
+  d -= border*count;
 end;
 
 { TBlockCoordHelper }

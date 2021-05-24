@@ -10,6 +10,8 @@ function GetMGMemoryAllocated : int64; inline;
 
 implementation
 
+{$RangeChecks off}
+
 var
   MainMemoryManager : TMemoryManager;
   mgMemoryManager : TMemoryManager;

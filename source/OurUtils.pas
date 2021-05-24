@@ -137,7 +137,7 @@ type
     property World : TOurWorld read fWorld write SetWorld;
 
     procedure ComputeCollisions(Entity : TEntity);
-    procedure Tick(const DeltaTime : QWord);
+    procedure Tick(const DeltaTime : QWord); virtual;
     function Resilence : Double; virtual;
 
     function GetID : integer; virtual;
@@ -202,7 +202,7 @@ type
     function LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean; virtual;
 
     //dentisty for resistance (from velocity)
-    function Dentisy : Double; virtual;        
+    function Density : Double; virtual;
     function Resilence : Double; virtual;
     function Transparency : TLight; virtual;
     function LightSource : TLight; virtual;
@@ -624,6 +624,9 @@ function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlo
 function ChunkCoordToBlockCoord(const ChunkPosition : TIntVector3) : TIntVector3; inline;
 
 implementation
+
+uses
+  air; //todo: remove
 
 {$RangeChecks off}
 {$macro on}
@@ -1092,11 +1095,9 @@ end;
 procedure TOurWorld.CheckCollisionsWithBlocks;
 var
   i : Integer;
-  e : TEntity;
-begin
-  i := 0;
-  while Entities.GetNext(i, e{%H-}) do
-      e.CheckCollisionsWithBlock;
+begin             //todo: synchronization
+  for i := Entities.GetCount-1 downto 0 do
+     Entities.Get(i).CheckCollisionsWithBlock;
 end;
 
 procedure TOurWorld.LoadFromSaver(Saver : TCustomSaver; const Path : array of ansistring; Stream : TStream);
@@ -1463,7 +1464,8 @@ begin
   FSaveAllChunks := False;                
   fQueues.AddMethodDelay(@Tick, fTickDelay);
   fQueues.AddMethodDelay(@RandomTickAuto, 1000);
-  fQueues.AddMethodDelay(@AddTime, 10);
+  fQueues.AddMethodDelay(@AddTime, 10);    
+  fQueues.AddMethodDelay(@CheckCollisions, 1);
   FLastCreatedWorld := Self;
 end;
 
@@ -1641,12 +1643,17 @@ end;
 procedure TOurChunk.Finalize(const DelayTime : QWord);
 var
   side : TTextureMode;
+  i : Integer;
 begin
   inherited Finalize(DelayTime);
   World.Queues.DequeueObject(self);
   for side := Low(TTextureMode) to High(TTextureMode) do
     if fNeightbors[side] <> nil then
       fNeightbors[side].RemoveNeightbor(OppositeSide[side]);
+
+  for i := Entities.GetCount-1 downto 0 do
+      Entities.Get(i).SwitchChunk(nil);
+
   Save;
 end;
 
@@ -2295,42 +2302,42 @@ end;
 
 function TOurChunk.GetNeightborFromBlockCoord(const x, y, z : integer) : TOurChunk;
 begin
-  if IsInsert(x, y, z) then
+  if (self <> nil) and IsInsert(x, y, z) then   //todo: skasować sprawdzenia o nil z następnych warunków ?
     exit(self);
 
-  if (x < 0) and (Neightbors[tmSouth] <> nil) then
+  if (x < 0) and (fNeightbors[tmSouth] <> nil) then
   begin
-    Result := Neightbors[tmSouth].GetNeightborFromBlockCoord(x + ChunkSize, y, z);
+    Result := fNeightbors[tmSouth].GetNeightborFromBlockCoord(x + ChunkSize, y, z);
     if Result <> nil then
       exit;
   end;
-  if (x >= ChunkSize) and (Neightbors[tmNorth] <> nil) then
+  if (x >= ChunkSize) and (fNeightbors[tmNorth] <> nil) then
   begin
-    Result := Neightbors[tmNorth].GetNeightborFromBlockCoord(x - ChunkSize, y, z);
+    Result := fNeightbors[tmNorth].GetNeightborFromBlockCoord(x - ChunkSize, y, z);
     if Result <> nil then
       exit;
   end;
-  if (y < 0) and (Neightbors[tmDown] <> nil) then
+  if (y < 0) and (fNeightbors[tmDown] <> nil) then
   begin
-    Result := Neightbors[tmDown].GetNeightborFromBlockCoord(x, y + ChunkSize, z);
+    Result := fNeightbors[tmDown].GetNeightborFromBlockCoord(x, y + ChunkSize, z);
     if Result <> nil then
       exit;
   end;
-  if (y >= ChunkSize) and (Neightbors[tmUp] <> nil) then
+  if (y >= ChunkSize) and (fNeightbors[tmUp] <> nil) then
   begin
-    Result := Neightbors[tmUp].GetNeightborFromBlockCoord(x, y - ChunkSize, z);
+    Result := fNeightbors[tmUp].GetNeightborFromBlockCoord(x, y - ChunkSize, z);
     if Result <> nil then
       exit;
   end;
-  if (z < 0) and (Neightbors[tmWest] <> nil) then
+  if (z < 0) and (fNeightbors[tmWest] <> nil) then
   begin
-    Result := Neightbors[tmWest].GetNeightborFromBlockCoord(x, y, z + ChunkSize);
+    Result := fNeightbors[tmWest].GetNeightborFromBlockCoord(x, y, z + ChunkSize);
     if Result <> nil then
       exit;
   end;
-  if (z >= ChunkSize) and (Neightbors[tmEast] <> nil) then
+  if (z >= ChunkSize) and (fNeightbors[tmEast] <> nil) then
   begin
-    Result := Neightbors[tmEast].GetNeightborFromBlockCoord(x, y, z - ChunkSize);
+    Result := fNeightbors[tmEast].GetNeightborFromBlockCoord(x, y, z - ChunkSize);
     if Result <> nil then
       exit;
   end;
@@ -2662,7 +2669,7 @@ end;
 
 function TBlock.GetCollisionBox(Chunk: TOurChunk; const Coord: TBlockCoord): TCollisionBox;
 begin
-  Result.Position := ChunkCoordToBlockCoord(Chunk.Position) + Coord;
+  Result.Position := ChunkCoordToBlockCoord(Chunk.Position) + Coord + Vector3(0.5, 0.5, 0.5);
   Result.Size := Vector3(1, 1, 1);
   Result.RotationMatrix := IdentityMatrix;
 end;
@@ -2737,7 +2744,7 @@ begin
   Result := 1e3;
 end;
 
-function TBlock.Dentisy: Double;
+function TBlock.Density: Double;
 begin
   Result := 1e9;
 end;
@@ -2770,10 +2777,10 @@ end;
 
 procedure TEntity.SwitchChunk(NewChunk: TOurChunk);
 begin
-  if FChunk <> nil then
+  if (FChunk <> nil) and Assigned(FChunk) then
      FChunk.Entities.RemoveItem(Self);
    FChunk := NewChunk;
-   if FChunk <> nil then
+   if (FChunk <> nil) and Assigned(FChunk) then
       FChunk.Entities.Add(Self);
 end;
 
@@ -2783,6 +2790,7 @@ var
 begin
   if fWorld=AValue then Exit;
   fWorld:=AValue;
+  World.Entities.Add(Self); //TODO: nie dać tego w World?
   p := Position;
   SwitchChunk(World.GetChunkFromBlockCoors(floor(p[axisX]), floor(p[axisY]), floor(p[axisZ])));
 end;
@@ -2800,6 +2808,7 @@ end;
 procedure TEntity.SetRotation(const AValue: TRotationVector);
 begin
   FRotation:=AValue;
+  MainCollisionBox.RotationMatrix := CreateRotateMatrixZXY(FRotation);
 end;
 
 procedure TEntity.SetRotation(const AValue: TRotationVector; const UpdateBoxes: Boolean);
@@ -2836,7 +2845,11 @@ var
   c : TOurChunk;
   CollisionBox : TCollisionBox;
   Where : TVector3;
-begin
+  r : Double;
+begin   // exit; //TODO: remove
+  if (self = nil) or (Chunk = nil) or (not Assigned(Chunk)) then
+     Exit;
+
   a := floor(Position);
   b := ceil(Position);
   for i := 0 to Length(PhisicalBoxes)-1 do
@@ -2844,21 +2857,33 @@ begin
 
   ChunkCoord := ChunkCoordToBlockCoord(Chunk.Position);
   a := a - ChunkCoord;
+  b := b - ChunkCoord;
 
-  for x := a[AxisX] to a[AxisX] do
-    for y := a[AxisY] to a[AxisY] do
-        for z := a[AxisZ] to a[AxisZ] do
-        begin                                            
+  for x := a[AxisX] to b[AxisX] do
+    for y := a[AxisY] to b[AxisY] do
+        for z := a[AxisZ] to b[AxisZ] do
+        begin
+          if chunk = nil then
+             Exit;
           c := Chunk.GetNeightborFromBlockCoord(x, y, z);
+          if c = nil then
+             Continue;
           Block := c.GetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask);
           if Block = nil then
-            Continue;
+             Continue;
           CollisionBox := Block.GetCollisionBox(c, BlockCoord(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask));
           for i := 0 to Length(PhisicalBoxes)-1 do
-          begin
-              PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-});
-              PhisicalBoxes[i].AddGlobalForce(Where, (CollisionBox.Position-Where)*(Block.Resilence+Resilence));
-          end;
+              if PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) then
+              begin
+                 //  if not (Block is TAir) then
+                 //     writeln('Collision', #9, Where[axisX]:2:2, #9, Where[axisY]:2:2, #9, Where[axisZ]:2:2);
+                 r := min(Block.Resilence, Resilence);
+                 if r <> 0 then
+                    PhisicalBoxes[i].AddGlobalForce(Where, PhisicalBoxes[i].GetMass*(Normalize(
+                    PhisicalBoxes[i].CollisionBox.Position - Where, Vector3(0, 0, 0))
+                    - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)/10
+                     )*r);
+              end;
         end;
 end;
 
@@ -2866,11 +2891,17 @@ procedure TEntity.AfterMovement;
 begin
   MainCollisionBox.Position := GetPosition;
   MainCollisionBox.RotationMatrix := CreateRotateMatrixZXY(GetRotation);
+  SwitchChunk(World.GetChunkFromBlockCoors(floor(MainCollisionBox.Position[axisX]), floor(MainCollisionBox.Position[axisY]), floor(MainCollisionBox.Position[axisZ])));
 end;
 
 function TEntity.GetLightLevel(const Point: TVector3): TRealLight;
 begin
-  Exit(Chunk.GetSmoothLightLevel(Point));
+  if (Chunk <> nil) and Assigned(Chunk) then
+    Exit(Chunk.GetSmoothLightLevel(Point - ChunkCoordToBlockCoord(Chunk.Position)));
+
+  Result[lcRed] := 0;
+  Result[lcGreen] := 0;
+  Result[lcBlue] := 0;
 end;
 
 procedure TEntity.StopMovement;
@@ -2906,15 +2937,24 @@ end;
 
 procedure TEntity.Tick(const DeltaTime: QWord);
 var
-  PositionB : TIntVector3;
+  PositionB, PositionC : TIntVector3;
   c : TOurChunk;
+  b : TBlock;
   i : Integer;
 begin
   OnTick(DeltaTime);
   PositionB := floor(GetPosition);
   c := World.GetChunkFromBlockCoors(PositionB[axisX], PositionB[axisY], PositionB[axisZ]);
-  for i := 0 to Length(PhisicalBoxes)-1 do
-      PhisicalBoxes[i].Tick(DeltaTime);
+
+  if c <> nil then
+    for i := 0 to Length(PhisicalBoxes)-1 do
+    begin
+        PositionC := round(Position - MainCollisionBox.Size/2);//.Mask(ChunkSizeMask);
+        b := World.GetBlock(PositionC[AxisX], PositionC[AxisY], PositionC[AxisZ]);
+        PhisicalBoxes[i].AddResistance(b.Density);
+        PhisicalBoxes[i].Tick(DeltaTime/100000);
+    end;
+
   OnTick(DeltaTime);
   if c <> Chunk then
     SwitchChunk(c);
@@ -2959,9 +2999,14 @@ begin
 end;
 
 destructor TEntity.Destroy;
+var
+  i : Integer;
 begin
   SwitchChunk(nil);
   World.Entities.RemoveItem(Self);
+  for i := 0 to Length(PhisicalBoxes)-1 do
+      if (PhisicalBoxes[i] <> nil) and Assigned(PhisicalBoxes[i]) then
+         PhisicalBoxes[i].Free;
   inherited Destroy;
 end;
 

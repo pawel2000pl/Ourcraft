@@ -127,6 +127,8 @@ var
   i, j : integer;
   x : TValue;
 begin
+  if l>r then
+     Exit;
   if (r - l <= 48) or (MaxDepth <= 0) then
   begin
     InsertComb(A, l, r - l + 1);
@@ -146,7 +148,7 @@ begin
   swap(A[i + 1], A[r]);
 
   Quick(A, l, i, MaxDepth - 1);
-  Quick(A, i + 2, MaxDepth - 1);
+  Quick(A, i + 2, r, MaxDepth - 1);
 end;
 
 {$ifdef StaticSort} class {$endif} procedure TClassSortName.Merge(var Tab : array of TValue; const a, b : integer);

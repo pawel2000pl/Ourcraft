@@ -13,7 +13,7 @@ type
   { TCollisionBox }
 
   TCollisionBox = record
-    Position : TVector3;
+    Position : TVector3; ///center
     RotationMatrix : TMatrix3x3;
     Size : TSizeVector;
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
@@ -59,6 +59,46 @@ begin
     3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth, CutAxis);
   end;
 end;
+                {
+function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer; const CutAxis : TAxis) : Boolean;
+var
+  SubA1, SubA2, SubB1, SubB2 : TCollisionBox;
+  c : Integer;
+  tempWhere : TVector3;
+begin
+  A.Cut(CutAxis, SubA1, SubA2);
+  B.Cut(CutAxis, SubB1, SubB2);
+  c := 0;
+
+  tempWhere := Vector3(0, 0, 0);
+  Where := Vector3(0, 0, 0);
+   if CheckCollision(SubA1, SubB1, tempWhere, MaxDepth, CutAxis) then
+   begin
+        Where := Where + tempWhere;
+        inc(c);
+   end;
+   if CheckCollision(SubA1, SubB2, tempWhere, MaxDepth, CutAxis) then
+   begin
+        Where := Where + tempWhere;
+        inc(c);
+   end;
+   if CheckCollision(SubA2, SubB1, tempWhere, MaxDepth, CutAxis) then
+   begin
+        Where := Where + tempWhere;
+        inc(c);
+   end;
+   if CheckCollision(SubA2, SubB2, tempWhere, MaxDepth, CutAxis) then
+   begin
+        Where := Where + tempWhere;
+        inc(c);
+   end;
+   if c > 0 then
+   begin
+      Where := Where/c;
+      Exit(True);
+   end;
+   Exit(False);
+end;        }
 
 function CheckCollision(const A, B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis : TAxis): Boolean;
 const
@@ -76,7 +116,7 @@ begin
   MaxDistance := (Hypot3(A.Size)+Hypot3(B.Size))/2;
   if (Distance > MaxDistance) or (MaxDepth<=0) then
      Exit(False);
-  Result := CheckSubCollision(A, B, Where, MaxDepth-1, NextAxis[CutAxis]);
+  Exit(CheckSubCollision(A, B, Where, MaxDepth-1, NextAxis[CutAxis]));
 end;
 
 { TCollisionBox }

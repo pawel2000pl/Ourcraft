@@ -213,6 +213,14 @@ begin
     end;
   end;
 
+  
+  if key = 'f' then
+  begin
+    v := Camera.Position + Camera.ForwardVector*4;
+    (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v);
+
+  end;
+
   if key = 'm' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;

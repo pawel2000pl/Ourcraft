@@ -16,7 +16,7 @@ type
   public
     function Transparency: TLight; override;
     function NeedDraw: boolean; override;
-    function Dentisy: Double; override;
+    function Density: Double; override;
     function Resilence: Double; override;
   end;
 
@@ -63,7 +63,7 @@ begin
   Result:=false;
 end;
 
-function TAir.Dentisy: Double;
+function TAir.Density: Double;
 begin
   Result:=1.21;
 end;
