@@ -97,10 +97,8 @@ type
     procedure ExecuteDelayMethods;
   public
     procedure Clear; override;
-    procedure AddMethodDelay(const Method: TQueueMethod;
-      const DelayMilliseconds: QWord);
-    constructor Create(const ThreadsPerCore: integer = 1;
-      const AdditionalThreads: integer = 0);
+    procedure AddMethodDelay(const Method: TQueueMethod; const DelayMilliseconds: QWord);
+    constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0);
     destructor Destroy; override;
   end;
 
@@ -308,7 +306,7 @@ end;
 
 procedure TQueueThread.WaitForNext;
 begin
-   SleepMicroseconds(10);
+   SleepMicroseconds(EnsureRange(fManager.ThreadCount, 1, 16));
 end;
 
 procedure TQueueThread.Execute;

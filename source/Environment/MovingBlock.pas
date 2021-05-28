@@ -95,7 +95,7 @@ begin
    inherited Tick(DeltaTime);
    Position := PhisicalBoxes[0].Position;
    Rotation := PhisicalBoxes[0].Rotate;
-   writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
+   //writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
    UpdateModel;
 end;
 

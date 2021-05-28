@@ -160,12 +160,15 @@ function CreateRotateMatrix(const Angle : double; const axis : TAxis) : TMatrix3
 function CreateRotateMatrix(const Rotate : TRotationVector) : TMatrix3x3; overload; //zyx
 function CreateRotateMatrixZXY(const Rotate : TRotationVector) : TMatrix3x3; //zxy (Ourcraft default)
 function CreateRotateMatrix(const Rotate : TRotationVector; const FirstAxis, SecondAxis, ThirdAxis : TAxis) : TMatrix3x3; overload;
+function CreateRotateMatrixFromVector(const vector : TVector3) : TMatrix3x3;
 function IntVector3(const x, y, z : integer) : TIntVector3; inline;
 function Vector3(const x, y, z : double) : TVector3; inline;
 function BlockCoord(const x, y, z : byte) : TBlockCoord; inline;
 
 function Hypot3(const a, b, c : double) : double; overload; inline;
-function Hypot3(const vector : TVector3) : double; overload; inline;
+function Hypot3(const vector : TVector3) : double; overload; inline;  
+function SquaredHypot3(const a, b, c : double) : double; overload; inline;
+function SquaredHypot3(const vector : TVector3) : double; overload; inline;
 
 function FlatVector(v : TVector3; const axis : TAxisSet) : TVector3;
 
@@ -173,6 +176,16 @@ function Q_rsqrt(const number : single) : single; inline;
 function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : LongWord = 4294967291) : LongWord;
 
 procedure FromZeroTo2Pi(var d : Double);
+procedure FromZeroTo2PiVector(var v : TVector3);
+
+function DecreaseVector(const v : TVector3; const d : Double) : TVector3;
+
+
+generic procedure Swap<T>(var a, b : T);
+generic procedure MinToLeft<T>(var a, b : T);
+generic procedure MaxToLeft<T>(var a, b : T);
+generic procedure MinToRight<T>(var a, b : T);
+generic procedure MaxToRight<T>(var a, b : T);
 
 implementation
 
@@ -272,6 +285,29 @@ begin
   Result := (a[axisX] = b[axisX]) and (a[axisY] = b[axisY]) and (a[axisZ] = b[axisZ]);
 end;
 
+function CreateRotateMatrixFromVector(const vector: TVector3): TMatrix3x3;
+var
+   u : TVector3;
+   angle, c, s : Double;
+begin
+  angle := Hypot3(vector);
+  c := cos(angle);
+  s := sin(angle);
+  u := vector/angle;
+
+  Result[AxisX, AxisX] := c+sqr(u[AxisX])*(1-c);
+  Result[AxisY, AxisX] := u[AxisX]*u[AxisY]*(1-c)-u[AxisZ]*s;
+  Result[AxisZ, AxisX] := u[AxisX]*u[AxisZ]*(1-c)+u[AxisY]*s;
+
+  Result[AxisX, AxisY] := u[AxisY]*u[AxisX]*(1-c)+u[AxisZ]*s;
+  Result[AxisY, AxisY] := c+sqr(u[axisY])*(1-c);
+  Result[AxisZ, AxisY] := u[AxisY]*u[AxisZ]*(1-c)-u[AxisX]*s;
+
+  Result[AxisX, AxisZ] := u[AxisZ]*u[AxisX]*(1-c)-u[AxisY]*s;
+  Result[AxisY, AxisZ] := u[AxisZ]*u[AxisY]*(1-c)+u[AxisX]*s;
+  Result[AxisZ, AxisZ] := c+sqr(u[axisZ])*(1-c);
+end;
+
 function IntVector3(const x, y, z : integer) : TIntVector3; inline;
 begin
   Result[axisX] := x;
@@ -343,12 +379,22 @@ end;
 
 function Hypot3(const a, b, c : double) : double; inline;
 begin
-  Result := sqrt(sqr(a) + sqr(b) + sqr(c));
+  Exit(sqrt(SquaredHypot3(a, b, c)));
 end;
 
 function Hypot3(const vector : TVector3) : double;
 begin
-  Result := Hypot3(vector[axisX], vector[axisY], vector[axisZ]);
+  Exit(Hypot3(vector[axisX], vector[axisY], vector[axisZ]));
+end;
+
+function SquaredHypot3(const a, b, c: double): double;
+begin
+   Exit(sqr(a) + sqr(b) + sqr(c));
+end;
+
+function SquaredHypot3(const vector: TVector3): double;
+begin
+  Exit(SquaredHypot3(vector[axisX], vector[axisY], vector[axisZ]));
 end;
 
 function floor(const v: TVector3): TIntVector3;
@@ -530,7 +576,8 @@ begin
   Result := y;
 end;
 
-function ModuloBuf(const Buf : Pointer; const Size : PtrUInt; const InitValue : PtrUInt = 0; const Base : longword = 4294967291) : longword;
+function ModuloBuf(const Buf: Pointer; const Size: PtrUInt;
+  const InitValue: PtrUInt; const Base: LongWord): LongWord;
 var
   i : PtrInt;
 begin
@@ -551,6 +598,32 @@ begin
      Exit;
   count := floor(d/border);
   d -= border*count;
+end;
+
+procedure FromZeroTo2PiVector(var v: TVector3);
+var
+  d, d2 : Double;
+begin
+  d := Hypot3(v);
+  if d = 0 then
+     Exit;
+  d2 := d;
+  FromZeroTo2Pi(d2);
+  v := v*(d2/d);
+end;
+
+function DecreaseVector(const v: TVector3; const d: Double): TVector3;
+var
+  l : Double;
+begin
+  l := Hypot3(v);
+  if l = 0 then
+     Exit(v);
+
+  if l < d then
+     Exit(Vector3(0, 0, 0));
+
+  Exit(v*((l-d)/l));
 end;
 
 { TBlockCoordHelper }
@@ -683,6 +756,37 @@ end;
 function TVector3Helper.Max: Double;
 begin
   Result := Math.Max(X, Math.Max(Y, Z))
+end;
+
+generic procedure Swap<T>(var a, b : T);
+var
+  x : T;
+begin
+  x := a;
+  a := b;
+  b := x;
+end;
+
+generic procedure MinToLeft<T>(var a, b : T);
+begin
+     if a > b then
+        specialize Swap<T>(a, b);
+end;
+
+generic procedure MaxToLeft<T>(var a, b : T);
+begin
+     if a < b then
+        specialize Swap<T>(a, b);
+end;
+
+generic procedure MinToRight<T>(var a, b : T);
+begin
+     specialize MaxToLeft<T>(a, b);
+end;
+
+generic procedure MaxToRight<T>(var a, b : T);
+begin
+     specialize MinToLeft<T>(a, b);
 end;
 
 end.

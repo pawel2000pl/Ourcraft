@@ -482,7 +482,7 @@ begin
 
   writeln('Loading textures: ErrorCode: ', glGetError);
 
-  TTextureRectSorter.Quick(fTextures, 0, c - 1);
+  TTextureRectSorter.InsertCombF(fTextures, 0, c - 1);
 
   Image.Free;
   SL.Free;

@@ -74,7 +74,7 @@ begin
     for y := -NearPrioritySide to NearPrioritySide do
       for z := -NearPrioritySide to NearPrioritySide do
         NearPriority[PostInc(i)] := IntVector3(x, y, z);
-  TIntVector3Sort.InsertComb(NearPriority);
+  TIntVector3Sort.InsertCombF(NearPriority);
   for i := 0 to GetCoordPriorityByDistanceCount - 1 do
   begin
     NearPriorityInverse[NearPriority[i][axisX], NearPriority[i][axisY], NearPriority[i][axisZ]] := i;

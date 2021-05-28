@@ -11,7 +11,7 @@ uses
   SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ProcessUtils, ThreeDimensionalArrayOfBoolean, Collections, OurGame,
   Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors,
-  TextureMode, PhisicalBox, CollisionBoxes;
+  TextureMode, PhisicalBox, CollisionBoxes, AsyncMicroTimer;
 
 const
   ChunkSizeLog2 = 4;
@@ -553,6 +553,7 @@ type
 
     fFreeThread : TFree;
     fQueues : TQueueManagerWithDelays;
+    fMicroTimer : TMicroTimer;
     fRenderAreaSet : TRenderAreaCollection;
     FSaveAllChunks : boolean;
 
@@ -584,6 +585,7 @@ type
     property RandomTickSpeed : Qword read fRandomTickSpeed write fRandomTickSpeed;
     property OurGame : TOurGame read fOurGame;
     property Queues : TQueueManagerWithDelays read fQueues;
+    property MicroTimer : TMicroTimer read fMicroTimer;
     property FreeThread : TFree read fFreeThread;
     property Time : Double read fTime;
     property LightTime : Double read fLightTime;
@@ -1389,7 +1391,8 @@ begin
 
   t := PrevTickTime;
   PrevTickTime := GetTickCount64;
-  t := max(MAX_TICK_DELTA_TIME, PrevTickTime-t);
+  t := min(MAX_TICK_DELTA_TIME, PrevTickTime-t);
+  writeln(t);
 
   try
     for x := 0 to WorldSize - 1 do
@@ -1459,13 +1462,14 @@ begin
       end;
   fQueues := TQueueManagerWithDelays.Create(1, 2);
   fDefaultBlock := defaultBlock;
-  fTickDelay := 50;
+  fTickDelay := 1;//50;             ///////////////////////////////////////////////////////
   fRandomTickSpeed := 3;
   FSaveAllChunks := False;                
   fQueues.AddMethodDelay(@Tick, fTickDelay);
   fQueues.AddMethodDelay(@RandomTickAuto, 1000);
   fQueues.AddMethodDelay(@AddTime, 10);    
   fQueues.AddMethodDelay(@CheckCollisions, 1);
+  fMicroTimer := TMicroTimer.Create(fQueues);
   FLastCreatedWorld := Self;
 end;
 
@@ -1481,7 +1485,8 @@ begin
   while Entities.GetCount > 0 do
     Entities.Get(0).Free;
   fEntities.Free;
-
+              
+  fMicroTimer.Free;
   fQueues.Clear;
   fFreeThread.Free;
   TickLocker.Free;
@@ -2844,7 +2849,7 @@ var
   Block : TBlock;
   c : TOurChunk;
   CollisionBox : TCollisionBox;
-  Where : TVector3;
+  Where, v : TVector3;
   r : Double;
 begin   // exit; //TODO: remove
   if (self = nil) or (Chunk = nil) or (not Assigned(Chunk)) then
@@ -2875,13 +2880,24 @@ begin   // exit; //TODO: remove
           for i := 0 to Length(PhisicalBoxes)-1 do
               if PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) then
               begin
-                 //  if not (Block is TAir) then
-                 //     writeln('Collision', #9, Where[axisX]:2:2, #9, Where[axisY]:2:2, #9, Where[axisZ]:2:2);
+                // Writeln(PhisicalBoxes[i].SuggestedDelay);
+                 if not (Block is TAir) then
+                 begin
+              //            writeln('Collision', #9, Where[axisX]:2:2, #9, Where[axisY]:2:2, #9, Where[axisZ]:2:2);
+                    v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
+                    if ScalarProduct(Where-CollisionBox.Position, v) < 0 then
+                    begin
+                       PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-0.8));
+                     //  PhisicalBoxes[i].MoveGlobal(Where, DecreaseVector(PhisicalBoxes[i].Position-CollisionBox.Position, 1));
+
+                    end;
+                end;
+                 //  Continue;
                  r := min(Block.Resilence, Resilence);
                  if r <> 0 then
                     PhisicalBoxes[i].AddGlobalForce(Where, PhisicalBoxes[i].GetMass*(Normalize(
-                    PhisicalBoxes[i].CollisionBox.Position - Where, Vector3(0, 0, 0))
-                    - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)/10
+                    PhisicalBoxes[i].CollisionBox.Position - Where, Vector3(0, 0, 0))/5
+                    - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)
                      )*r);
               end;
         end;
@@ -2952,7 +2968,7 @@ begin
         PositionC := round(Position - MainCollisionBox.Size/2);//.Mask(ChunkSizeMask);
         b := World.GetBlock(PositionC[AxisX], PositionC[AxisY], PositionC[AxisZ]);
         PhisicalBoxes[i].AddResistance(b.Density);
-        PhisicalBoxes[i].Tick(DeltaTime/100000);
+        PhisicalBoxes[i].Tick(DeltaTime/1000);
     end;
 
   OnTick(DeltaTime);

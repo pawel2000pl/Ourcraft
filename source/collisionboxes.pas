@@ -16,6 +16,7 @@ type
     Position : TVector3; ///center
     RotationMatrix : TMatrix3x3;
     Size : TSizeVector;
+    procedure GetRegularCube(out LeftBottomFront, RightTopBack : TVector3);
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
     function GetSide(const Side : TTextureMode; const Thickness : Double = 0) : TCollisionBox;
     function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 256; const CutAxis : TAxis = AxisX) : Boolean;
@@ -59,46 +60,6 @@ begin
     3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth, CutAxis);
   end;
 end;
-                {
-function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer; const CutAxis : TAxis) : Boolean;
-var
-  SubA1, SubA2, SubB1, SubB2 : TCollisionBox;
-  c : Integer;
-  tempWhere : TVector3;
-begin
-  A.Cut(CutAxis, SubA1, SubA2);
-  B.Cut(CutAxis, SubB1, SubB2);
-  c := 0;
-
-  tempWhere := Vector3(0, 0, 0);
-  Where := Vector3(0, 0, 0);
-   if CheckCollision(SubA1, SubB1, tempWhere, MaxDepth, CutAxis) then
-   begin
-        Where := Where + tempWhere;
-        inc(c);
-   end;
-   if CheckCollision(SubA1, SubB2, tempWhere, MaxDepth, CutAxis) then
-   begin
-        Where := Where + tempWhere;
-        inc(c);
-   end;
-   if CheckCollision(SubA2, SubB1, tempWhere, MaxDepth, CutAxis) then
-   begin
-        Where := Where + tempWhere;
-        inc(c);
-   end;
-   if CheckCollision(SubA2, SubB2, tempWhere, MaxDepth, CutAxis) then
-   begin
-        Where := Where + tempWhere;
-        inc(c);
-   end;
-   if c > 0 then
-   begin
-      Where := Where/c;
-      Exit(True);
-   end;
-   Exit(False);
-end;        }
 
 function CheckCollision(const A, B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis : TAxis): Boolean;
 const
@@ -120,6 +81,18 @@ begin
 end;
 
 { TCollisionBox }
+
+procedure TCollisionBox.GetRegularCube(out LeftBottomFront, RightTopBack: TVector3);
+var
+  s : TVector3;
+  a : TAxis;
+begin
+  s := RotationMatrix*(Size/2);
+  LeftBottomFront := Position - s;
+  RightTopBack := Position + s;
+  for a := Low(TAxis) to High(TAxis) do
+     specialize MinToLeft<Double>(LeftBottomFront[a], RightTopBack[a]);
+end;
 
 procedure TCollisionBox.Cut(const Axis: TAxis; out A, B: TCollisionBox);
 var

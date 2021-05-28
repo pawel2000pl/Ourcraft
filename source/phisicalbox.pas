@@ -5,19 +5,20 @@ unit PhisicalBox;
 interface
 
 uses
-  Classes, SysUtils, CalcUtils, CollisionBoxes, math;
+  Classes, SysUtils, CalcUtils, CollisionBoxes, math, Locker, ProcessUtils, PrefixSI;
 
 type
-  TPhisicalShape = record
-    Position : TVector3;
-    Size : TSizeVector;
-    Rotate : TRotationVector;
-  end;
+  TPhisicalBox = class;
+
+  TCollisionChecker = function(Box : TPhisicalBox) : Boolean;
 
   { TPhisicalBox }
 
-  TPhisicalBox = class
+  TPhisicalBox = class(TLocker)
   private
+    fMicroseconds : QWord;
+    fAccurancy : Double;
+
     fCollisionBox : TCollisionBox;
     RotateVector : TRotationVector;
 
@@ -26,12 +27,17 @@ type
                                       
     Force : TVector3;
     ForceMoment : TRotationVector;
+    fLocker : TLocker;
 
     function GetPosition: TVector3; inline; //center
     function GetSize: TSizeVector; inline;
     procedure SetPosition(AValue: TVector3); inline;
     procedure SetRotate(AValue: TRotationVector); inline; 
     procedure SetSize(const AValue : TSizeVector); inline;
+
+  protected
+    function ResetTime : Double;
+
   public
     procedure ZeroForce;
     property Size : TSizeVector read GetSize write SetSize;
@@ -48,13 +54,20 @@ type
     function GetMass : Double; virtual;
     function GetInertiaMoment(const Axis : TAxis) : Double; overload;
     function GetInertiaMoment : TRotationVector; overload;
-    procedure Tick(const dt : Double);
+    procedure Tick(dt : Double);
     procedure AddResistance(const Dentisy : Double);
     procedure AddLocalForce(const Where : TVector3; const Value : TVector3);
     procedure AddGlobalForce(const Where : TVector3; const Value : TVector3);
     procedure AddGlobalAcceleration(const Value : TVector3);
 
+    procedure AddLocalVelocity(const Where : TVector3; const Value : TVector3);
+    procedure AddGlobalVelocity(const Where : TVector3; const Value : TVector3);
+
+    procedure MoveLocal(const Where : TVector3; const Value : TVector3);
+    procedure MoveGlobal(const Where : TVector3; const Value : TVector3);
+
     function VelocityAtGlobalPoint(const Where : TVector3) : TVector3;
+    function SuggestedDelay : Double;
 
     constructor Create;
   end;
@@ -86,12 +99,20 @@ begin
   if RotateVector = AValue then
      Exit;
   RotateVector := AValue;
-  fCollisionBox.RotationMatrix := CreateRotateMatrixZXY(RotateVector);
+  fCollisionBox.RotationMatrix := CreateRotateMatrixFromVector(RotateVector);
 end;
 
 procedure TPhisicalBox.SetSize(const AValue: TSizeVector);
 begin
   fCollisionBox.Size := AValue;
+end;
+
+function TPhisicalBox.ResetTime: Double;
+begin
+  Result := fMicroseconds;
+  fMicroseconds := GetMicroseconds;
+  Result := fMicroseconds - Result;
+  Result *= PrefixSI.Micro;
 end;
 
 procedure TPhisicalBox.ZeroForce;
@@ -121,7 +142,7 @@ end;
 
 function TPhisicalBox.GetMass: Double;
 begin
-  Result := 1;
+  Result := 1000;
 end;
 
 function TPhisicalBox.GetInertiaMoment(const Axis: TAxis): Double;
@@ -137,7 +158,7 @@ begin
       Result[a] := GetInertiaMoment(a);
 end;
 
-procedure TPhisicalBox.Tick(const dt: Double);
+procedure TPhisicalBox.Tick(dt: Double);  ////remove this parametr
 var
   NewVelocity : TVector3;
   NewAngularVelocity : TRotationVector;
@@ -146,6 +167,8 @@ var
   I : Double;
   oldRotateMatrix : TMatrix3x3;
 begin
+  Lock;
+  dt := ResetTime;
   NewVelocity := Force/GetMass*dt + fVelocity;
   for a := low(TAxis) to High(TAxis) do
   begin
@@ -155,15 +178,29 @@ begin
   end;                                                                
   Position := Position + CollisionBox.RotationMatrix*((fVelocity + NewVelocity)/2) * dt;
   NewShapeRotate := RotateVector + ((fAngularVelocity + NewAngularVelocity)/2) * dt;
-             
-  for a := low(TAxis) to High(TAxis) do
-      FromZeroTo2Pi(NewShapeRotate[a]);
+
+  FromZeroTo2PiVector(NewShapeRotate);
 
   oldRotateMatrix := CollisionBox.RotationMatrix;
   Rotate := NewShapeRotate;
   fVelocity := Transposing(CollisionBox.RotationMatrix) * (oldRotateMatrix * NewVelocity);
   fAngularVelocity := NewAngularVelocity;
   ZeroForce;
+  Unlock;
+
+
+  ////test
+  I := Hypot3(fVelocity);
+  if I > dt then
+    fVelocity := fVelocity - Normalize(fVelocity)*dt
+    else
+    fVelocity := Vector3(0, 0, 0);
+
+  I := Hypot3(fAngularVelocity);
+  if I > dt then
+    fAngularVelocity := fAngularVelocity - Normalize(fAngularVelocity)*dt
+    else
+    fAngularVelocity := Vector3(0, 0, 0);
 end;
 
 procedure TPhisicalBox.AddResistance(const Dentisy: Double);
@@ -171,7 +208,8 @@ var
   Corner : TIntVector3;
   F, S, v, CornerPlace : TVector3;
   a : TAxis;
-begin                       exit;
+begin
+  exit;  //////////////////////////////////////
   S := Vector3(CollisionBox.Size[SizeDepth]*CollisionBox.Size[SizeHeight]/4, CollisionBox.Size[SizeWidth]*CollisionBox.Size[SizeDepth]/4, CollisionBox.Size[SizeWidth]*CollisionBox.Size[SizeHeight]/4);
   for Corner in Corners do
   begin
@@ -202,17 +240,66 @@ begin
   Force := Force + Transposing(CollisionBox.RotationMatrix)*Value*GetMass;
 end;
 
+procedure TPhisicalBox.AddLocalVelocity(const Where: TVector3; const Value: TVector3);
+var
+  v : TVector3;
+begin                                    
+  v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
+  v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
+  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
+  v := VectorProduct(v/SquaredHypot3(Where), Where);
+  AngularVelocity := AngularVelocity - v;
+  Velocity := Velocity + (Value-v);
+end;
+
+procedure TPhisicalBox.AddGlobalVelocity(const Where: TVector3; const Value: TVector3);
+var
+  m : TMatrix3x3;
+begin
+  m := Transposing(CollisionBox.RotationMatrix);
+  AddLocalVelocity(m*(Where - CollisionBox.Position), m*Value);
+end;
+
+procedure TPhisicalBox.MoveLocal(const Where: TVector3; const Value: TVector3);
+var
+  v : TVector3;
+begin
+  v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
+  v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
+  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
+  v := VectorProduct(v/SquaredHypot3(Where), Where);
+  Rotate := Rotate - v;
+  Position := Position + CollisionBox.RotationMatrix * (Value-v);
+end;
+
+procedure TPhisicalBox.MoveGlobal(const Where: TVector3; const Value: TVector3);
+var
+  m : TMatrix3x3;
+begin
+  m := Transposing(CollisionBox.RotationMatrix);
+  MoveLocal(m*(Where - CollisionBox.Position), m*Value);
+  //writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
+end;
+
 function TPhisicalBox.VelocityAtGlobalPoint(const Where: TVector3): TVector3;
 begin
   Exit(CollisionBox.RotationMatrix * Velocity + VectorProduct(Where-Position, CollisionBox.RotationMatrix * AngularVelocity));
 end;
 
+function TPhisicalBox.SuggestedDelay: Double;
+begin
+  Result := fAccurancy / (Hypot3(Velocity) + sqrt(SquaredHypot3(Rotate)*SquaredHypot3(Size/2)));
+end;
+
 constructor TPhisicalBox.Create;
 begin
+  inherited Create;
   ZeroForce;
   Position := Vector3(0, 0, 0);
   Rotate := Vector3(0, 0, 0);
   fCollisionBox.RotationMatrix := IdentityMatrix;
+  fMicroseconds := GetMicroseconds;
+  fAccurancy:=1/256;
 end;
 
 end.

@@ -112,7 +112,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="49">
+    <Units Count="51">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -340,6 +340,16 @@
         <Filename Value="../incrementations2.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit48>
+      <Unit49>
+        <Filename Value="../prefixsi.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="PrefixSI"/>
+      </Unit49>
+      <Unit50>
+        <Filename Value="../asyncmicrotimer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="AsyncMicroTimer"/>
+      </Unit50>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
