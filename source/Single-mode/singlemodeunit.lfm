@@ -1,8 +1,8 @@
 object MainForm: TMainForm
   Left = 238
-  Height = 327
+  Height = 544
   Top = 139
-  Width = 490
+  Width = 797
   Caption = 'OurCraft'
   DesignTimePPI = 98
   OnCreate = FormCreate

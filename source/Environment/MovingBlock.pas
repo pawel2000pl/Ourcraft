@@ -114,7 +114,7 @@ begin
   for side := low(TTextureMode) to High(TTextureMode) do
   begin
     for i := 0 to 3 do                  //TODO: czemu transponowane?
-        rc[i] := Transposing(MainCollisionBox.RotationMatrix)*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
+        rc[i] := {Transposing}(MainCollisionBox.RotationMatrix)*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
     Model.AddWall(p, rc, TextureStandardCorners, (Creator as TMovingBlockCreator).fTexture, rl);
   end;
   Model.Unlock;

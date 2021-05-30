@@ -13,19 +13,20 @@ Warning: this is project, some (almost all) of this features haven't been implem
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
 5. [+] Three channels for light (red, green, blue)
 6. [+] Light with 256 levels (but light-resistance is 16/block)
-7. [?] More realistic phisics
+7. [+] More realistic phisics
      
 It's not playable yet (but almost). But you can: 
 
 * Fly: WASD, Space (Up) and X (Down)
 * Move camera: IJKL 
+* Spawn the first entity "MovingBlock": F
 * Edit blocks: N (air), M (stone), 0-7 (colored lightstone); only in constant and determined distance
 
 Changelog:
 
 * Added (only) directive for using CORBA interfaces. TEnvironmentElementAttribute will be removed in a near future.
 * Optimalization in temporary rendering (SingleMode)
-* Update to FPC 3.2 (but it should be compatible with 3.0)
+* Update to FPC 3.2 (it is NOT compatible with 3.0)
 * Update for newer kernels (fastcmem was deactivated)
 * Changed algorithm of light: instead of only gray it is red, green and blue (and mixing of them is possible)
 * Day-Night cycle for block lighting
@@ -33,6 +34,7 @@ Changelog:
 * Added Perlin Noise algorithm for any count of dimenstion
 * Added simply terrain generator
 * Bug fixes and optimalization
+* Added phisic engine (it still does not work as it will, but work with a slow velocity)
 
 How to compile and run
 
@@ -44,7 +46,7 @@ or execute "make all" to install and compile and then execute "make run" to open
 
 In case of errors with the compilation, open with the Lazarus "source/Single-mode/SingleMode.lpr" and then click Package -> Open loaded package.
 Find "lazopenglcontext", open it and compile. Then click Run -> Build.
-And then, you can type "make run" (in the console, in main directiry of project) to open the game in single mode.
+And then, you can type "make run" (in the console, in main directory of project) to open the game in single mode.
 
 Screenshots:
 

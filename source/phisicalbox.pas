@@ -25,9 +25,8 @@ type
     fVelocity : TVector3;
     fAngularVelocity : TRotationVector;
                                       
-    Force : TVector3;
-    ForceMoment : TRotationVector;
-    fLocker : TLocker;
+    fForce : TVector3;
+    fForceMoment : TRotationVector;
 
     function GetPosition: TVector3; inline; //center
     function GetSize: TSizeVector; inline;
@@ -46,6 +45,9 @@ type
 
     property Velocity : TVector3 read fVelocity write fVelocity;
     property AngularVelocity : TVector3 read fAngularVelocity write fAngularVelocity;
+
+    property Force : TVector3 read fForce write fForce;
+    property ForceMoment : TRotationVector read fForceMoment write fForceMoment;
 
     property CollisionBox : TCollisionBox read fCollisionBox;
 
@@ -168,16 +170,17 @@ var
   oldRotateMatrix : TMatrix3x3;
 begin
   Lock;
-  dt := ResetTime;
+  dt := 0.002;//ResetTime;
   NewVelocity := Force/GetMass*dt + fVelocity;
   for a := low(TAxis) to High(TAxis) do
   begin
       I := GetInertiaMoment(a);
       if I > 0 then
-         NewAngularVelocity[a] := ForceMoment[a]/I * dt + fAngularVelocity[a];
-  end;                                                                
-  Position := Position + CollisionBox.RotationMatrix*((fVelocity + NewVelocity)/2) * dt;
-  NewShapeRotate := RotateVector + ((fAngularVelocity + NewAngularVelocity)/2) * dt;
+         NewAngularVelocity[a] := ForceMoment[a]/I * dt;
+  end;
+  NewAngularVelocity := CollisionBox.RotationMatrix*NewAngularVelocity + fAngularVelocity;
+  Position := Position + CollisionBox.RotationMatrix*((fVelocity + NewVelocity)*(dt/2));
+  NewShapeRotate := RotateVector + ((fAngularVelocity + NewAngularVelocity)*(dt/2));
 
   FromZeroTo2PiVector(NewShapeRotate);
 
@@ -186,6 +189,7 @@ begin
   fVelocity := Transposing(CollisionBox.RotationMatrix) * (oldRotateMatrix * NewVelocity);
   fAngularVelocity := NewAngularVelocity;
   ZeroForce;
+
   Unlock;
 
 
@@ -224,7 +228,7 @@ end;
 procedure TPhisicalBox.AddLocalForce(const Where: TVector3; const Value: TVector3);
 begin
   Force := Force + Value;
-  ForceMoment := ForceMoment + VectorProduct(Value, Where);// - CollisionBox.Size/2);
+  ForceMoment := ForceMoment + VectorProduct(Where, Value);
 end;
 
 procedure TPhisicalBox.AddGlobalForce(const Where: TVector3; const Value: TVector3);
@@ -247,8 +251,8 @@ begin
   v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
   v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
   v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
-  v := VectorProduct(v/SquaredHypot3(Where), Where);
-  AngularVelocity := AngularVelocity - v;
+  v := VectorProduct(Where, v/SquaredHypot3(Where));
+  AngularVelocity := AngularVelocity + v;
   Velocity := Velocity + (Value-v);
 end;
 
@@ -267,7 +271,7 @@ begin
   v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
   v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
   v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
-  v := VectorProduct(v/SquaredHypot3(Where), Where);
+  v := VectorProduct(Where, v/SquaredHypot3(Where));
   Rotate := Rotate - v;
   Position := Position + CollisionBox.RotationMatrix * (Value-v);
 end;
@@ -278,12 +282,11 @@ var
 begin
   m := Transposing(CollisionBox.RotationMatrix);
   MoveLocal(m*(Where - CollisionBox.Position), m*Value);
-  //writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
 end;
 
 function TPhisicalBox.VelocityAtGlobalPoint(const Where: TVector3): TVector3;
 begin
-  Exit(CollisionBox.RotationMatrix * Velocity + VectorProduct(Where-Position, CollisionBox.RotationMatrix * AngularVelocity));
+  Exit(CollisionBox.RotationMatrix * Velocity + VectorProduct(AngularVelocity, Where-Position));
 end;
 
 function TPhisicalBox.SuggestedDelay: Double;

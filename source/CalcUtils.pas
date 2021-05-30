@@ -179,7 +179,8 @@ procedure FromZeroTo2Pi(var d : Double);
 procedure FromZeroTo2PiVector(var v : TVector3);
 
 function DecreaseVector(const v : TVector3; const d : Double) : TVector3;
-
+function BiggestDimension(const v : TVector3) : TVector3;
+function NormalizeDimensionsIndepedently(const v : TVector3) : TVector3;
 
 generic procedure Swap<T>(var a, b : T);
 generic procedure MinToLeft<T>(var a, b : T);
@@ -591,13 +592,10 @@ end;
 procedure FromZeroTo2Pi(var d: Double);
 const
   border = 2*pi;
-var
-  count : Integer;
 begin
   if (d>=0) and (d<border) then
      Exit;
-  count := floor(d/border);
-  d -= border*count;
+  d -= border*floor(d/border);
 end;
 
 procedure FromZeroTo2PiVector(var v: TVector3);
@@ -758,7 +756,33 @@ begin
   Result := Math.Max(X, Math.Max(Y, Z))
 end;
 
-generic procedure Swap<T>(var a, b : T);
+function BiggestDimension(const v: TVector3): TVector3;
+begin
+  if abs(v[AxisX]) > abs(v[AxisY]) then
+  begin
+     if abs(v[AxisX]) > abs(v[axisZ]) then
+        Exit(Vector3(v[AxisX], 0, 0))
+     else
+        Exit(Vector3(0, 0, v[AxisZ]));
+  end
+  else
+  begin
+     if abs(v[AxisY]) > abs(v[axisZ]) then
+        Exit(Vector3(0, v[AxisY], 0))
+     else
+        Exit(Vector3(0, 0, v[AxisZ]));
+  end;
+end;
+
+function NormalizeDimensionsIndepedently(const v: TVector3): TVector3;
+var
+  a : TAxis;
+begin
+  for a := Low(TAxis) to High(TAxis) do
+    Result[a] := sign(v[a]);
+end;
+
+generic   procedure Swap<T>(var a, b : T);
 var
   x : T;
 begin

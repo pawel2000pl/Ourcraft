@@ -2881,24 +2881,36 @@ begin   // exit; //TODO: remove
               if PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) then
               begin
                 // Writeln(PhisicalBoxes[i].SuggestedDelay);
+                {
                  if not (Block is TAir) then
                  begin
               //            writeln('Collision', #9, Where[axisX]:2:2, #9, Where[axisY]:2:2, #9, Where[axisZ]:2:2);
                     v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
+
+                   // PhisicalBoxes[i].AddGlobalForce(Where, Normalize(Where-CollisionBox.Position)*ScalarProduct(v, PhisicalBoxes[i].Force));
+
+                    //if False then
                     if ScalarProduct(Where-CollisionBox.Position, v) < 0 then
                     begin
                        PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-0.8));
-                     //  PhisicalBoxes[i].MoveGlobal(Where, DecreaseVector(PhisicalBoxes[i].Position-CollisionBox.Position, 1));
-
+                       PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + v*(-0.005);
+                       //PhisicalBoxes[i].MoveGlobal(Where, DecreaseVector(PhisicalBoxes[i].Position-CollisionBox.Position, 1)/256);
+                       //PhisicalBoxes[i].MoveGlobal(Where, Vector3(0, 1, 0)/256);
                     end;
-                end;
-                 //  Continue;
+                end;          }
+
+                 //if Hypot3(PhisicalBoxes[i].AngularVelocity) < 0.1 then
+                 //  PhisicalBoxes[i].ForceMoment := PhisicalBoxes[i].ForceMoment - PhisicalBoxes[i].GetMass * PhisicalBoxes[i].Rotate;
+
+                // Continue;
                  r := min(Block.Resilence, Resilence);
+                 v := Normalize(BiggestDimension(PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
+                 //v := PhisicalBoxes[i].CollisionBox.RotationMatrix * PhisicalBoxes[i].CollisionBox.GetNormalVectorForSide(PhisicalBoxes[i].CollisionBox.GetHittedSide(Where));
+                 //v := (-1)*Normalize(v);
                  if r <> 0 then
-                    PhisicalBoxes[i].AddGlobalForce(Where, PhisicalBoxes[i].GetMass*(Normalize(
-                    PhisicalBoxes[i].CollisionBox.Position - Where, Vector3(0, 0, 0))/5
-                    - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)
-                     )*r);
+                    PhisicalBoxes[i].AddGlobalForce(
+                    PhisicalBoxes[i].CollisionBox.HittedPointToSide(Where),
+                    PhisicalBoxes[i].GetMass*r*(v - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)));
               end;
         end;
 end;

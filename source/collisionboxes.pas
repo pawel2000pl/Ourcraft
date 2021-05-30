@@ -20,6 +20,9 @@ type
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
     function GetSide(const Side : TTextureMode; const Thickness : Double = 0) : TCollisionBox;
     function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 256; const CutAxis : TAxis = AxisX) : Boolean;
+    function GetHittedSide(const Where : TVector3) : TTextureMode;
+    function GetNormalVectorForSide(const Side : TTextureMode) : TVector3;
+    function HittedPointToSide(const Where : TVector3) : TVector3;
   end;
 
 function CreateCollosionBox(const Position : TVector3; const Rotation : TRotationVector; const Size : TSizeVector) : TCollisionBox; inline;
@@ -60,6 +63,53 @@ begin
     3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth, CutAxis);
   end;
 end;
+                 {
+function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer; const CutAxis : TAxis) : Boolean;
+var
+  axis, axis2, minAxis, minAxis2 : TAxis;
+  ia, ib, minIA, minIB : Integer;
+  tmp, MinLength : Double;
+  SubsA, SubsB : array[TAxis] of array[0..1] of TCollisionBox;
+begin
+  for axis := Low(TAxis) to High(TAxis) do
+  begin
+    A.Cut(axis, SubsA[axis, 0], SubsA[axis, 1]);
+    B.Cut(axis, SubsB[axis, 0], SubsB[axis, 1]);
+  end;
+
+  MinLength := MaxDouble;
+  minAxis:=AxisX;
+  minAxis2:=AxisX;
+  minIA := 0;
+  minIB := 0;
+
+  for axis := Low(TAxis) to High(TAxis) do
+    for axis2 := axis to High(TAxis) do
+      for ia := 0 to 1 do
+        for ib := 0 to 1 do
+        begin
+           tmp := Hypot3(SubsA[axis, ia].Position - SubsB[axis2, ib].Position);
+           if tmp < MinLength then
+           begin
+             MinLength:=tmp;
+             minAxis:=axis;
+             minAxis2:=axis2;
+             minIA := ia;
+             minIB := ib;
+           end;
+        end;
+
+  Exit(CheckCollision(SubsA[minAxis, minIA], SubsB[minAxis2, minIB], Where, MaxDepth, CutAxis));
+end;              }
+
+function AverageCollisionPlace(const A, B : TCollisionBox) : TVector3; inline;
+var
+  ha, hb : Double;
+begin
+  ha := Hypot3(A.Size);
+  hb := Hypot3(B.Size);
+  Exit((A.Position*hb+B.Position*ha)/(ha+hb));
+end;
 
 function CheckCollision(const A, B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis : TAxis): Boolean;
 const
@@ -71,7 +121,8 @@ begin
   MinDistance := (A.Size.Min + B.Size.Min)/2;
   if Distance - Epsilon <= MinDistance + Epsilon then
   begin
-     Where := (A.Position + B.Position)/2;
+     Where := AverageCollisionPlace(A, B);
+     //Where := (A.Position + B.Position)/2;
      Exit(True);
   end;
   MaxDistance := (Hypot3(A.Size)+Hypot3(B.Size))/2;
@@ -122,12 +173,69 @@ begin
   PositionOffset := Vector3(0, 0, 0);
   PositionOffset[TextureModeSidesAxis[Side].Axis] := Size[TextureModeSidesAxis[Side].Axis]/2;
 
-  Result.Position := Position + (RotationMatrix*PositionOffset)*TextureModeSidesAxis[Side].Offset ;
+  Result.Position := Position + (RotationMatrix*PositionOffset)*TextureModeSidesAxis[Side].Offset;
 end;
 
 function TCollisionBox.CheckCollision(const B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis: TAxis): Boolean;
 begin
   Result := CollisionBoxes.CheckCollision(Self, B, Where, MaxDepth, CutAxis);
+end;
+
+function AxisAndSognToTextureMode(const a : TAxis; const s : Double) : TTextureMode; inline;
+const
+  UpArr : array[TAxis] of TTextureMode = (tmNorth, tmUp, tmEast);
+  DownArr : array[TAxis] of TTextureMode = (tmSouth, tmDown, tmWest);
+begin
+  if s > 0 then
+     Exit(UpArr[a]);
+  Exit(DownArr[a]);
+end;
+
+function TCollisionBox.GetHittedSide(const Where: TVector3): TTextureMode;
+var
+  v : TVector3;
+  a : TAxis;
+begin
+  v := Transposing(RotationMatrix)*(Where-Position);
+  for a := low(TAxis) to High(TAxis) do
+     if Size[a] = 0 then
+        Exit(AxisAndSognToTextureMode(a, 1))
+        else
+        v[a] /= Size[a];
+
+  if abs(v[AxisX]) > abs(v[AxisY]) then
+  begin
+    if abs(v[AxisX]) > abs(v[axisZ]) then
+       Exit(AxisAndSognToTextureMode(AxisX, v[AxisX]))
+    else
+       Exit(AxisAndSognToTextureMode(AxisZ, v[AxisZ]));
+  end
+  else
+  begin
+    if abs(v[AxisY]) > abs(v[axisZ]) then
+       Exit(AxisAndSognToTextureMode(AxisY, v[AxisY]))
+    else
+       Exit(AxisAndSognToTextureMode(AxisZ, v[AxisZ]));
+  end;
+end;
+
+function TCollisionBox.GetNormalVectorForSide(const Side: TTextureMode): TVector3;
+begin
+  Exit(RotationMatrix * Vector3(Size[AxisX]*TextureModeSidesD[Side][AxisX]/2, Size[AxisY]*TextureModeSidesD[Side][AxisY]/2, Size[AxisZ]*TextureModeSidesD[Side][AxisZ]/2));
+end;
+
+function TCollisionBox.HittedPointToSide(const Where: TVector3): TVector3;
+var
+  a : TAxis;
+  v : TVector3;
+begin
+  a := TextureModeSidesAxis[GetHittedSide(Where)].Axis;
+  if Size[a] = 0 then
+     Exit(Where);
+  v := Transposing(RotationMatrix)*(Where - Position);
+  if v[a] = 0 then
+     Exit(Vector3(0, 0, 0));
+  Exit(RotationMatrix * v*abs(Size[a]/v[a]) + Position);
 end;
 
 end.
