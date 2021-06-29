@@ -182,6 +182,7 @@ begin
     z * Settings.WorldScale[axisZ] + hr * sin(ha)], floor64(MiddleLevel*1024) + ExampleSeedOffset[3]);
   }Result := RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX], z * Settings.WorldScale[axisZ]], ExampleSeedOffset[0]);
   Result += RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX]*4, z * Settings.WorldScale[axisZ]*4], ExampleSeedOffset[1])/4;
+  Result += RandomGenerator.PerlinNoise([x * Settings.WorldScale[axisX]/4, z * Settings.WorldScale[axisZ]/4], ExampleSeedOffset[2])*4;
 end;
 
 procedure TWorldGenerator.Generate(const Chunk : TOurChunk);

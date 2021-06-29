@@ -19,19 +19,37 @@ type
     procedure GetRegularCube(out LeftBottomFront, RightTopBack : TVector3);
     procedure Cut(const Axis : TAxis; out A, B : TCollisionBox);
     function GetSide(const Side : TTextureMode; const Thickness : Double = 0) : TCollisionBox;
-    function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 256; const CutAxis : TAxis = AxisX) : Boolean;
+    function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 8) : Boolean;
     function GetHittedSide(const Where : TVector3) : TTextureMode;
     function GetNormalVectorForSide(const Side : TTextureMode) : TVector3;
     function HittedPointToSide(const Where : TVector3) : TVector3;
   end;
 
 function CreateCollosionBox(const Position : TVector3; const Rotation : TRotationVector; const Size : TSizeVector) : TCollisionBox; inline;
-function CheckCollision(const A, B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 256; const CutAxis : TAxis = AxisX) : Boolean;
+function CheckCollision(const A, B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 8) : Boolean;
 
 implementation
 
 uses
   Math;
+
+function BiggestDimension(const v : TVector3) : TAxis; inline;
+begin
+   if abs(v[AxisX]) > abs(v[AxisY]) then
+  begin
+    if abs(v[AxisX]) > abs(v[axisZ]) then
+       Exit(AxisX)
+    else
+       Exit(AxisZ);
+  end
+  else
+  begin
+    if abs(v[AxisY]) > abs(v[axisZ]) then
+       Exit(AxisY)
+    else
+       Exit(AxisZ);
+  end;
+end;
 
 function CreateCollosionBox(const Position: TVector3; const Rotation: TRotationVector; const Size: TSizeVector): TCollisionBox;
 begin
@@ -50,33 +68,36 @@ begin
         Result := i;
 end;
 
-function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer; const CutAxis : TAxis) : Boolean;
+function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer) : Boolean;
 var
   SubA1, SubA2, SubB1, SubB2 : TCollisionBox;
 begin
-  A.Cut(CutAxis, SubA1, SubA2);
-  B.Cut(CutAxis, SubB1, SubB2);
+  A.Cut(BiggestDimension(A.Size), SubA1, SubA2);
+  B.Cut(BiggestDimension(B.Size), SubB1, SubB2);
   case MinIndex([Hypot3(SubA1.Position-SubB1.Position), Hypot3(SubA1.Position-SubB2.Position), Hypot3(SubA2.Position - SubB1.Position), Hypot3(SubA2.Position - SubB2.Position)]) of
-    0: Result := CheckCollision(SubA1, SubB1, Where, MaxDepth, CutAxis);
-    1: Result := CheckCollision(SubA1, SubB2, Where, MaxDepth, CutAxis);
-    2: Result := CheckCollision(SubA2, SubB1, Where, MaxDepth, CutAxis);
-    3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth, CutAxis);
+    0: Result := CheckCollision(SubA1, SubB1, Where, MaxDepth);
+    1: Result := CheckCollision(SubA1, SubB2, Where, MaxDepth);
+    2: Result := CheckCollision(SubA2, SubB1, Where, MaxDepth);
+    3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth);
   end;
 end;
-                 {
-function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer; const CutAxis : TAxis) : Boolean;
+                    {
+function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer) : Boolean;
 var
   axis, axis2, minAxis, minAxis2 : TAxis;
   ia, ib, minIA, minIB : Integer;
   tmp, MinLength : Double;
   SubsA, SubsB : array[TAxis] of array[0..1] of TCollisionBox;
+
+  Wage : Double;
+  TempWhere : TVector3;
 begin
   for axis := Low(TAxis) to High(TAxis) do
   begin
     A.Cut(axis, SubsA[axis, 0], SubsA[axis, 1]);
     B.Cut(axis, SubsB[axis, 0], SubsB[axis, 1]);
   end;
-
+                            {
   MinLength := MaxDouble;
   minAxis:=AxisX;
   minAxis2:=AxisX;
@@ -99,8 +120,23 @@ begin
            end;
         end;
 
-  Exit(CheckCollision(SubsA[minAxis, minIA], SubsB[minAxis2, minIB], Where, MaxDepth, CutAxis));
-end;              }
+  Exit(CheckCollision(SubsA[minAxis, minIA], SubsB[minAxis2, minIB], Where, MaxDepth));   }
+  Wage := 0;
+  Where := Vector3(0, 0, 0);
+  for axis := Low(TAxis) to High(TAxis) do
+    for axis2 := axis to High(TAxis) do
+      for ia := 0 to 1 do
+        for ib := 0 to 1 do
+           if CheckCollision(SubsA[axis, ia], SubsB[axis2, ib], TempWhere{%H-}, MaxDepth) then
+           begin
+              Wage += Hypot3(SubsA[axis, ia].Size)+Hypot3(SubsB[axis2, ib].Size);
+              Where := Where + TempWhere;
+           end;
+
+  if Wage <> 0 then
+     Where := Where / Wage;
+  Exit(Wage<>0);
+end;            }
 
 function AverageCollisionPlace(const A, B : TCollisionBox) : TVector3; inline;
 var
@@ -111,7 +147,7 @@ begin
   Exit((A.Position*hb+B.Position*ha)/(ha+hb));
 end;
 
-function CheckCollision(const A, B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis : TAxis): Boolean;
+function CheckCollision(const A, B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer): Boolean;
 const
   Epsilon = 2*MinDouble;
 var
@@ -128,7 +164,7 @@ begin
   MaxDistance := (Hypot3(A.Size)+Hypot3(B.Size))/2;
   if (Distance > MaxDistance) or (MaxDepth<=0) then
      Exit(False);
-  Exit(CheckSubCollision(A, B, Where, MaxDepth-1, NextAxis[CutAxis]));
+  Exit(CheckSubCollision(A, B, Where, MaxDepth-1));
 end;
 
 { TCollisionBox }
@@ -176,12 +212,12 @@ begin
   Result.Position := Position + (RotationMatrix*PositionOffset)*TextureModeSidesAxis[Side].Offset;
 end;
 
-function TCollisionBox.CheckCollision(const B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer; const CutAxis: TAxis): Boolean;
+function TCollisionBox.CheckCollision(const B: TCollisionBox; var Where: TVector3; const MaxDepth: Integer): Boolean;
 begin
-  Result := CollisionBoxes.CheckCollision(Self, B, Where, MaxDepth, CutAxis);
+  Result := CollisionBoxes.CheckCollision(Self, B, Where, MaxDepth);
 end;
 
-function AxisAndSognToTextureMode(const a : TAxis; const s : Double) : TTextureMode; inline;
+function AxisAndSignToTextureMode(const a : TAxis; const s : Double) : TTextureMode; inline;
 const
   UpArr : array[TAxis] of TTextureMode = (tmNorth, tmUp, tmEast);
   DownArr : array[TAxis] of TTextureMode = (tmSouth, tmDown, tmWest);
@@ -199,23 +235,23 @@ begin
   v := Transposing(RotationMatrix)*(Where-Position);
   for a := low(TAxis) to High(TAxis) do
      if Size[a] = 0 then
-        Exit(AxisAndSognToTextureMode(a, 1))
+        Exit(AxisAndSignToTextureMode(a, 1))
         else
         v[a] /= Size[a];
 
   if abs(v[AxisX]) > abs(v[AxisY]) then
   begin
     if abs(v[AxisX]) > abs(v[axisZ]) then
-       Exit(AxisAndSognToTextureMode(AxisX, v[AxisX]))
+       Exit(AxisAndSignToTextureMode(AxisX, v[AxisX]))
     else
-       Exit(AxisAndSognToTextureMode(AxisZ, v[AxisZ]));
+       Exit(AxisAndSignToTextureMode(AxisZ, v[AxisZ]));
   end
   else
   begin
     if abs(v[AxisY]) > abs(v[axisZ]) then
-       Exit(AxisAndSognToTextureMode(AxisY, v[AxisY]))
+       Exit(AxisAndSignToTextureMode(AxisY, v[AxisY]))
     else
-       Exit(AxisAndSognToTextureMode(AxisZ, v[AxisZ]));
+       Exit(AxisAndSignToTextureMode(AxisZ, v[AxisZ]));
   end;
 end;
 

@@ -27,7 +27,7 @@ uses
   SysUtils, Classes, Math, FpImage, fpreadbmp, fpwritebmp,
   fpreadjpeg, fpwritejpeg, fpreadpng, fpwritepng, fpreadpnm, fpwritepnm,
   fpreadtga, fpwritetga, fpreadtiff, fpwritetiff, fpreadxpm, fpwritexpm,
-  fpreadpcx, fpwritepcx, FPImgCanv;
+  fpreadpcx, fpwritepcx, FPImgCanv, matrix;
 
 type
   TPoint = record
@@ -47,7 +47,7 @@ type
     function GetWriter(const Ext : ansistring) : TFPCustomImageWriter;
     function GetInternalColor(x, y : integer) : TFPColor; override;
     procedure SetInternalColor(x, y : integer; const Value : TFPColor); override;
-    function GetInternalPixel(x, y : integer) : integer; override; //Ignore Palette
+    function GetInternalPixel(x, y : integer) : integer; override; //Ignores Palette
     procedure SetInternalPixel(x, y : integer; Value : integer); override;
   public
     property Canvas : TFPImageCanvas read FCanvas;
@@ -56,6 +56,11 @@ type
     function GetGLBuffer : PLongWord; //RGBA
     function GetGLBuffer16 : PQWord;  //RGBA16
     function GetGLBuffer(const RGBA16 : boolean) : Pointer; overload;
+
+    procedure SaveToPixelBuffer(const buf : Pointer);  //RGBA
+    procedure SaveToPixelBuffer16(const buf : Pointer); //RGBA16
+    procedure LoadFromPixelBuffer(const buf : Pointer);  //RGBA
+    procedure LoadFromPixelBuffer16(const buf : Pointer); //RGBA16
 
     function CreateMipmap(const Level : integer) : TUniversalImage;
 
@@ -66,17 +71,54 @@ type
     procedure SaveToFile(const FileName : ansistring; const Quality : Integer); overload; //only JPG
 
     procedure LoadFromFile(const FileName : ansistring); overload;
-    constructor CreateEmpty;
+    constructor CreateEmpty; virtual;
     constructor Create(AWidth, AHeight : integer); override;
-    constructor CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer);
+    constructor CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); virtual;
     destructor Destroy; override;
     procedure SetSize(AWidth, AHeight : integer); override;
-    procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage;
-      const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
+    procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage; const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
   end;
 
-function MixColors(const CanvColor, DrawColor : TFPColor;
-  const Transparency : double = 0) : TFPColor; inline;
+  { TUniversalTransformationImage }
+
+  //warning: write only without matrix (UseMatrix := False)
+  TUniversalTransformationImage = class(TUniversalImage)
+  type
+    TTransformationMatrix = Tmatrix3_double;
+  private
+    FMatrix : TTransformationMatrix;
+    FDefaultColor : TFPColor;
+    FUseMatrix: Boolean;
+    procedure Init;
+  protected
+    function GetPointerForFPColor(const x, y : Integer; const def : PFPColor = nil) : PFPColor; inline;
+    function GetInternalColor(x, y : integer) : TFPColor; override;
+    procedure SetInternalColor(x, y : integer; const Value : TFPColor); override;
+    function GetInternalPixel(x, y : integer) : integer; override; //Ignores Palette
+    procedure SetInternalPixel(x, y : integer; Value : integer); override;
+  public
+    property Matrix : TTransformationMatrix read FMatrix write FMatrix;
+    property DefaultColor : TFPColor read FDefaultColor write FDefaultColor;
+    property UseMatrix : Boolean read FUseMatrix write FUseMatrix;
+
+    procedure MultipleMatrixLeft(const LeftMatrix : TTransformationMatrix); //Matrix := LeftMatrix * Matrix
+    procedure MultipleMatrixRight(const RightMatrix : TTransformationMatrix); //Matrix := Matrix * RightMatrix
+
+    class function RotationMatrix(const angle : Double) : TTransformationMatrix; static; inline;
+    class function TranslationMatrix(const x, y : Double) : TTransformationMatrix; static; inline;
+    class function ScaleMatrix(const kx, ky : Double) : TTransformationMatrix; static; inline;
+    class function MirrorXMatrix : TTransformationMatrix; static; inline;
+    class function MirrorYMatrix : TTransformationMatrix; static; inline;
+    class function InclinationXMatrix(const a : Double) : TTransformationMatrix; static; inline;
+    class function InclinationYMatrix(const a : Double) : TTransformationMatrix; static; inline;
+
+    constructor CreateEmpty; override;
+    constructor Create(AWidth, AHeight : integer); override;
+    constructor CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); override;
+    destructor Destroy; override;
+  end;
+
+function MixColors(const CanvColor, DrawColor : TFPColor; const Transparency : double = 0) : TFPColor; inline;
 function Point(const X, Y : integer) : TPoint; inline;
 function FpColor(red, green, blue, alpha : word) : TFPColor; inline;
 
@@ -127,6 +169,151 @@ begin
   Result.alpha := alpha;
 end;
 
+{ TUniversalTransformationImage }
+
+procedure TUniversalTransformationImage.Init;
+begin
+  FMatrix.init_identity;
+  FUseMatrix := True;
+  FDefaultColor := FpColor(0, 0, 0, 0);
+end;
+
+function TUniversalTransformationImage.GetPointerForFPColor(const x, y: Integer; const def: PFPColor): PFPColor;
+var
+  v : Tvector3_double;
+  newX, newY : Integer;
+begin
+  if not FUseMatrix then
+     Exit(@FData[x, y]);
+  v.init(x, y, 1);
+  v := FMatrix * v;
+  newX := round(v.data[0]);
+  newY := round(v.data[1]);
+  if (0 <= newX) and (Width < newX) and (0 <= newY) and (Height < newY) then
+     Exit(@FData[newX, newY]);
+  Exit(@def);
+end;
+
+function TUniversalTransformationImage.GetInternalColor(x, y: integer): TFPColor;
+begin
+  Exit(GetPointerForFPColor(x, y, @FDefaultColor)^);
+end;
+
+procedure TUniversalTransformationImage.SetInternalColor(x, y: integer; const Value: TFPColor);
+var
+  c : PFPColor;
+begin
+  c := GetPointerForFPColor(x, y, nil);
+  if c = nil then
+     Exit;
+  c^ := Value;
+end;
+
+function TUniversalTransformationImage.GetInternalPixel(x, y: integer): integer;
+var
+  c : PFPColor;
+begin
+  c := GetPointerForFPColor(x, y, @FDefaultColor);
+  Result := c^.red shr 8 + c^.blue shr 8 shl 8 + c^.green shr 8 shl 16 + c^.alpha shr 8 shl 24;
+end;
+
+procedure TUniversalTransformationImage.SetInternalPixel(x, y: integer;Value: integer);
+var
+  c : PFPColor;
+begin
+  c := GetPointerForFPColor(x, y, nil);
+  if c = nil then
+     Exit;
+  c^.red := (Value and $FF) shl 8;
+  c^.blue := (Value and $FF00) shl 8;
+  c^.green := (Value and $FF0000) shl 8;
+  c^.alpha := (Value and $FF000000) shl 8;
+end;
+
+procedure TUniversalTransformationImage.MultipleMatrixLeft(const LeftMatrix: TTransformationMatrix);
+begin
+  Matrix := LeftMatrix * Matrix;
+end;
+
+procedure TUniversalTransformationImage.MultipleMatrixRight(const RightMatrix: TTransformationMatrix);
+begin
+  Matrix := Matrix * RightMatrix;
+end;
+
+class function TUniversalTransformationImage.RotationMatrix(const angle: Double): TTransformationMatrix;
+var
+  c, s : Double;
+begin
+  c := cos(angle);
+  s := sin(angle);
+  Result.init_identity;
+  Result.data[0, 0] := c;
+  Result.data[0, 1] := -s;
+  Result.data[1, 0] := s;
+  Result.data[1, 1] := c;
+end;
+
+class function TUniversalTransformationImage.TranslationMatrix(const x, y: Double): TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[0, 2] := x;
+  Result.data[1, 2] := y;
+end;
+
+class function TUniversalTransformationImage.ScaleMatrix(const kx, ky: Double): TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[0, 0] := kx;
+  Result.data[1, 1] := ky;
+end;
+
+class function TUniversalTransformationImage.MirrorXMatrix: TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[0, 0] := -1;
+end;
+
+class function TUniversalTransformationImage.MirrorYMatrix: TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[1, 1] := -1;
+end;
+
+class function TUniversalTransformationImage.InclinationXMatrix(const a: Double): TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[0, 1] := a;
+end;
+
+class function TUniversalTransformationImage.InclinationYMatrix(const a: Double): TTransformationMatrix;
+begin
+  Result.init_identity;
+  Result.data[1, 0] := a;
+end;
+
+constructor TUniversalTransformationImage.CreateEmpty;
+begin
+   Init;
+   Inherited CreateEmpty;
+end;
+
+constructor TUniversalTransformationImage.Create(AWidth, AHeight: integer);
+begin                 
+  Init;
+  inherited Create(AWidth, AHeight);
+end;
+
+constructor TUniversalTransformationImage.CreateSubImage(Image: TUniversalImage; const Left, Top, Right, Bottom: Integer);
+begin
+  Init;
+  inherited CreateSubImage(Image, Left, Top, Right, Bottom);
+end;
+
+destructor TUniversalTransformationImage.Destroy;
+begin
+  inherited Destroy;
+end;
+
 function TUniversalImage.GetInternalColor(x, y : integer) : TFPColor;
 begin
   Result := FData[x, y];
@@ -153,27 +340,15 @@ begin
 end;
 
 function TUniversalImage.GetGLBuffer : PLongWord;
-var
-  x, y, i : integer;
 begin
   Result := AllocMem(Width * Height * sizeof(longword));
-  i := 0;
-  for y := 0 to Height - 1 do
-    for x := 0 to Width - 1 do
-      Result[PostInc(i)] :=
-        (FData[x, y].red shr 8) or (FData[x, y].green shr 8 shl 8) or
-        (FData[x, y].blue shr 8 shl 16) or (FData[x, y].alpha shr 8 shl 24);
+  SaveToPixelBuffer(Result);
 end;
 
 function TUniversalImage.GetGLBuffer16 : PQWord;
-var
-  x, y, i : integer;
 begin
   Result := AllocMem(Width * Height * sizeof(QWord));
-  i := 0;
-  for y := 0 to Height - 1 do
-    for x := 0 to Width - 1 do
-      Result[PostInc(i)] := QWord(FData[x, y]);
+  SaveToPixelBuffer16(Result);
 end;
 
 function TUniversalImage.GetGLBuffer(const RGBA16 : boolean) : Pointer;
@@ -182,6 +357,54 @@ begin
     Result := GetGLBuffer16
   else
     Result := GetGLBuffer;
+end;
+
+procedure TUniversalImage.SaveToPixelBuffer(const buf: Pointer);
+var
+  x, y, i : integer;
+begin
+  i := 0;
+  for y := 0 to Height - 1 do
+    for x := 0 to Width - 1 do
+      PLongWord(buf)[PostInc(i)] :=
+        (FData[x, y].red shr 8) or (FData[x, y].green shr 8 shl 8) or
+        (FData[x, y].blue shr 8 shl 16) or (FData[x, y].alpha shr 8 shl 24);
+end;
+
+procedure TUniversalImage.SaveToPixelBuffer16(const buf: Pointer);
+var
+  x, y, i : integer;
+begin
+  i := 0;
+  for y := 0 to Height - 1 do
+    for x := 0 to Width - 1 do
+      PQWord(buf)[PostInc(i)] := QWord(FData[x, y]);
+end;
+
+procedure TUniversalImage.LoadFromPixelBuffer(const buf: Pointer);
+var
+  x, y, i : integer;
+begin
+  i := 0;
+  for y := 0 to Height - 1 do
+    for x := 0 to Width - 1 do
+    begin
+      FData[x, y].red := (PLongWord(buf)[i] and $FF) shl 8;
+      FData[x, y].green := (PLongWord(buf)[i] and $FF00);
+      FData[x, y].Blue := (PLongWord(buf)[i] and $FF0000) shr 8;
+      FData[x, y].Alpha := (PLongWord(buf)[i] and $FF000000) shr 16;
+      Inc(i);
+    end;
+end;
+
+procedure TUniversalImage.LoadFromPixelBuffer16(const buf: Pointer);
+var
+  x, y, i : integer;
+begin
+  i := 0;
+  for y := 0 to Height - 1 do
+    for x := 0 to Width - 1 do
+      QWord(FData[x, y]) := PQWord(buf)[PostInc(i)];
 end;
 
 function TUniversalImage.CreateMipmap(const Level : integer) : TUniversalImage;
@@ -306,16 +529,8 @@ begin
 end;
 
 constructor TUniversalImage.Create(AWidth, AHeight : integer);
-var
-  x, y : integer;
 begin
-  setlength(FData, AWidth);
-  for x := 0 to AWidth - 1 do
-  begin
-    setlength(FData[x], AHeight);
-    for y := 0 to AHeight - 1 do
-      FData[x, y] := FPColor(0, 0, 0, 0);
-  end;
+  setlength(FData, AWidth, AHeight);
   inherited Create(AWidth, AHeight);
   SetUsePalette(False);
   FCanvas := TFPImageCanvas.Create(Self);
@@ -348,9 +563,7 @@ begin
   inherited;
 end;
 
-procedure TUniversalImage.Draw(const PositionX, PositionY : integer;
-  Img : TUniversalImage; const Transparency : double = 0;
-  DrawFunction : TDrawFunction = nil);
+procedure TUniversalImage.Draw(const PositionX, PositionY : integer; Img : TUniversalImage; const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
 var
   x, y : integer;
 begin
@@ -362,10 +575,7 @@ begin
     if (x + PositionX >= 0) and (x + PositionX < Width) then
       for y := 0 to Img.Height - 1 do
         if (y + PositionY >= 0) and (y + PositionY < Height) then
-          FData[x + PositionX, y + PositionY] :=
-            MixColors(FData[x + PositionX, y + PositionY],
-            DrawFunction(FData[x + PositionX, y + PositionY], Img.FData[x, y]), Transparency);
-
+          FData[x + PositionX, y + PositionY] := MixColors(FData[x + PositionX, y + PositionY], DrawFunction(FData[x + PositionX, y + PositionY], Img.GetInternalColor(x, y)), Transparency);
 end;
 
 end.

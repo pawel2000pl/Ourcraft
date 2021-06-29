@@ -50,6 +50,8 @@ And then, you can type "make run" (in the console, in main directory of project)
 
 Screenshots:
 
+In the screenshot below, it was 3888 frames per second  (Dell Inspiron G3 / NVidia GTX 1650)
+![Screenshot](screenshots/Screenshot_20210629_152853.png)
 ![Screenshot](screenshots/Screenshot_20201230_215039.png)
 ![Screenshot](screenshots/Screenshot_20201214_225918.png)
 ![Screenshot](screenshots/Screenshot_20201006_220412.png)

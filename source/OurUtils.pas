@@ -4,6 +4,7 @@ unit OurUtils;
 {$RangeChecks off}
 {$ModeSwitch advancedrecords}
 {$Interfaces CORBA}
+{$IfNDef DEBUGBUILD} {$Optimization AUTOINLINE} {$endif}
 
 interface
 
@@ -1010,8 +1011,7 @@ var
   side : TTextureMode;
 begin
   try
-    MakeFog((ray - 2) shl ChunkSizeLog2, (ray - 1) shl ChunkSizeLog2,
-      LightLevelToColor3f(0));
+    MakeFog((ray - 2) shl ChunkSizeLog2, (ray - 1) shl ChunkSizeLog2, LightLevelToColor3f(0));
     //todo:od pogody, biomu i pory dnia
     TVertexModel.BeginDraw;
 
@@ -2855,8 +2855,8 @@ begin   // exit; //TODO: remove
   if (self = nil) or (Chunk = nil) or (not Assigned(Chunk)) then
      Exit;
 
-  a := floor(Position);
-  b := ceil(Position);
+  a := floor(Position-1);
+  b := ceil(Position+1);
   for i := 0 to Length(PhisicalBoxes)-1 do
       PhisicalBoxes[i].GetIntegerBorders(a, b);
 
@@ -2880,37 +2880,37 @@ begin   // exit; //TODO: remove
           for i := 0 to Length(PhisicalBoxes)-1 do
               if PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) then
               begin
-                // Writeln(PhisicalBoxes[i].SuggestedDelay);
-                {
-                 if not (Block is TAir) then
-                 begin
-              //            writeln('Collision', #9, Where[axisX]:2:2, #9, Where[axisY]:2:2, #9, Where[axisZ]:2:2);
-                    v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
-
-                   // PhisicalBoxes[i].AddGlobalForce(Where, Normalize(Where-CollisionBox.Position)*ScalarProduct(v, PhisicalBoxes[i].Force));
-
-                    //if False then
-                    if ScalarProduct(Where-CollisionBox.Position, v) < 0 then
-                    begin
-                       PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-0.8));
-                       PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + v*(-0.005);
-                       //PhisicalBoxes[i].MoveGlobal(Where, DecreaseVector(PhisicalBoxes[i].Position-CollisionBox.Position, 1)/256);
-                       //PhisicalBoxes[i].MoveGlobal(Where, Vector3(0, 1, 0)/256);
-                    end;
-                end;          }
-
                  //if Hypot3(PhisicalBoxes[i].AngularVelocity) < 0.1 then
                  //  PhisicalBoxes[i].ForceMoment := PhisicalBoxes[i].ForceMoment - PhisicalBoxes[i].GetMass * PhisicalBoxes[i].Rotate;
 
-                // Continue;
-                 r := min(Block.Resilence, Resilence);
-                 v := Normalize(BiggestDimension(PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
-                 //v := PhisicalBoxes[i].CollisionBox.RotationMatrix * PhisicalBoxes[i].CollisionBox.GetNormalVectorForSide(PhisicalBoxes[i].CollisionBox.GetHittedSide(Where));
-                 //v := (-1)*Normalize(v);
+                 r := 2*min(Block.Resilence, Resilence);
                  if r <> 0 then
+                 begin
+                    {//v := Normalize((PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
+                    v := Normalize((PhisicalBoxes[i].CollisionBox.Position-CollisionBox.Position), Vector3(0, 0, 0));
+                    //v := 8*Normalize((Where - CollisionBox.Position), Vector3(0, 0, 0)) * sqr(1-Hypot3(BiggestDimension(Where - CollisionBox.Position))) / 2;
                     PhisicalBoxes[i].AddGlobalForce(
-                    PhisicalBoxes[i].CollisionBox.HittedPointToSide(Where),
+                    Where, //PhisicalBoxes[i].CollisionBox.HittedPointToSide(Where),
                     PhisicalBoxes[i].GetMass*r*(v - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)));
+                     }
+
+                    v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
+
+                    if ScalarProduct(Where-CollisionBox.Position, v) < 0 then
+                    begin
+                        PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-0.9));
+                        PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (5*sqr(PhisicalBoxes[i].SuggestedDelay));
+                    //    while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
+                    //      PhisicalBoxes[i].MoveGlobal(Where, BiggestDimension(PhisicalBoxes[i].Position-CollisionBox.Position)/1024);
+                       //PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + v*(-0.001);
+                    end;
+
+
+                    //while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
+                    //  PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (1-Hypot3(BiggestDimension(Where - CollisionBox.Position)))*(0.001);
+
+
+                 end;
               end;
         end;
 end;

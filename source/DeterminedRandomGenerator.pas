@@ -33,6 +33,10 @@ type
     function LinearRandom(const x : double; const SeedOffset : QWord = 0) : double; overload;
     function LinearRandom(const Dim : array of double; const SeedOffset : QWord = 0) : double; overload;
     function PerlinNoise(const Dim : array of double; const SeedOffset : QWord = 0) : double;
+
+    procedure RandomAtSphere(const Dim : array of Double; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
+    procedure RandomAtSphere(const Dim : array of Integer; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
+
     procedure RandomVector(const Dim : array of Double; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
     procedure RandomVector(const Dim : array of Integer; var Vector : array of Double; const SeedOffset : QWord = 0); overload;
     constructor Create(const InitSeed : QWord);
@@ -61,6 +65,31 @@ function CreateConstRandomCacheKey(const i : integer;
 begin
   Result.i := i;
   Result.SeedOffset := SeedOffset;
+end;
+
+function rational_approximation(t: Double): Double;
+
+const
+    c: array [0..2] of Double = (2.515517, 0.802853, 0.010328);
+    d: array [0..2] of Double = (1.432788, 0.189269, 0.001308);
+
+var numerator: Double;
+    denominator: Double;
+
+begin
+    numerator := (c[2]*t + c[1])*t + c[0];
+    denominator := ((d[2]*t + d[1])*t + d[0])*t + 1.0;
+    rational_approximation := t - numerator / denominator;
+end;
+
+function normal_cdf_inverse(p: Double): Double;
+
+begin
+    assert((p > 0.0) and (p < 1));
+    if p < 0.5 then
+        normal_cdf_inverse := -rational_approximation( sqrt(-2.0*ln(p)) )
+    else
+        normal_cdf_inverse := rational_approximation( sqrt(-2.0*ln(1.0-p)) );
 end;
 
 { TRandomGenerator }
@@ -115,8 +144,7 @@ begin
   Result := 2 * pi * (a * fx + b * (1 - fx)) + 2 * pi * floor(a * 100 + b * 10);
 end;
 
-function TRandomGenerator.LinearRandom(const x: double; const SeedOffset: QWord
-  ): double;
+function TRandomGenerator.LinearRandom(const x: double; const SeedOffset: QWord): double;
 var
   fx : double;
   x0 : integer;
@@ -188,10 +216,11 @@ var
     pqs := Pointer(@Mask);
     for i := 0 to c-1 do
       Coords2[i] := Coords[i] + ifthen(i in pqs^, 1, 0);
-    RandomVector(Coords2, Gradient, SeedOffset);
+    //RandomVector(Coords2, Gradient, SeedOffset);
+    RandomAtSphere(Coords2, Gradient, SeedOffset);
     Result := 0;
     for i := 0 to c-1 do
-      Result += (Dim[i] - Coords2[i]) * sin(pi*Gradient[i]);
+      Result += (Dim[i] - Coords2[i]) * Gradient[i];//sin(pi*Gradient[i]);
     SetLength(Gradient, 0);
     SetLength(Coords2, 0);
   end;
@@ -236,8 +265,37 @@ begin
   SetLength(fraqs, 0);
 end;
 
-procedure TRandomGenerator.RandomVector(const Dim: array of Double;
+procedure TRandomGenerator.RandomAtSphere(const Dim: array of Double;
   var Vector: array of Double; const SeedOffset: QWord);
+var
+  i : Integer;
+  s : Double;
+begin
+   RandomVector(Dim, Vector, SeedOffset);
+   for i := Low(Vector) to High(Vector) do
+       Vector[i] := normal_cdf_inverse((Vector[i]+1)/2);
+   s := SumOfSquares(Vector);
+   if s <> 0 then
+      for i := Low(Vector) to High(Vector) do
+          Vector[i] /= s;
+end;
+
+procedure TRandomGenerator.RandomAtSphere(const Dim: array of Integer;
+  var Vector: array of Double; const SeedOffset: QWord);
+var
+  i : Integer;  
+  s : Double;
+begin
+   RandomVector(Dim, Vector, SeedOffset);
+   for i := Low(Vector) to High(Vector) do
+       Vector[i] := normal_cdf_inverse((Vector[i]+1)/2); 
+   s := SumOfSquares(Vector);
+   if s <> 0 then
+      for i := Low(Vector) to High(Vector) do
+          Vector[i] /= s;
+end;
+
+procedure TRandomGenerator.RandomVector(const Dim: array of Double; var Vector: array of Double; const SeedOffset: QWord);
 var
   i, c : Integer;
   d : Double;

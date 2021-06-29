@@ -109,10 +109,10 @@ begin
   begin
     Game := TOurGame.Create;
     World := TOurWorld.Create(Game.Environment.GetCreator(0) as TBlockCreator,
-      Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World1'));
+      Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World2'));
     World.SaveAllChunks:=False;
     writeln('Generating world');
-    RenderArea := World.AddRenderArea(0, 0, 0, 10);
+    RenderArea := World.AddRenderArea(0, 0, 0, 32);
     Camera := TGlCamera.Create;
     Camera.Position := Vector3(10, ChunkSize div 2 + 4, 10);
     writeln('Modeling world');

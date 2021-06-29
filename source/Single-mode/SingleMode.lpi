@@ -112,7 +112,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="51">
+    <Units Count="52">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -350,6 +350,10 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="AsyncMicroTimer"/>
       </Unit50>
+      <Unit51>
+        <Filename Value="../Environment/MovingBlock.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit51>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

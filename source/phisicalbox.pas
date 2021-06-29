@@ -170,7 +170,8 @@ var
   oldRotateMatrix : TMatrix3x3;
 begin
   Lock;
-  dt := 0.002;//ResetTime;
+  dt := SuggestedDelay;//0.002;//ResetTime;
+
   NewVelocity := Force/GetMass*dt + fVelocity;
   for a := low(TAxis) to High(TAxis) do
   begin
@@ -182,27 +183,27 @@ begin
   Position := Position + CollisionBox.RotationMatrix*((fVelocity + NewVelocity)*(dt/2));
   NewShapeRotate := RotateVector + ((fAngularVelocity + NewAngularVelocity)*(dt/2));
 
-  FromZeroTo2PiVector(NewShapeRotate);
+  //FromZeroTo2PiVector(NewShapeRotate);
 
   oldRotateMatrix := CollisionBox.RotationMatrix;
   Rotate := NewShapeRotate;
   fVelocity := Transposing(CollisionBox.RotationMatrix) * (oldRotateMatrix * NewVelocity);
   fAngularVelocity := NewAngularVelocity;
+
   ZeroForce;
 
   Unlock;
 
-
   ////test
   I := Hypot3(fVelocity);
   if I > dt then
-    fVelocity := fVelocity - Normalize(fVelocity)*dt
+    fVelocity := fVelocity*(1-dt)
     else
     fVelocity := Vector3(0, 0, 0);
 
   I := Hypot3(fAngularVelocity);
   if I > dt then
-    fAngularVelocity := fAngularVelocity - Normalize(fAngularVelocity)*dt
+    fAngularVelocity := fAngularVelocity*(1-dt)
     else
     fAngularVelocity := Vector3(0, 0, 0);
 end;
@@ -248,12 +249,12 @@ procedure TPhisicalBox.AddLocalVelocity(const Where: TVector3; const Value: TVec
 var
   v : TVector3;
 begin                                    
-  v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
-  v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
-  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
-  v := VectorProduct(Where, v/SquaredHypot3(Where));
+  v[AxisX] := Value[AxisX] * Where[AxisX] / GetInertiaMoment(AxisX);
+  v[AxisY] := Value[AxisY] * Where[AxisY] / GetInertiaMoment(AxisY);
+  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / GetInertiaMoment(AxisZ);
+  v := (-GetMass) * VectorProduct(Where, v);
   AngularVelocity := AngularVelocity + v;
-  Velocity := Velocity + (Value-v);
+  Velocity := Velocity + (Value-VectorProduct(v, Where));
 end;
 
 procedure TPhisicalBox.AddGlobalVelocity(const Where: TVector3; const Value: TVector3);
@@ -268,12 +269,12 @@ procedure TPhisicalBox.MoveLocal(const Where: TVector3; const Value: TVector3);
 var
   v : TVector3;
 begin
-  v[AxisX] := Value[AxisX] * Where[AxisX] / CollisionBox.Size[AxisX];
-  v[AxisY] := Value[AxisY] * Where[AxisY] / CollisionBox.Size[AxisY];
-  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / CollisionBox.Size[AxisZ];
-  v := VectorProduct(Where, v/SquaredHypot3(Where));
-  Rotate := Rotate - v;
-  Position := Position + CollisionBox.RotationMatrix * (Value-v);
+  v[AxisX] := Value[AxisX] * Where[AxisX] / GetInertiaMoment(AxisX);
+  v[AxisY] := Value[AxisY] * Where[AxisY] / GetInertiaMoment(AxisY);
+  v[AxisZ] := Value[AxisZ] * Where[AxisZ] / GetInertiaMoment(AxisZ);
+  v := (-GetMass) * VectorProduct(Where, v/SquaredHypot3(Where));
+  Rotate := Rotate + CollisionBox.RotationMatrix * v;
+  Position := Position + CollisionBox.RotationMatrix * (Value-VectorProduct(v, Where));
 end;
 
 procedure TPhisicalBox.MoveGlobal(const Where: TVector3; const Value: TVector3);
@@ -291,7 +292,7 @@ end;
 
 function TPhisicalBox.SuggestedDelay: Double;
 begin
-  Result := fAccurancy / (Hypot3(Velocity) + sqrt(SquaredHypot3(Rotate)*SquaredHypot3(Size/2)));
+  Result := fAccurancy / (1+Hypot3(Velocity) + sqrt(SquaredHypot3(Rotate)*SquaredHypot3(Size/2)));
 end;
 
 constructor TPhisicalBox.Create;

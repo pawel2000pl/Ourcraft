@@ -16,8 +16,8 @@ uses
   DeterminedRandomGenerator, SimpleCache, ArrayOfNumber, Collections,
   CustomSaver, FileSaver, SaverPaths, LightTypes, ServerService, ClientService,
   SocketCommands, NearestVectors, CollisionBoxes, TextureMode, PhisicalBox,
-  CalcUtils, OurGame, SimpleTypes,
-  ThreeDimensionalArrayOfBoolean, UniversalImage, PrefixSI, AsyncMicroTimer;
+  CalcUtils, OurGame, SimpleTypes, ThreeDimensionalArrayOfBoolean,
+  UniversalImage, PrefixSI, AsyncMicroTimer, MovingBlock;
 
 {$R *.res}
 

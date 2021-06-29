@@ -607,7 +607,8 @@ begin
      Exit;
   d2 := d;
   FromZeroTo2Pi(d2);
-  v := v*(d2/d);
+  if d <> d2 then
+    v := v*(d2/d);
 end;
 
 function DecreaseVector(const v: TVector3; const d: Double): TVector3;

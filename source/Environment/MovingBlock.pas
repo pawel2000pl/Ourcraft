@@ -59,7 +59,6 @@ begin
   PhisicalBoxes[0] := TPhisicalBox.Create;
   PhisicalBoxes[0].Size := MainCollisionBox.Size;
   PhisicalBoxes[0].Position := Position;
-  AfterMovement;
 end;
 
 procedure TMovingBlock.AfterMovement;
@@ -71,11 +70,12 @@ begin
 end;
 
 constructor TMovingBlock.Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
-begin
+begin             
+  InitBoxes;
   inherited Create(TheWorld, MyCreator, APosition);
   Model := TVertexModel.Create;
   UpdateModel;
-  InitBoxes;
+  AfterMovement;
 end;
 
 destructor TMovingBlock.Destroy;
