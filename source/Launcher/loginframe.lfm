@@ -1,0 +1,73 @@
+object LoginFrm: TLoginFrm
+  Left = 0
+  Height = 518
+  Top = 0
+  Width = 779
+  ClientHeight = 518
+  ClientWidth = 779
+  Color = clWhite
+  DesignTimePPI = 98
+  ParentColor = False
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 666
+  DesignTop = 201
+  object LoginBox: TGroupBox
+    Left = 24
+    Height = 472
+    Top = 24
+    Width = 360
+    Caption = 'Login in'
+    ClientHeight = 448
+    ClientWidth = 358
+    TabOrder = 0
+    OnClick = LoginBoxClick
+    object PasswordEdit: TEdit
+      Left = 16
+      Height = 34
+      Top = 255
+      Width = 323
+      EchoMode = emPassword
+      PasswordChar = '*'
+      TabOrder = 0
+      Text = 'ourpassword'
+    end
+    object AccountCB: TComboBox
+      Left = 16
+      Height = 34
+      Top = 207
+      Width = 323
+      ItemHeight = 0
+      TabOrder = 1
+      Text = 'Select an account'
+    end
+    object LoginBtn: TSpeedButton
+      Left = 234
+      Height = 40
+      Top = 295
+      Width = 105
+      Caption = 'Login in'
+      OnClick = LoginBtnClick
+    end
+    object NewAccountBtn: TSpeedButton
+      Left = 187
+      Height = 40
+      Top = 391
+      Width = 152
+      Caption = 'Create an account'
+    end
+    object AddUserBtn: TSpeedButton
+      Left = 16
+      Height = 40
+      Top = 391
+      Width = 152
+      Caption = 'Add existsing'
+    end
+    object ProfileImage: TImage
+      Left = 80
+      Height = 179
+      Top = 16
+      Width = 180
+    end
+  end
+end

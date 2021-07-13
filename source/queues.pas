@@ -65,6 +65,7 @@ type
     fAddIndex, fExecuteIndex: word;
     Locker: TLocker;
     FCoreCount: integer;
+    FMethodCount : Integer;
 
     FThreadCount: integer;
     Threads: array of TQueueThread;
@@ -177,10 +178,12 @@ begin
 end;
 
 destructor TQueueManagerWithDelays.Destroy;
+var
+  dl : TLocker;
 begin
-  Clear;
-  DelayLocker.Free;
+  dl := DelayLocker;
   inherited Destroy;
+  dl.Free;
 end;
 
 { TQueueManager }
@@ -198,6 +201,7 @@ begin
   try
     for i := low(fList) to High(fList) do
       fList[i].Method := nil;
+    FMethodCount:=0;
   finally
     Locker.Unlock;
   end;
@@ -208,14 +212,14 @@ var
   q: TQueueRecord;
   i: word;
 begin
-  if Suspend then
+  if Suspend or (FMethodCount = 0) then
     Exit(False);
-  try      
+  try
     Locker.Lock;
     repeat
       q := fList[PostInc(fExecuteIndex)];
       if fExecuteIndex = fAddIndex then
-        Exit(False);
+        Break;
     until (q.Method <> nil);
 
     if q.Method <> nil then
@@ -225,18 +229,24 @@ begin
         i := fExecuteIndex - 1;
         repeat
           if q = fList[i] then
+          begin
             fList[i].Method := nil;
+            Dec(FMethodCount);
+          end;
         until PostInc(i) = fAddIndex;
       end
       else
+      begin
         fList[Word(fExecuteIndex-1)].Method:=nil;
+        Dec(FMethodCount);
+      end;
     end;
   finally
     Locker.Unlock;
   end;
 
   try
-    if q.Method <> nil then
+    if (q.MethodPointer <> nil) and (q.ObjectInstance <> nil) then
       q.Method();
   except
     on E:Exception do RaiseException('Exception in queue method: ' + E.Message, False);
@@ -253,7 +263,10 @@ begin
   try
     for i := low(FList) to High(FList) do
       if Obj = fList[i].ObjectInstance then
+      begin
         fList[i].Method := nil;
+        Dec(FMethodCount);
+      end;
   finally
     Locker.Unlock;
   end;
@@ -267,6 +280,7 @@ begin
   Locker.Lock;
   try
     fList[PostInc(fAddIndex)] := q;
+    Inc(FMethodCount);
   finally
     Locker.Unlock;
   end;
@@ -281,6 +295,7 @@ begin
   fRemoveRepeated := True;
   fAddIndex := 0;
   fExecuteIndex := 0;
+  FMethodCount := 0;
   Locker := TLocker.Create;
   FCoreCount := GetCoreCount;
   FThreadCount := max(1, AdditionalThreads + ThreadsPerCore * CoreCount);
@@ -322,7 +337,6 @@ begin
   fTerminating := False;
   fManager := Manager;
   inherited Create(False);
-  Priority := tpHigher;
 end;
 
 destructor TQueueThread.Destroy;

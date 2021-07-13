@@ -1,0 +1,10 @@
+object Form1: TForm1
+  Left = 379
+  Height = 682
+  Top = 221
+  Width = 1177
+  Caption = 'MainForm'
+  Color = clWhite
+  DesignTimePPI = 98
+  LCLVersion = '2.0.10.0'
+end

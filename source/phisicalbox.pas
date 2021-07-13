@@ -24,6 +24,9 @@ type
 
     fVelocity : TVector3;
     fAngularVelocity : TRotationVector;
+
+    fAdditionalVelocity : TVector3;
+    fAdditionalAngularVelocity : TVector3;
                                       
     fForce : TVector3;
     fForceMoment : TRotationVector;
@@ -120,7 +123,9 @@ end;
 procedure TPhisicalBox.ZeroForce;
 begin
   Force := Vector3(0, 0, 0);
-  ForceMoment := Vector3(0, 0, 0);
+  ForceMoment := Vector3(0, 0, 0);  
+  fAdditionalVelocity := Vector3(0, 0, 0);
+  fAdditionalAngularVelocity := Vector3(0, 0, 0);
 end;
 
 procedure TPhisicalBox.GetIntegerBorders(var a, b: TIntVector3);
@@ -172,14 +177,14 @@ begin
   Lock;
   dt := SuggestedDelay;//0.002;//ResetTime;
 
-  NewVelocity := Force/GetMass*dt + fVelocity;
+  NewVelocity := Force/GetMass*dt + fVelocity + fAdditionalVelocity;
   for a := low(TAxis) to High(TAxis) do
   begin
       I := GetInertiaMoment(a);
       if I > 0 then
          NewAngularVelocity[a] := ForceMoment[a]/I * dt;
   end;
-  NewAngularVelocity := CollisionBox.RotationMatrix*NewAngularVelocity + fAngularVelocity;
+  NewAngularVelocity := CollisionBox.RotationMatrix*NewAngularVelocity + fAngularVelocity + fAdditionalAngularVelocity;
   Position := Position + CollisionBox.RotationMatrix*((fVelocity + NewVelocity)*(dt/2));
   NewShapeRotate := RotateVector + ((fAngularVelocity + NewAngularVelocity)*(dt/2));
 
@@ -253,8 +258,8 @@ begin
   v[AxisY] := Value[AxisY] * Where[AxisY] / GetInertiaMoment(AxisY);
   v[AxisZ] := Value[AxisZ] * Where[AxisZ] / GetInertiaMoment(AxisZ);
   v := (-GetMass) * VectorProduct(Where, v);
-  AngularVelocity := AngularVelocity + v;
-  Velocity := Velocity + (Value-VectorProduct(v, Where));
+  fAdditionalAngularVelocity += v;
+  fAdditionalVelocity += (Value-VectorProduct(v, Where));
 end;
 
 procedure TPhisicalBox.AddGlobalVelocity(const Where: TVector3; const Value: TVector3);

@@ -140,7 +140,7 @@ var
 begin
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(RadToDeg(fPerspective), fWidth / fHeight, 0.1, 16 * 16);
+  gluPerspective(RadToDeg(fPerspective), fWidth / fHeight, 0.1, 64 * 16);
   glMatrixMode(GL_MODELVIEW);
 
   glLoadIdentity;

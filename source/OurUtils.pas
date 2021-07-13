@@ -142,9 +142,9 @@ type
     function Resilence : Double; virtual;
 
     function GetID : integer; virtual;
-    procedure OnTick(const DeltaTime : QWord); virtual;
-    procedure OnHit(Entity : TEntity); virtual;  //left click
-    procedure OnOptions(Entity : TEntity); virtual; //right click
+    procedure OnTick(const {%H-}DeltaTime : QWord); virtual;
+    procedure OnHit({%H-}Entity : TEntity); virtual;  //left click
+    procedure OnOptions({%H-}Entity : TEntity); virtual; //right click
 
     procedure Render; virtual; abstract;
 
@@ -192,7 +192,7 @@ type
     procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
     procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure DrawAnimation({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
-    procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; const DeltaTime : QWord); virtual;
+    procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; const {%H-}DeltaTime : QWord); virtual;
     procedure OnRandomTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure AfterPut({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure NearChangeUpdate({%H-}Chunk : TOurChunk; const {%H-}side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
@@ -627,9 +627,6 @@ function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlo
 function ChunkCoordToBlockCoord(const ChunkPosition : TIntVector3) : TIntVector3; inline;
 
 implementation
-
-uses
-  air; //todo: remove
 
 {$RangeChecks off}
 {$macro on}
@@ -1392,7 +1389,7 @@ begin
   t := PrevTickTime;
   PrevTickTime := GetTickCount64;
   t := min(MAX_TICK_DELTA_TIME, PrevTickTime-t);
-  writeln(t);
+  //writeln(t);
 
   try
     for x := 0 to WorldSize - 1 do
@@ -2886,19 +2883,19 @@ begin   // exit; //TODO: remove
                  r := 2*min(Block.Resilence, Resilence);
                  if r <> 0 then
                  begin
-                    {//v := Normalize((PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
+                    //v := Normalize((PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
                     v := Normalize((PhisicalBoxes[i].CollisionBox.Position-CollisionBox.Position), Vector3(0, 0, 0));
                     //v := 8*Normalize((Where - CollisionBox.Position), Vector3(0, 0, 0)) * sqr(1-Hypot3(BiggestDimension(Where - CollisionBox.Position))) / 2;
                     PhisicalBoxes[i].AddGlobalForce(
                     Where, //PhisicalBoxes[i].CollisionBox.HittedPointToSide(Where),
-                    PhisicalBoxes[i].GetMass*r*(v - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)));
-                     }
+                    PhisicalBoxes[i].GetMass*r*(BiggestDimension(v) - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)/2));
+
 
                     v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
 
-                    if ScalarProduct(Where-CollisionBox.Position, v) < 0 then
+                    if true then //ScalarProduct(Where-CollisionBox.Position, v) < 0 then
                     begin
-                        PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-0.9));
+                        PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-1.1));
                         PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (5*sqr(PhisicalBoxes[i].SuggestedDelay));
                     //    while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
                     //      PhisicalBoxes[i].MoveGlobal(Where, BiggestDimension(PhisicalBoxes[i].Position-CollisionBox.Position)/1024);
@@ -2906,8 +2903,8 @@ begin   // exit; //TODO: remove
                     end;
 
 
-                    //while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
-                    //  PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (1-Hypot3(BiggestDimension(Where - CollisionBox.Position)))*(0.001);
+                    while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
+                      PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (1-Hypot3(BiggestDimension(Where - CollisionBox.Position)))*(0.001);
 
 
                  end;

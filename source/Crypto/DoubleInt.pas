@@ -34,9 +34,9 @@ type
         procedure Zero;  
         function AddQWord(const AValue : QWord) : QWord;
         procedure ShrOne; inline;  
-        function ReturnShrOne : TDoubleInt; inline;
+        function ReturnShrOne : TDoubleInt;
         procedure ShlOne; inline;  
-        function ReturnShlOne : TDoubleInt; inline;
+        function ReturnShlOne : TDoubleInt;
 
         function Add(const x : TDoubleInt) : QWord;
         function Subtrack(const x : TDoubleInt) : QWord;
@@ -93,10 +93,13 @@ type
         procedure SetHi(const AValue : TInt);
     end;
 
+    { TSignedInt }
+
     generic TSignedInt<TUnsignedType> = record
         UnsignedValue :  TUnsignedType;
         procedure Assign(const Buf; Size : PtrUInt; const Signed : Boolean);
         function Negative : Boolean;
+        function Sign : Integer;
         function AbsoluteValue : TUnsignedType;
         function CompareTo(const x : TSignedInt) : Integer;
     
@@ -109,6 +112,7 @@ type
         class operator *(const a,b : TSignedInt) : TSignedInt; 
         class operator div (const a, b : TSignedInt) : TSignedInt; 
         class operator mod (const a, b : TSignedInt) : TSignedInt; 
+        class procedure DivMod(const a : TSignedInt; const b : TSignedInt; out Quotient, Modulo : TSignedInt; const NeedQuotient : Boolean = true); static;
         
         class operator >(const a,b : TSignedInt) : Boolean; 
         class operator <(const a,b : TSignedInt) : Boolean; 
@@ -297,7 +301,7 @@ end;
 
 function TDoubleInt.SumHalf(const a : TDoubleInt; const b : TInt) : QWord;
 begin
-    Result := Integers[1].AddQWord(Integers[0].Sum(Integers[0], b));
+    Result := Integers[1].AddQWord(Integers[0].Sum(a.Integers[0], b));
 end;
 
 function TDoubleInt.Sum(const a, b : TDoubleInt) : QWord;
@@ -325,7 +329,7 @@ end;
 
 function TDoubleInt.Add(const x : TDoubleInt) : QWord;
 begin
-    Sum(Self, x);
+    Exit(Sum(Self, x));
 end;
 
 function TDoubleInt.Subtrack(const x : TDoubleInt) : QWord;
@@ -354,7 +358,7 @@ end;
 function TDoubleInt.Product(const a, b : TDoubleInt; const NeedResult : Boolean) : TDoubleInt; 
 var
     r0, r1, r2 : TInt;
-    t1, t2, t3 : TInt;
+    t1, t2 : TInt;
     q1 : QWord;
 begin
     r0 := Integers[0].Product(a.Integers[0], b.Integers[0]);
@@ -367,7 +371,7 @@ begin
 
     if NeedResult then
     begin
-        Result.Integers[1] := Result.Integers[0].Product(a.Integers[1], b.Integers[1]);
+        Result.Integers[1] := Result{%H-}.Integers[0].Product(a.Integers[1], b.Integers[1]);
         Result.AddQWord(q1);
         Result.SumHalf(Result, r1);
         Result.SumHalf(Result, r2);
@@ -496,7 +500,7 @@ var
     i, c : PtrUInt;
 begin
     c := SizeOf(TInt) shl 4;
-    SetLength(Result, c);
+    SetLength(Result{%H-}, c);
     for i := 0 to c-1 do
         if GetBit(i) then
             Result[c-i] := '1'
@@ -681,6 +685,15 @@ begin
     Result := UnsignedValue.GetBit(SizeOf(TUnsignedType) shl 3 -1);
 end;
 
+function TSignedInt.Sign: Integer;
+begin
+  if Negative then
+     Exit(-1);
+  if Self > 0 then
+    Exit(1);
+  Exit(0);
+end;
+
 function TSignedInt.AbsoluteValue : TUnsignedType;
 begin
     if Negative then
@@ -755,6 +768,16 @@ begin
     Result.UnsignedValue := a.AbsoluteValue mod b.AbsoluteValue;
     if a.Negative then
         Result := -Result;
+end;
+
+class procedure TSignedInt.DivMod(const a : TSignedInt; const b : TSignedInt; out Quotient, Modulo : TSignedInt; const NeedQuotient : Boolean = true); static;
+begin
+    TUnsignedType.DivMod(a.AbsoluteValue, b.AbsoluteValue, Quotient.UnsignedValue, Modulo.UnsignedValue, NeedQuotient);
+    if a.Negative then
+        Modulo := -{%H-}Modulo;    
+    if NeedQuotient then
+        if a.Negative xor b.Negative then
+            Quotient := -{%H-}Quotient;
 end;
 
 class operator TSignedInt.>(const a,b : TSignedInt) : Boolean; 

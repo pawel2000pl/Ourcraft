@@ -8,71 +8,78 @@ uses
     DoubleInt;
 
 type
-    generic TPrimeTests<TInt> = class
+
+    { TPrimeTests }
+
+    generic TPrimeTests<TuInt> = class
     type
-        TDoubledInt = specialize TDoubleInt<TInt>;
-        TNWDResult = array[0..2] of TInt;
+        TDoubledInt = specialize TDoubleInt<TuInt>;
+        TDoubleSignedInt = specialize TSignedInt<TDoubledInt>;
+        TInt = specialize TSignedInt<TuInt>;
+        TNWDResult = array[0..2] of TDoubleSignedInt;
     public
 
-        class function RandomNumber(const m : TInt) : TInt;
+        class function RandomNumber(const m : TuInt) : TuInt;
     
-        class function Fermat(const a, p : TInt) : Boolean; overload;    
-        class function Fermat(const p : TInt) : Boolean; overload;
-        class function FermatRand(const p : TInt; const k : PtrUInt = 8) : Boolean; 
+        class function Fermat(const a, p : TuInt) : Boolean; overload;    
+        class function Fermat(const p : TuInt) : Boolean; overload;
+        class function FermatRand(const p : TuInt; const k : PtrUInt = 8) : Boolean; 
 
-        class function ModPrimes(const p : TInt) : Boolean;
+        class function ModPrimes(const p : TuInt) : Boolean;
         
-        class function MillerRabin(const n : TInt; const k : PtrUInt = 24) : Boolean;
+        class function MillerRabin(const n : TuInt; const k : PtrUInt = 24) : Boolean;
 
-        class function RandomPrime : TInt;
-        class function NextPrime(const Number : TInt) : TInt;
+        class function RandomPrime(const LessThanHalf : Boolean = False) : TuInt;
+        class function NextPrime(const Number : TuInt) : TuInt;
 
-        class function NWDResult(const a, b, c : TInt) : TNWDResult; inline;
-        class function NWD(const j, k : TInt) : TNWDResult;
-    end;
+        class function SimpleEuclides(a, b : TuInt) : TuInt; 
+        class function NWDResult(const a, b, c : TDoubleSignedInt) : TNWDResult; inline;
+        class function NWD(const j, k : TDoubleSignedInt) : TNWDResult;
+        class function InvertModulo(const x, m : TuInt) : TuInt;
+    end;   
     
 implementation
 
-class function TPrimeTests.RandomNumber(const m : TInt) : TInt;
+class function TPrimeTests.RandomNumber(const m : TuInt) : TuInt;
 var
     d : TDoubledInt;
     l : PLongWord;
     i : PtrUInt;
 begin
     l := @d;
-    for i := 0 to SizeOf(TInt) shr 1 -1 do
+    for i := 0 to SizeOf(TuInt) shr 1 -1 do
         l[i] := Random($FFFFFFFF);
     Exit(d mod m);
 end;
 
-class function TPrimeTests.Fermat(const a, p : TInt) : Boolean;
+class function TPrimeTests.Fermat(const a, p : TuInt) : Boolean;
 begin
     Result := TDoubledInt.PowerMod(a, p-1, p) = 1;
 end;
 
-class function TPrimeTests.Fermat(const p : TInt) : Boolean; 
+class function TPrimeTests.Fermat(const p : TuInt) : Boolean; 
 begin
     Result := Fermat(2, p) and Fermat(3, p) and Fermat(5, p) and Fermat(7, p) and Fermat(11, p) and Fermat(13, p) and Fermat(17, p);
 end;
 
-class function TPrimeTests.FermatRand(const p : TInt; const k : PtrUInt) : Boolean; 
+class function TPrimeTests.FermatRand(const p : TuInt; const k : PtrUInt) : Boolean; 
 var
     i, a : PtrUInt;
 begin
     for i := 1 to k do
     begin
         a := Random($FFFFFFF0)+2;
-        if (NWD(a, p)[0] <> 1) or (not Fermat(a, p)) then
+        if (SimpleEuclides(a, p) <> 1) or (not Fermat(a, p)) then
             Exit(False);
     end;
     Exit(True);
 end;
 
-class function TPrimeTests.MillerRabin(const n : TInt; const k : PtrUInt) : Boolean;
+class function TPrimeTests.MillerRabin(const n : TuInt; const k : PtrUInt) : Boolean;
 var
     s, i, r : PtrUInt;
-    tmp, a, d : TInt;
-    n1 : TInt;
+    tmp, a, d : TuInt;
+    n1 : TuInt;
     all : Boolean;
 begin
     if n and 1 = 0 then
@@ -112,26 +119,28 @@ begin
     Exit(True); 
 end;
 
-class function TPrimeTests.RandomPrime : TInt;
+class function TPrimeTests.RandomPrime(const LessThanHalf : Boolean) : TuInt;
 var
     d : TDoubledInt;
     l : PLongWord;
     i : PtrUInt;
 begin
     l := @d;
-    for i := 0 to SizeOf(TInt) shr 1 -1 do
+    for i := 0 to SizeOf(TuInt) shr 1 -1 do
         l[i] := Random($FFFFFFFF);
-    Exit(NextPrime((d mod TDoubledInt(TInt(not TInt(1))))));
+    if LessThanHalf then
+        d.SetBit(SizeOf(d)*8-1, False);
+    Exit(NextPrime((d mod TDoubledInt(TuInt(not TuInt(1))))));
 end;
 
-class function TPrimeTests.NextPrime(const Number : TInt) : TInt;
+class function TPrimeTests.NextPrime(const Number : TuInt) : TuInt;
 const
     s = 3*5*7*11*13*17*19*23*29*31*37*41*43*47*53;
     LowPrimes : array[0..14] of PtrUInt = (3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53);
 var
     si, lp : PtrUInt;
     b : Boolean;
-    m : TInt;
+    m : TuInt;
 begin
     Result := Number or 1;
     m := Result mod s;
@@ -153,24 +162,37 @@ begin
     until FermatRand(Result) and MillerRabin(Result);
 end;
 
-class function TPrimeTests.ModPrimes(const p : TInt) : Boolean;
+class function TPrimeTests.ModPrimes(const p : TuInt) : Boolean;
 begin
     Result := (PQWord(@p)^ and 1 <> 0) and (p mod 3 <> 0) and (p mod 5 <> 0) and (p mod 7 <> 0) and (p mod 11 <> 0) and (p mod 13 <> 0) and (p mod 17 <> 0) and (p mod 19 <> 0);
 end;
 
-class function TPrimeTests.NWDResult(const a, b, c : TInt) : TNWDResult;
+class function TPrimeTests.NWDResult(const a, b, c: TDoubleSignedInt
+  ): TNWDResult;
 begin
     Result[0] := a;
     Result[1] := b;
     Result[2] := c;
 end;
 
-class function TPrimeTests.NWD(const j, k : TInt) : TNWDResult;
+class function TPrimeTests.SimpleEuclides(a, b : TuInt) : TuInt;
 var
-  r : TInt;
+    c : TuInt;
+begin
+    while b <> 0 do
+    begin
+        c := a mod b;
+        a := b;
+        b := c;
+    end;
+    Result := a;
+end;
+
+class function TPrimeTests.NWD(const j, k: TDoubleSignedInt): TNWDResult;
+var
   p : TNWDResult;
-  x, y : TInt;
-  q : TInt;
+  x, y : TDoubleSignedInt;
+  q, r : TDoubleSignedInt;
 begin
   if j = 0 then
   begin
@@ -178,13 +200,27 @@ begin
      exit;
   end;
 
-  TInt.DivMod(k, j, q, r);
-  //r := k mod j;
+  TDoubleSignedInt.DivMod(k, j, q, r);
+
   p := NWD(r, j);
-  y := p[1]-{(k div j)}q*p[2];
+  y := p[1]-q*p[2];
   x := p[2];
          
   Result := NWDResult(p[0], x, y);
+end;
+
+class function TPrimeTests.InvertModulo(const x, m : TuInt) : TuInt;
+var
+    tmp : TNWDResult;
+begin
+    tmp := NWD(TDoubledInt(TuInt(x)), TDoubledInt(TuInt(m)));
+    while tmp[2].Negative do
+        tmp[2] += TDoubledInt(TuInt(m));
+    if tmp[2] <> TDoubledInt(TuInt(x)) then
+        Exit(tmp[2].AbsoluteValue);
+    while tmp[1].Negative do
+        tmp[1] += TDoubledInt(TuInt(m));;
+    Exit(tmp[1].AbsoluteValue);
 end;
 
 end.

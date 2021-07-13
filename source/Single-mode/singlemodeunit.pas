@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl,
-  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver;
+  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, ProcessUtils;
 
 type
 
@@ -76,14 +76,16 @@ begin
 
   Camera.SetMatrix;
   Game.Textures.SelectTextures;
-  RenderArea.DrawBlocks;
+  RenderArea.DrawBlocks;  
+  Inc(FrameCount);
 
-  GLBox.SwapBuffers;
+  GLBox.SwapBuffers;  
+  World.Queues.AddMethod(@QRepaint);
 end;
 
 procedure TMainForm.Timer1Timer(Sender : TObject);
 begin
-  Writeln(FrameCount);
+  Writeln('FPS = ', FrameCount);
   FrameCount := 0;
 end;
 
@@ -94,13 +96,11 @@ end;
 procedure TMainForm.QRepaint;
 begin
   Application.QueueAsyncCall(@QProcess, 0);
-  World.Queues.AddMethod(@QRepaint);
 end;
 
 procedure TMainForm.QProcess(Data: PtrInt);
 begin
   GLBox.Repaint;
-  Inc(FrameCount);
 end;
 
 procedure TMainForm.InitGame;
@@ -112,7 +112,7 @@ begin
       Game, TWorldGenerator.Create(50000), TFileSaver.Create('worlds/World2'));
     World.SaveAllChunks:=False;
     writeln('Generating world');
-    RenderArea := World.AddRenderArea(0, 0, 0, 32);
+    RenderArea := World.AddRenderArea(0, 0, 0, 10);
     Camera := TGlCamera.Create;
     Camera.Position := Vector3(10, ChunkSize div 2 + 4, 10);
     writeln('Modeling world');
