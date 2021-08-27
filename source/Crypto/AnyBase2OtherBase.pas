@@ -20,10 +20,10 @@ procedure ArrayOfByteToStr(const arr : array of Byte; var Str : AnsiString; cons
 ///predictes length (in deciminals) of integer converted from FromBase to ToBase
 function PredictIntegerLength(const FromLength : LongWord; const FromBase, ToBase : Byte) : LongWord;
 
-///conver x from BaseX to equal y in BaseY. Warning: y must have been length enough and filled with zeros
+///convert x from BaseX to equal y in BaseY. Warning: y must have been length enough and filled with zeros
 procedure Base2Base(const x : array of Byte; const BaseX : Byte; var y : array of Byte; const BaseY : Byte); overload;
 
-///conver x from BaseX to equal y in BaseY
+///convert x from BaseX to equal y in BaseY
 function Base2Base(const x : AnsiString; const FromBase, ToBase : Byte; const InputConversion : TCharToByte; const OutputConversion : TByteToChar) : AnsiString; overload;
 
 ///same as below but with using standard conversions

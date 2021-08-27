@@ -17,10 +17,8 @@ type
     fieldD: TuInt;
     fieldE: TuInt;
     fieldN: TuInt;
-    FRandomBuf : Pointer;
-    FRandomBufSize : PtrUInt;
     procedure Generate;
-    {%H-}constructor Create(const ARandomBuf : Pointer = nil; const ARandomBufSize : PtrUInt = 0);
+    {%H-}constructor Create;
   public
     property n : TuInt read fieldN;
     property d : TuInt read fieldD;
@@ -31,21 +29,21 @@ type
   generic TArrayOfRSAKeySearcher<TuInt> = array of specialize TRSAKeySearcher<TuInt>;
 
 
-generic procedure GenerateRSAKeys<TuInt>(const Count : Integer; out Searchers : specialize TArrayOfRSAKeySearcher<TuInt>; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
+generic procedure GenerateRSAKeys<TuInt>(const Count : Integer; out Searchers : specialize TArrayOfRSAKeySearcher<TuInt>);
 
 implementation
 
-generic procedure GenerateRSAKeys<TuInt>(const Count : Integer; out Searchers : specialize TArrayOfRSAKeySearcher<TuInt>; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
+generic procedure GenerateRSAKeys<TuInt>(const Count : Integer; out Searchers : specialize TArrayOfRSAKeySearcher<TuInt>);
 var
    queue : TQueueManager;
    i : Integer;
 begin
-   queue := TQueueManager.Create(1, 1);
+   queue := TQueueManager.Create(1, 1, DefaultStackSize);
    queue.RemoveRepeated:=False;
    SetLength(Searchers{%H-}, Count);
    for i := 0 to Count-1 do
    begin
-     Searchers[i] := specialize TRSAKeySearcher<TuInt>.Create(RandomBuf, RandomBufSize);
+     Searchers[i] := specialize TRSAKeySearcher<TuInt>.Create();
      queue.AddMethod(@Searchers[i].Generate);
    end;
    for i := 0 to Count-1 do
@@ -62,15 +60,12 @@ end;
 procedure TRSAKeySearcher.Generate;
 begin
     if not FGenerated then
-        specialize GenerateRSAKey<TuInt>(fieldD, fieldE, fieldN, FRandomBuf, FRandomBufSize);
+        specialize GenerateRSAKey<TuInt>(fieldD, fieldE, fieldN);
     FGenerated := True;
 end;
 
-constructor TRSAKeySearcher.Create(const ARandomBuf: Pointer;
-  const ARandomBufSize: PtrUInt);
+constructor TRSAKeySearcher.Create;
 begin
-    FRandomBufSize:=ARandomBufSize;
-    FRandomBuf:=ARandomBuf;
     fieldD:=0;
     fieldE:=0;
     fieldN:=0;

@@ -13,55 +13,20 @@ type
         First, Second, Third : T;
     end;
 
-generic procedure GenerateRSAKey<TuInt>(out d, e, n : TuInt; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
+//(n, e) - public; (n, d) - private;
+generic procedure GenerateRSAKey<TuInt>(out d, e, n : TuInt; const MaxThreadCount : PtrUInt = 1);
 generic function CodeRSA<TuInt>(const Data, e, n : TuInt) : TuInt;
 generic function tee<T>(const Value : T; out OutValue : T) : T; inline;
 
-function RandomFromBuf(const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0) : LongWord;
-procedure RandomBufFromBuf(const Buf : Pointer; const Size : PtrUInt; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
+generic function Max<Ordinal>(const a, b : Ordinal) : Ordinal; overload; inline;
+generic function Min<Ordinal>(const a, b : Ordinal) : Ordinal; overload; inline;
+
+function Pow3(const x : QWord) : QWord; inline;
 
 implementation
 
 uses
-    math, sha1;
-
-function RandomFromBuf(const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0) : LongWord;
-var
-    e : Extended;
-    r : Integer;
-    Context: TSHA1Context;
-    code : TSHA1Digest;
-begin
-  if (RandomBuf = nil) or (RandomBufSize = 0) then
-     Exit(Random($FFFFFFFF));
-  e := Random;
-  SHA1Init(Context);
-  SHA1Update(Context, RandomBuf^, RandomBufSize);
-  e := 1;
-  for r := 0 to random(16)+15 do
-    e *= (1+Random) + random(16);
-  SHA1Update(Context, e, SizeOf(e));
-  SHA1Final(Context, code);
-  Result := 0;
-  for r := 0 to 4 do
-    Result := Result xor PLongWord(@code)[r];
-end;
-
-procedure RandomBufFromBuf(const Buf : Pointer; const Size : PtrUInt; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
-var
-    i : Integer;
-    b : PLongWord;
-    x : LongWord;
-begin
-  b := Buf;
-  for i := 0 to Size div 4 -1 do
-    b[i] := RandomFromBuf(RandomBuf, RandomBufSize);
-  if Size and 3 > 0 then
-  begin
-    x := RandomFromBuf(RandomBuf, RandomBufSize);
-    Move(x, (Buf + Size and (not 3))^, Size and 3);
-  end;
-end;
+    SafeRandomGenerator;
 
 generic function tee<T>(const Value : T; out OutValue : T) : T; inline;
 begin
@@ -74,7 +39,26 @@ begin
     Result := specialize TDoubleInt<TuInt>.PowerMod(Data, e, n);
 end;
 
-generic procedure GenerateRSAKey<TuInt>(out d, e, n : TuInt; const RandomBuf : Pointer = nil; const RandomBufSize : PtrUInt = 0);
+generic function Max<Ordinal>(const a, b : Ordinal) : Ordinal; inline;
+begin
+    if a > b then
+       Exit(a);
+    Exit(b);
+end;
+
+generic function Min<Ordinal>(const a, b : Ordinal) : Ordinal; inline;
+begin
+    if a < b then
+       Exit(a);
+    Exit(b);
+end;
+
+function Pow3(const x : QWord) : QWord; inline;
+begin
+    Exit(x*x*x);
+end;
+
+generic procedure GenerateRSAKey<TuInt>(out d, e, n : TuInt; const MaxThreadCount : PtrUInt);
 type
     TPrimeClass = specialize TPrimeTests<TuInt>;
     TDoubleUInt = specialize TDoubleInt<TuInt>;
@@ -82,12 +66,16 @@ var
     p, q : TuInt;
     phi : TuInt;
     k : Integer;
+
+    Threads : QWord;
 begin
+     p := 0;
+     q := 0;
     repeat
-      RandomBufFromBuf(@p, SizeOf(p) div 2, RandomBuf, RandomBufSize);
-      RandomBufFromBuf(@q, SizeOf(q) div 2, RandomBuf, RandomBufSize);
-      p.SetBit(SizeOf(p)*8-1, True);
-      q.SetBit(SizeOf(p)*8-1, True);
+      RandomSafeBuf(@p, SizeOf(p) div 2);
+      RandomSafeBuf(@q, SizeOf(q) div 2);
+      p.SetBit(SizeOf(p)*4-1, True);
+      q.SetBit(SizeOf(q)*4-1, True);
       k := 0;
       while p*q div q <> p do
       begin
@@ -97,13 +85,23 @@ begin
            q.ShrOne;
         Inc(k);
       end;
-      p := TPrimeClass.NextPrime(p);
-      q := TPrimeClass.NextPrime(q);
+      if MaxThreadCount > 1 then
+         Threads := specialize Max<QWord>(1, specialize Min<QWord>(SizeOf(TuInt) div 32, MaxThreadCount))
+         else
+         Threads:=1;
+      if Threads > 1 then
+      begin         
+        p := TPrimeClass.NextMultithreadedPrime(p, Threads);
+        q := TPrimeClass.NextMultithreadedPrime(q, Threads);
+      end else begin
+        p := TPrimeClass.NextPrime(p);
+        q := TPrimeClass.NextPrime(q);
+      end;
       n := p*q;
     until n div p = q;
 
     phi := (p-1)*(q-1);
-    RandomBufFromBuf(@e, SizeOf(e), RandomBuf, RandomBufSize);
+    RandomSafeBuf(@e, SizeOf(e));
     e := e mod phi + 10;
     repeat
         e += 1;

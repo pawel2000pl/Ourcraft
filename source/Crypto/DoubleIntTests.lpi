@@ -5,13 +5,9 @@
     <General>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="OurLauncher"/>
-      <Scaled Value="True"/>
+      <Title Value="DoubleIntTests"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
-      <XPManifest>
-        <DpiAware Value="True"/>
-      </XPManifest>
       <Icon Value="0"/>
     </General>
     <BuildModes Count="1">
@@ -25,52 +21,43 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <RequiredPackages Count="1">
+    <RequiredPackages Count="3">
       <Item1>
-        <PackageName Value="LCL"/>
+        <PackageName Value="fpcunittestrunner"/>
       </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FCL"/>
+      </Item3>
     </RequiredPackages>
-    <Units Count="5">
+    <Units Count="3">
       <Unit0>
-        <Filename Value="OurLauncher.lpr"/>
+        <Filename Value="DoubleIntTests.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="mainlauncherform.pas"/>
+        <Filename Value="doubleinttestunit1.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="Form1"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
-        <UnitName Value="MainLauncherForm"/>
+        <UnitName Value="DoubleIntTestUnit1"/>
       </Unit1>
       <Unit2>
-        <Filename Value="loginframe.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="LoginFrm"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Frame"/>
-        <UnitName Value="LoginFrame"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="../Crypto/ouraccounts.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="OurAccounts"/>
-      </Unit3>
-      <Unit4>
         <Filename Value="../queues.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit4>
+        <UnitName Value="Queues"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../bin/OurLauncher"/>
+      <Filename Value="../../bin/DoubleIntTests"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../Crypto;.."/>
-      <UnitOutputDirectory Value="/home/pawel24pl/Programy/Ourcraft/bin/lib"/>
+      <OtherUnitFiles Value=".."/>
+      <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
       <Options>
@@ -79,12 +66,9 @@
         </Win32>
       </Options>
     </Linking>
-    <Other>
-      <CustomOptions Value="-dUseCThreads"/>
-    </Other>
   </CompilerOptions>
   <Debugging>
-    <Exceptions Count="3">
+    <Exceptions Count="4">
       <Item1>
         <Name Value="EAbort"/>
       </Item1>
@@ -94,6 +78,9 @@
       <Item3>
         <Name Value="EFOpenError"/>
       </Item3>
+      <Item4>
+        <Name Value="EAssertionFailedError"/>
+      </Item4>
     </Exceptions>
   </Debugging>
 </CONFIG>

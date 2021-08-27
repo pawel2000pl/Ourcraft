@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl,
-  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, ProcessUtils;
+  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, ProcessUtils, Generics.Collections;
 
 type
 

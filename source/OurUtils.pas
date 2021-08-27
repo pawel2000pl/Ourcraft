@@ -467,7 +467,7 @@ type
   TOurChunkClass = class of TOurChunk;
 
   TOurChunkTable = record
-    Locker : TLocker;
+    Locker : TMultiReadExclusiveWriteSynchronizer;
     Table : array of TOurChunk;
     Count : integer;
   end;
@@ -1230,14 +1230,14 @@ begin
   y := ChunkY and WorldSizeMask;
   z := ChunkZ and WorldSizeMask;
   try
-    fChunks[x, y, z].Locker.Lock;
+    fChunks[x, y, z].Locker.Beginread;
     for i := 0 to fChunks[x, y, z].Count - 1 do
       if (fChunks[x, y, z].Table[i].Position[axisX] = ChunkX) and
         (fChunks[x, y, z].Table[i].Position[axisY] = ChunkY) and
         (fChunks[x, y, z].Table[i].Position[axisZ] = ChunkZ) then
         exit(fChunks[x, y, z].Table[i]);
   finally
-    fChunks[x, y, z].Locker.Unlock;
+    fChunks[x, y, z].Locker.Endread;
   end;
   Result := nil;
 end;
@@ -1293,7 +1293,7 @@ begin
   y := ChunkY and WorldSizeMask;
   z := ChunkZ and WorldSizeMask;
 
-  fChunks[x, y, z].Locker.Lock;
+  fChunks[x, y, z].Locker.Beginwrite;
   try
     for i := 0 to fChunks[x, y, z].Count - 1 do
       if (fChunks[x, y, z].Table[i].Position[axisX] = ChunkX) and
@@ -1307,7 +1307,7 @@ begin
         exit;
       end;
   finally
-    fChunks[x, y, z].Locker.Unlock;
+    fChunks[x, y, z].Locker.Endwrite;
     freeThread.FreeObject(c, 1500);
   end;
 end;
@@ -1324,7 +1324,7 @@ begin
   y := ChunkY and WorldSizeMask;
   z := ChunkZ and WorldSizeMask;
 
-  fChunks[x, y, z].Locker.Lock;
+  fChunks[x, y, z].Locker.Beginwrite;
   try
     Inc(fChunks[x, y, z].Count);
     SetLength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
@@ -1332,7 +1332,7 @@ begin
       TOurChunk.Create(fDefaultBlock, IntVector3(ChunkX, ChunkY, ChunkZ), self);
     Result := fChunks[x, y, z].Table[fChunks[x, y, z].Count - 1];
   finally
-    fChunks[x, y, z].Locker.Unlock;
+    fChunks[x, y, z].Locker.Endwrite;
   end;
 
   if Queues.QueueSize < Queues.ThreadCount-1 then
@@ -1349,9 +1349,9 @@ begin
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
       begin
-        fChunks[x, y, z].Locker.Lock;
+        fChunks[x, y, z].Locker.Beginread;
         SetLength(fChunks[x, y, z].Table, fChunks[x, y, z].Count);
-        fChunks[x, y, z].Locker.Unlock;
+        fChunks[x, y, z].Locker.Endread;
       end;
 end;
 
@@ -1396,18 +1396,18 @@ begin
       for y := 0 to WorldSize - 1 do
         for z := 0 to WorldSize - 1 do
         begin
-          fChunks[x, y, z].Locker.Lock;
+          fChunks[x, y, z].Locker.Beginread;
           i := -1;
           while PreInc(i) < fChunks[x, y, z].Count do
           begin
             c := fChunks[x, y, z].Table[i];
             if c.Finishing then
               Continue;
-            fChunks[x, y, z].Locker.Unlock;
+            fChunks[x, y, z].Locker.Endread;
             c.Tick(t);
-            fChunks[x, y, z].Locker.Lock;
+            fChunks[x, y, z].Locker.Beginread;
           end;
-          fChunks[x, y, z].Locker.Unlock;
+          fChunks[x, y, z].Locker.Endread;
         end;
   finally
     TickLocker.Unlock;
@@ -1455,7 +1455,7 @@ begin
       for z := 0 to WorldSize - 1 do
       begin
         fChunks[x, y, z].Count := 0;
-        fChunks[x, y, z].Locker := TLocker.Create;
+        fChunks[x, y, z].Locker := TMultiReadExclusiveWriteSynchronizer.Create;
       end;
   fQueues := TQueueManagerWithDelays.Create(1, 2);
   fDefaultBlock := defaultBlock;
@@ -2884,28 +2884,29 @@ begin   // exit; //TODO: remove
                  if r <> 0 then
                  begin
                     //v := Normalize((PhisicalBoxes[i].CollisionBox.Position - Where), Vector3(0, 0, 0));
-                    v := Normalize((PhisicalBoxes[i].CollisionBox.Position-CollisionBox.Position), Vector3(0, 0, 0));
+                    {v := Normalize((PhisicalBoxes[i].CollisionBox.Position-CollisionBox.Position), Vector3(0, 0, 0));
                     //v := 8*Normalize((Where - CollisionBox.Position), Vector3(0, 0, 0)) * sqr(1-Hypot3(BiggestDimension(Where - CollisionBox.Position))) / 2;
                     PhisicalBoxes[i].AddGlobalForce(
                     Where, //PhisicalBoxes[i].CollisionBox.HittedPointToSide(Where),
                     PhisicalBoxes[i].GetMass*r*(BiggestDimension(v) - PhisicalBoxes[i].VelocityAtGlobalPoint(Where)/2));
-
+                      }
 
                     v := PhisicalBoxes[i].VelocityAtGlobalPoint(Where);
 
                     if true then //ScalarProduct(Where-CollisionBox.Position, v) < 0 then
                     begin
-                        PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-1.1));
-                        PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (5*sqr(PhisicalBoxes[i].SuggestedDelay));
+                    //    PhisicalBoxes[i].AddGlobalVelocity(Where, v*(-1.1));
+                        PhisicalBoxes[i].AddGlobalForce(Where, PhisicalBoxes[i].ForceAtGlobalPoint(Where)*(-1));
+                    //   PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (5*sqr(PhisicalBoxes[i].SuggestedDelay));
                     //    while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
                     //      PhisicalBoxes[i].MoveGlobal(Where, BiggestDimension(PhisicalBoxes[i].Position-CollisionBox.Position)/1024);
                        //PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + v*(-0.001);
                     end;
 
-
+                      {
                     while PhisicalBoxes[i].CollisionBox.CheckCollision(CollisionBox, Where{%H-}) do
                       PhisicalBoxes[i].Position := PhisicalBoxes[i].Position + Normalize(BiggestDimension(Where - CollisionBox.Position), Vector3(0, 0, 0)) * (1-Hypot3(BiggestDimension(Where - CollisionBox.Position)))*(0.001);
-
+                       }
 
                  end;
               end;

@@ -1,17 +1,31 @@
 unit DoubleInt;
 
+{This module was created by Paweł Bielecki}
+
 {$Mode ObjFpc}
-{$ModeSwitch AdvancedRecords} 
+{$ModeSwitch AdvancedRecords}
+{$Optimization AUTOINLINE}
+{$Optimization CONSTPROP}
+
+{$Define MultithreadedProduct}
+{$Define FastButConsumingMemoryDivision}
 
 interface
 
 type
 
-    TQWordAbstraction = record
+    { TQWordAbstraction }
+
+    TQWordOverlay = record
+    {$IfDef MULTITHREADEDPRODUCT}
+    private
+        class function AsyncProduct(P : Pointer) : PtrInt; static; //same as Product()
+    {$EndIf}
     public
         Value : QWord;
 
-        class operator := (const q : QWord) : TQWordAbstraction;
+        class operator := (const q : QWord) : TQWordOverlay;
+        class operator := (const q : TQWordOverlay) : QWord;
     
         function Lo : LongWord;
         function Hi : LongWord;
@@ -20,23 +34,49 @@ type
         procedure SetHi(const AValue : LongWord);
 
         function GetBit(const Index : PtrUInt) : Boolean;
-        function Product(const a, b : TQWordAbstraction) : TQWordAbstraction;
-        function Sum(const a, b : TQWordAbstraction) : QWord;
+        function Product(const a, b : TQWordOverlay) : TQWordOverlay;
+        function Sum(const a, b : TQWordOverlay) : QWord;
         function AddQWord(const x : QWord) : QWord;
         procedure Zero;
     end;
     
     {Warning: only for unsigned!}
     
+    { TDoubleInt }
+
     generic TDoubleInt<TInt> = record
+    type
+        PInt = ^TInt;
+        PDoubleInt = ^TDoubleInt; 
+        PPDoubleInt = ^PDoubleInt;
+    private
+        {$IfDef MULTITHREADEDPRODUCT}
+        ///Pointer to PPDoubleInt - [0]^ := a; [1]^ := b; [2]^ := a*b; [3]^ := Result;
+        class function AsyncProduct(P : Pointer) : PtrInt; static;
+        //creates if thread pool is not overloaded - returns 0 if it is
+        class function CreateNewProductThread(const a, b, prod, res : PInt) : TThreadID; static;
+        {$EndIf}                                                   
+        function GetQWords(const Index : PtrUInt): QWord; inline;
+        function GetLongWords(const Index : PtrUInt): LongWord; inline;
+        function GetWords(const Index : PtrUInt): Word; inline;
+        function GetBytes(const Index : PtrUInt): Byte; inline;
+        procedure SetQWords(const Index : PtrUInt; const AValue: QWord); inline;
+        procedure SetLongWords(const Index : PtrUInt; const AValue: LongWord); inline;
+        procedure SetWords(const Index : PtrUInt; const AValue: Word); inline;
+        procedure SetBytes(const Index : PtrUInt; const AValue: Byte); inline;
+    public
         Integers : array[0..1] of TInt;
 
-        procedure Zero;  
+        procedure Zero;
+        function IsZero : Boolean;
+
         function AddQWord(const AValue : QWord) : QWord;
-        procedure ShrOne; inline;  
-        function ReturnShrOne : TDoubleInt;
-        procedure ShlOne; inline;  
-        function ReturnShlOne : TDoubleInt;
+        procedure ShrOne(const Output : PDoubleInt);
+        procedure ShrOne; overload; inline;
+        function ReturnShrOne : TDoubleInt; inline;
+        procedure ShlOne(const Output : PDoubleInt);
+        procedure ShlOne; overload; inline;
+        function ReturnShlOne : TDoubleInt; inline;
 
         function Add(const x : TDoubleInt) : QWord;
         function Subtrack(const x : TDoubleInt) : QWord;
@@ -56,17 +96,17 @@ type
         class operator xor (const a, b : TDoubleInt) : TDoubleInt;
         class operator in (const a : TDoubleInt; const b : QWord) : Boolean;
         
-        class operator >(const a,b : TDoubleInt) : Boolean; 
-        class operator <(const a,b : TDoubleInt) : Boolean; 
-        class operator >=(const a,b : TDoubleInt) : Boolean; 
-        class operator <=(const a,b : TDoubleInt) : Boolean; 
-        class operator =(const a,b : TDoubleInt) : Boolean; 
-        class operator <>(const a,b : TDoubleInt) : Boolean; 
+        class operator >(const a,b : TDoubleInt) : Boolean;
+        class operator <(const a,b : TDoubleInt) : Boolean;
+        class operator >=(const a,b : TDoubleInt) : Boolean;
+        class operator <=(const a,b : TDoubleInt) : Boolean;
+        class operator =(const a,b : TDoubleInt) : Boolean;
+        class operator <>(const a,b : TDoubleInt) : Boolean;
 
         class operator shl (const a : TDoubleInt; const b : PtrInt) : TDoubleInt;
         class operator shr (const a : TDoubleInt; const b : PtrInt) : TDoubleInt;
 
-        ///Returns rest less than $FFFFFFFF
+        ///Returns rest less than $FFFFFFFFFFFFFFFF
         function Sum(const a, b : TDoubleInt) : QWord;
         function SumHalf(const a : TDoubleInt; const b : TInt) : QWord;
         ///Returns rest (it is possible to check if it was overflowed)
@@ -87,10 +127,18 @@ type
         function ToBinaryString : AnsiString;
         procedure FromBinaryString(const s : AnsiString);
         
-        function Lo : TInt;
-        function Hi : TInt;
-        procedure SetLo(const AValue : TInt);
-        procedure SetHi(const AValue : TInt);
+        function GetLo : TInt; inline;
+        function GetHi : TInt; inline;
+        procedure SetLo(const AValue : TInt); inline;
+        procedure SetHi(const AValue : TInt); inline;
+
+        property Lo : TInt read GetLo write SetLo;
+        property Hi : TInt read GetHi write SetHi;
+
+        property QWords[const Index : PtrUInt] : QWord read GetQWords write SetQWords;
+        property LongWords[const Index : PtrUInt] : LongWord read GetLongWords write SetLongWords;
+        property Words[const Index : PtrUInt] : Word read GetWords write SetWords;
+        property Bytes[const Index : PtrUInt] : Byte read GetBytes write SetBytes;
     end;
 
     { TSignedInt }
@@ -98,9 +146,9 @@ type
     generic TSignedInt<TUnsignedType> = record
         UnsignedValue :  TUnsignedType;
         procedure Assign(const Buf; Size : PtrUInt; const Signed : Boolean);
-        function Negative : Boolean;
-        function Sign : Integer;
-        function AbsoluteValue : TUnsignedType;
+        function Negative : Boolean; inline;
+        function Sign : Integer; inline;
+        function AbsoluteValue : TUnsignedType; inline;
         function CompareTo(const x : TSignedInt) : Integer;
     
         class operator := (const AValue : Int64) : TSignedInt;
@@ -121,8 +169,8 @@ type
         class operator =(const a,b : TSignedInt) : Boolean; 
         class operator <>(const a,b : TSignedInt) : Boolean; 
     end;
-    
-    uInt128 = specialize TDoubleInt<TQWordAbstraction>; 
+
+    uInt128 = specialize TDoubleInt<TQWordOverlay>; 
     uInt256 = specialize TDoubleInt<uInt128>; 
     uInt512 = specialize TDoubleInt<uInt256>; 
     uInt1024 = specialize TDoubleInt<uInt512>; 
@@ -144,34 +192,131 @@ type
     Int32768 = specialize TSignedInt<uInt32768>;
     Int65536 = specialize TSignedInt<uInt65536>;
 
+{$if FPC_FULLVERSION >= 30200}
+generic procedure DivMod<TuInt>(const Dividend, Divisor: TuInt; out Result, Remainder : TuInt); overload;
+generic function CopyUnsigned<TFromType, TToType>(const Source : TFromType) : TToType;
+{$endif}
+                           
+{$IfDef MULTITHREADEDPRODUCT}     
+
+const
+   IntSizeForMultithreading = 1024; //In Bytes
+
+function CheckIfCanCreateThread : Boolean; //DO NOT USE - ONLY FOR GENERICS
+procedure DoneThread(const ID : TThreadID); //DO NOT USE - ONLY FOR GENERICS
+
+{$EndIf}
+
+function Shr3(const x : Int64) : Int64; inline; overload; //ONLY FOR GENERICS
+function Shr3(const x : Int32) : Int32; inline; overload; //ONLY FOR GENERICS
+
 implementation
+
+{$IfDef MULTITHREADEDPRODUCT}
+var
+    CounterLock : TRTLCriticalSection;
+    ThreadCount : PtrUInt;
+
+function CheckIfCanCreateThread : Boolean;
+begin
+    EnterCriticalSection(CounterLock);
+    Result := ThreadCount < 15;
+    if Result then
+       Inc(ThreadCount);
+    LeaveCriticalSection(CounterLock);
+end;
+
+procedure DoneThread(const ID: TThreadID);
+begin
+    if ID = 0 then
+       Exit;
+    WaitForThreadTerminate(ID, 0);
+    EnterCriticalSection(CounterLock);
+    if ThreadCount > 0 then
+       Dec(ThreadCount);
+    LeaveCriticalSection(CounterLock);
+end;
+
+{$EndIf}
 
 {$RangeChecks Off}
 
-class operator TQWordAbstraction.:= (const q : QWord) : TQWordAbstraction;
+{$if FPC_FULLVERSION >= 30200}
+
+generic procedure DivMod<TuInt>(const Dividend, Divisor: TuInt; out Result, Remainder : TuInt); overload;
+begin
+     TuInt.DivMod(Dividend, Divisor, Result, Remainder);
+end;
+
+generic function CopyUnsigned<TFromType, TToType>(const Source : TFromType) : TToType;
+var
+    copySize : PtrUInt;
+begin
+    if SizeOf(TFromType) < SizeOf(TToType) then
+       copySize:=SizeOf(TFromType)
+    else
+       copySize:=SizeOf(TToType);
+    Move(Source, Result{%H-}, copySize);
+end;
+
+{$endif}
+
+function Shr3(const x : Int64) : Int64; inline; overload;
+begin
+  if x >= 0 then
+     Exit(x shr 3);
+  exit((x shr 3) or $E000000000000000);
+end;
+
+function Shr3(const x : Int32) : Int32; inline; overload;
+begin
+  if x >= 0 then
+     Exit(x shr 3);
+  exit((x shr 3) or $E0000000);
+end;
+
+{ TQWordOverlay }
+
+class operator TQWordOverlay.:= (const q : QWord) : TQWordOverlay;
 begin
     Result.Value := q;
 end;
 
-function TQWordAbstraction.Lo : LongWord;
+class operator TQWordOverlay.:=(const q: TQWordOverlay): QWord;
+begin
+  Exit(q.Value);
+end;
+
+function TQWordOverlay.Lo : LongWord;
 begin
     Result := Value and $FFFFFFFF;
 end;
 
-function TQWordAbstraction.Hi : LongWord;
+function TQWordOverlay.Hi : LongWord;
 begin
     Result := Value shr 32;
 end;
 
-procedure TQWordAbstraction.SetLo(const AValue : LongWord);
+procedure TQWordOverlay.SetLo(const AValue : LongWord);
 begin
     Value := Value and $FFFFFFFF00000000 or AValue;
 end;
 
-procedure TQWordAbstraction.SetHi(const AValue : LongWord);
+procedure TQWordOverlay.SetHi(const AValue : LongWord);
 begin
     Value := Value and $00000000FFFFFFFF or (QWord(AValue) shl 32);
 end;
+
+{$IfDef MULTITHREADEDPRODUCT}
+class function TQWordOverlay.AsyncProduct(P: Pointer): PtrInt;
+type
+    PQWordAbstraction = ^TQWordOverlay;
+    PPQWordAbstraction = ^PQWordAbstraction;
+begin
+    PPQWordAbstraction(P)[3]^ := PPQWordAbstraction(P)[2]^.Product(PPQWordAbstraction(P)[0]^, PPQWordAbstraction(P)[1]^);
+    Exit(0);
+end;
+{$EndIf}
 
 function LongWordProduct(const a, b : LongWord; out res : LongWord) : LongWord;
 var
@@ -182,7 +327,7 @@ begin
     Result := q shr 32;
 end;
 
-function TQWordAbstraction.Product(const a, b : TQWordAbstraction) : TQWordAbstraction;
+function TQWordOverlay.Product(const a, b : TQWordOverlay) : TQWordOverlay;
 var
     r0, r1, r2 : LongWord;
     t1, t2 : LongWord;
@@ -201,49 +346,56 @@ begin
     Result.Value := a.Hi*b.Hi + q1;
 end;
 
-function TQWordAbstraction.Sum(const a, b : TQWordAbstraction) : QWord;
+function TQWordOverlay.Sum(const a, b : TQWordOverlay) : QWord;
 begin
     Value := QWord(a.Value+b.Value);
-    if Value < a.Value then
+      if Value < a.Value then
         Result := 1
     else
         Result := 0;
 end;
 
-function TQWordAbstraction.AddQWord(const x : QWord) : QWord;
+function TQWordOverlay.AddQWord(const x : QWord) : QWord;
 var
-    q : TQWordAbstraction;
+    q : TQWordOverlay;
 begin
     q.Value := x;
     Result := Sum(Self, q);
 end;
 
-function TQWordAbstraction.GetBit(const Index : PtrUInt) : Boolean;
+function TQWordOverlay.GetBit(const Index : PtrUInt) : Boolean;
 begin
     Result := (1 shl Index) and Value <> 0;
 end;
 
-procedure TQWordAbstraction.Zero;
+procedure TQWordOverlay.Zero;
 begin
     Value := 0;
-end;
+end;          
+
+{ TDoubleInt }
 
 procedure TDoubleInt.Zero;
 var
-    b : PByte;
     i : PtrUInt;
 begin
-    b := Pointer(@Self);
-    for i := 0 to 2*SizeOf(TInt)-1 do
-       b[i] := 0; 
+    for i := 0 to SizeOf(TInt) shr 2 -1 do
+       PQWord(Pointer(@Self))[i] := 0;
 end;
 
-procedure TDoubleInt.ShrOne;
+function TDoubleInt.IsZero: Boolean;
+var
+    i : PtrUInt;
+    q : PQWord;
 begin
-    self := ReturnShrOne;
+    q := @self;
+    for i := 0 to SizeOf(TInt) shr 2 do
+       if q[i] <> 0 then
+           Exit(False);
+    Exit(True);
 end;
 
-function TDoubleInt.ReturnShrOne : TDoubleInt;
+procedure TDoubleInt.ShrOne(const Output: PDoubleInt);
 var
     Q, RP : PQWord;
     t, r : QWord;
@@ -251,35 +403,50 @@ var
 begin
     r := 0;
     Q := @Self;
-    RP := @Result;
+    RP := Pointer(Output);
     for i := SizeOf(TInt) shr 2 -1 downto 0 do
     begin
       t := Q[i];
-      RP[i] := (Q[i] shr 1) or r;  
+      RP[i] := (Q[i] shr 1) or r;
       r := (t and 1) shl 63;
+    end;
+end;
+
+procedure TDoubleInt.ShrOne;
+begin
+  ShrOne(@Self);
+end;
+
+function TDoubleInt.ReturnShrOne : TDoubleInt;
+begin
+    ShrOne(@Result);
+end;
+
+procedure TDoubleInt.ShlOne(const Output: PDoubleInt);
+var
+    Q, RP : PQWord;
+    t, r : QWord;
+    i : PtrUInt;
+begin
+    r := 0;
+    Q := @Self;
+    RP := Pointer(Output);
+    for i := 0 to SizeOf(TInt) shr 2 -1 do
+    begin
+      t := Q[i];
+      RP[i] := (Q[i] shl 1) or r;
+      r := (t and (1 shl 63)) shr 63;
     end;
 end;
 
 procedure TDoubleInt.ShlOne;
 begin
-    self := ReturnShlOne;
+  ShlOne(@Self);
 end;
 
 function TDoubleInt.ReturnShlOne : TDoubleInt;
-var
-    Q, RP : PQWord;
-    t, r : QWord;
-    i : PtrUInt;
 begin
-    r := 0;
-    Q := @Self;
-    RP := @Result;
-    for i := 0 to SizeOf(TInt) shr 2 -1 do
-    begin
-      t := Q[i];
-      RP[i] := (Q[i] shl 1) or r;  
-      r := (t and (1 shl 63)) shr 63;
-    end;
+    ShlOne(@Result);
 end;
 
 function TDoubleInt.AddQWord(const AValue : QWord) : QWord;
@@ -360,11 +527,23 @@ var
     r0, r1, r2 : TInt;
     t1, t2 : TInt;
     q1 : QWord;
+    {$ifdef MULTITHREADEDPRODUCT}
+    ThreadsID : array[0..1] of TThreadID;
+    {$EndIf}
 begin
+    {$ifdef MULTITHREADEDPRODUCT}
+    ThreadsID[0] := CreateNewProductThread(@a.Integers[0], @b.Integers[0], @Integers[0], @r0);
+    ThreadsID[1] := CreateNewProductThread(@a.Integers[0], @b.Integers[1], @t1, @r1);
+                                                                 
+    r2 := t2.Product(a.Integers[1], b.Integers[0]);
+    DoneThread(ThreadsID[0]);
+    DoneThread(ThreadsID[1]);
+    {$Else}
     r0 := Integers[0].Product(a.Integers[0], b.Integers[0]);
 
     r1 := t1.Product(a.Integers[0], b.Integers[1]);
-    r2 := t2.Product(a.Integers[1], b.Integers[0]);
+    r2 := t2.Product(a.Integers[1], b.Integers[0]);  
+    {$EndIf}
 
     q1 := Integers[1].Sum(t1, t2);
     q1 += Integers[1].Sum(Integers[1], r0);
@@ -378,26 +557,180 @@ begin
     end;
 end;
 
+{$IfDef MULTITHREADEDPRODUCT}
+
+class function TDoubleInt.AsyncProduct(P: Pointer): PtrInt;
+begin
+    PPDoubleInt(P)[3]^ := PPDoubleInt(P)[2]^.Product(PPDoubleInt(P)[0]^, PPDoubleInt(P)[1]^);
+    Freemem(P);
+    Exit(0);
+end;
+
+class function TDoubleInt.CreateNewProductThread(const a, b, prod, res: PInt): TThreadID;
+var
+    Data : ^PInt;
+begin
+    if (SizeOf(TInt) > IntSizeForMultithreading) and CheckIfCanCreateThread then
+    begin
+      Data := GetMem(4*SizeOf(PInt));
+      Data[0] := a;
+      Data[1] := b;
+      Data[2] := prod;
+      Data[3] := res;
+      Exit(BeginThread(@TInt.AsyncProduct, Data));
+    end;
+    res^ := prod^.Product(a^, b^);
+    Exit(0);
+end;    
+{$EndIf}
+
+function TDoubleInt.GetQWords(const Index : PtrUInt): QWord;
+begin
+  If Index < SizeOf(TInt) shr 2 then
+     Exit(PQWord(@Self)[Index]);
+end;              
+
+function TDoubleInt.GetLongWords(const Index : PtrUInt): LongWord;
+begin
+  If Index < SizeOf(TInt) shr 1 then
+     Exit(PLongWord(@Self)[Index]);
+end;
+
+function TDoubleInt.GetWords(const Index : PtrUInt): Word;
+begin
+  If Index < SizeOf(TInt) then
+     Exit(PWord(@Self)[Index]);
+end;               
+
+function TDoubleInt.GetBytes(const Index : PtrUInt): Byte;
+begin
+  If Index < SizeOf(TInt) shl 1 then
+     Exit(PByte(@Self)[Index]);
+end;
+
+procedure TDoubleInt.SetQWords(const Index: PtrUInt; const AValue: QWord);
+begin
+  If Index < SizeOf(TInt) shr 2 then
+     PQWord(@Self)[Index] := AValue;
+end;
+
+procedure TDoubleInt.SetLongWords(const Index: PtrUInt; const AValue: LongWord);
+begin
+  If Index < SizeOf(TInt) shr 1 then
+     PLongWord(@Self)[Index] := AValue;
+end;
+
+procedure TDoubleInt.SetWords(const Index: PtrUInt; const AValue: Word);
+begin
+  If Index < SizeOf(TInt) then
+     PWord(@Self)[Index] := AValue;
+end;  
+
+procedure TDoubleInt.SetBytes(const Index: PtrUInt; const AValue: Byte);
+begin
+  If Index < SizeOf(TInt) shl 1 then
+     PByte(@Self)[Index] := AValue;
+end;
+
+{$IfDef FASTBUTCONSUMINGMEMORYDIVISION}
+
 class procedure TDoubleInt.DivMod(const a : TDoubleInt; const b : TDoubleInt; out Quotient, Modulo : TDoubleInt; const NeedQuotient : Boolean); static;
 var
-    bb : TDoubleInt;
-    i, c, size, offset : PtrUInt;
+    bbTab : array[0..7, 0..2] of TDoubleInt;
+    bb : PDoubleInt;
+    i, c, size, shrCount, offset : PtrInt;
 begin
+    if a < b then
+    begin
+        if NeedQuotient then
+            Quotient.Zero;
+        Modulo := a;
+        Exit;
+    end;
+
     size := SizeOf(b) shl 3;
     c := size;
     while (c > 0) and (not b.GetBit(c-1)) do
         Dec(c);
 
+    if c = 0 then
+    begin
+        if NeedQuotient then
+           Quotient := a;
+        Modulo := 0;
+        Exit;
+    end;
+
+    while not a.GetBit(Size-1) do
+        Dec(Size);
+    offset := size-c;
+
+    bbTab[0, 1] := b;
+    for i := 1 to 7 do
+         bbTab[i-1, 1].ShrOne(@bbTab[i, 1]);
+
+    for i := 0 to 7 do
+    begin
+         bbTab[i, 0].Zero;
+         bbTab[i, 2].Zero;
+    end;
+
+    PByte(Pointer(@bbTab[7, 1])-1)^ := PByte(@bbTab[0, 1])^ shl 1;
+    for i := 6 downto 1 do
+        PByte(Pointer(@bbTab[i, 1])-1)^ := PByte(Pointer(@bbTab[i+1, 1])-1)^ shl 1;
+
+    shrCount := -Offset;
+
+    Modulo := a;
+    if NeedQuotient then
+        Quotient.Zero;
+    for i := offset downto 0 do
+    begin
+        bb := PDoubleInt(Pointer(@bbTab[shrCount and 7, 1]) + Shr3(shrCount));
+        if Modulo >= bb^ then
+        begin
+            if NeedQuotient then
+                Quotient.SetBit(i, True);
+            Modulo.Subtrack(bb^);
+        end;
+        Inc(shrCount);
+    end;
+
+end;
+
+{$else}
+
+class procedure TDoubleInt.DivMod(const a : TDoubleInt; const b : TDoubleInt; out Quotient, Modulo : TDoubleInt; const NeedQuotient : Boolean); static;
+var
+    bb : TDoubleInt;
+    i, c, size, offset : PtrUInt;
+begin
+    if a < b then
+    begin
+        if NeedQuotient then
+            Quotient.Zero;
+        Modulo := a;
+        Exit;
+    end;
+    size := SizeOf(b) shl 3;
+    c := size;
+    while (c > 0) and (not b.GetBit(c-1)) do
+        Dec(c);
+
+    if c = 0 then
+    begin
+        if NeedQuotient then
+           Quotient := a;
+        Modulo := 0;
+        Exit;
+    end;
+
     offset := size-c;
     if c = size then
         bb := b
     else
-    begin
-        bb.Zero;
-        for i := 0 to c-1 do
-            bb.SetBit(i+offset, b.GetBit(i));
-    end;
-    
+        bb := b shl offset;
+
     Modulo := a;
     if NeedQuotient then
         Quotient.Zero;
@@ -412,6 +745,8 @@ begin
         bb.ShrOne;
     end;
 end;
+
+{$endIf}
 
 class function TDoubleInt.PowerMod(const x, n, m : TInt) : TInt;
 var
@@ -460,14 +795,11 @@ begin
 end;
 
 procedure TDoubleInt.SetBit(const Index : Integer; const AValue : Boolean);
-var
-    v : QWord;
 begin
     if AValue then
-        v := QWord(1) shl (Index and 63)
-    else
-        v := 0;
-    PQWord(@Self)[Index shr 6] := PQWord(@Self)[Index shr 6] and (not (QWord(1) shl (Index and 63))) or v;
+       PQWord(@Self)[Index shr 6] := PQWord(@Self)[Index shr 6] or (QWord(1) shl (Index and 63))
+       else
+       PQWord(@Self)[Index shr 6] := PQWord(@Self)[Index shr 6] and (not (QWord(1) shl (Index and 63)));
 end;
 
 function TDoubleInt.GetBit(const Index : Integer) : Boolean;
@@ -475,12 +807,12 @@ begin
     Result := (PQWord(@Self)[Index shr 6] and (QWord(1) shl (Index and 63))) <> 0;
 end;
 
-function TDoubleInt.Lo : TInt;
+function TDoubleInt.GetLo : TInt;
 begin
     Result := Integers[0];
 end;
 
-function TDoubleInt.Hi : TInt;
+function TDoubleInt.GetHi : TInt;
 begin
     Result := Integers[1];
 end;
@@ -552,13 +884,16 @@ end;
 
 class operator TDoubleInt.:= (const AValue : TDoubleInt) : TInt;
 begin
-    Result := AValue.Lo;
+    Result := AValue.Integers[0];
 end;
 
-class operator TDoubleInt.:= (const AValue : QWord) : TDoubleInt;
+class operator TDoubleInt.:= (const AValue : QWord) : TDoubleInt;  
+var
+    i : PtrUInt;
 begin
-    Result.Zero;
-    PQWord(@Result)^ := AValue;
+    PQWord(Pointer(@Result))[0] := AValue;
+    for i := 1 to SizeOf(TInt) shr 2 -1 do
+       PQWord(Pointer(@Result))[i] := 0;
 end;
 
 class operator TDoubleInt.:= (const AValue : TInt) : TDoubleInt;
@@ -674,7 +1009,7 @@ begin
     UnsignedValue.Zero;
     b := @buf;
     bu := @UnsignedValue;
-    if (b[Size-1] and %10000000 <> 0) and (SizeOf(buf) < SizeOf(TUnsignedType)) then
+    if Signed and (b[Size-1] and %10000000 <> 0) and (SizeOf(buf) < SizeOf(TUnsignedType)) then
         UnsignedValue := not UnsignedValue;
     for i := 0 to Size-1 do
         bu[i] := b[i];
@@ -697,9 +1032,8 @@ end;
 function TSignedInt.AbsoluteValue : TUnsignedType;
 begin
     if Negative then
-        Result := (-self).UnsignedValue
-    else
-        Result := Self.UnsignedValue;
+        Exit((-self).UnsignedValue);
+    Exit(Self.UnsignedValue);
 end;
 
 function TSignedInt.CompareTo(const x : TSignedInt) : Integer;
@@ -809,5 +1143,13 @@ class operator TSignedInt.<>(const a,b : TSignedInt) : Boolean;
 begin
     Result := a.CompareTo(b) <> 0;
 end;
+
+{$IfDef MULTITHREADEDPRODUCT}
+initialization
+    InitCriticalSection(CounterLock);
+
+finalization
+    DoneCriticalSection(CounterLock);
+{$EndIf}
 
 end.

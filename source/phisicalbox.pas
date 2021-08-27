@@ -72,6 +72,7 @@ type
     procedure MoveGlobal(const Where : TVector3; const Value : TVector3);
 
     function VelocityAtGlobalPoint(const Where : TVector3) : TVector3;
+    function ForceAtGlobalPoint(const Where : TVector3) : TVector3;
     function SuggestedDelay : Double;
 
     constructor Create;
@@ -293,6 +294,11 @@ end;
 function TPhisicalBox.VelocityAtGlobalPoint(const Where: TVector3): TVector3;
 begin
   Exit(CollisionBox.RotationMatrix * Velocity + VectorProduct(AngularVelocity, Where-Position));
+end;
+
+function TPhisicalBox.ForceAtGlobalPoint(const Where: TVector3): TVector3;
+begin
+  Exit(CollisionBox.RotationMatrix * Force + VectorProduct(ForceMoment, Where-Position)/SquaredHypot3(Where-Position));
 end;
 
 function TPhisicalBox.SuggestedDelay: Double;

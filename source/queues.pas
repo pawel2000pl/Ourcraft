@@ -24,7 +24,7 @@ unit Queues;
 interface
 
 uses
-  Classes, SysUtils, ProcessUtils, Locker, Math, Incrementations;
+  Classes, SysUtils, ProcessUtils, Locker, RTLEvent, Math, Incrementations;
 
 type
 
@@ -66,6 +66,8 @@ type
     Locker: TLocker;
     FCoreCount: integer;
     FMethodCount : Integer;
+    FEvent : TRTLEvent;
+    FStackSizePerThread : PtrUInt;
 
     FThreadCount: integer;
     Threads: array of TQueueThread;
@@ -76,6 +78,7 @@ type
     property ThreadCount: integer read FThreadCount;
     property CoreCount: integer read FCoreCount;
     property RemoveRepeated: boolean read fRemoveRepeated write fRemoveRepeated;
+    property QueuedMethodCount : Integer read FMethodCount;
     function QueueSize: integer;
 
     procedure Clear; virtual;
@@ -83,8 +86,8 @@ type
     function ExecuteMethod: boolean;
     procedure DequeueObject(obj: TObject); virtual;
     procedure AddMethod(const Method: TQueueMethod); virtual;
-    constructor Create(const ThreadsPerCore: integer = 1;
-      const AdditionalThreads: integer = 0);
+    procedure AddOrExecuteIfOveloaded(const Method: TQueueMethod);
+    constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0; const StackSizePerThread : PtrUInt = DefaultStackSize);
     destructor Destroy; override;
   end;
 
@@ -99,7 +102,7 @@ type
   public
     procedure Clear; override;
     procedure AddMethodDelay(const Method: TQueueMethod; const DelayMilliseconds: QWord);
-    constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0);
+    constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0; const StackSizePerThread : PtrUInt = DefaultStackSize);
     destructor Destroy; override;
   end;
 
@@ -168,12 +171,12 @@ begin
 end;
 
 constructor TQueueManagerWithDelays.Create(const ThreadsPerCore: integer;
-  const AdditionalThreads: integer);
+  const AdditionalThreads: integer; const StackSizePerThread: PtrUInt);
 begin
   DelayLocker := TLocker.Create;
   fDelayListCount := 0;
   setlength(fDelayList, fDelayListCount);
-  inherited Create(max(0, ThreadsPerCore), max(AdditionalThreads, 0) + 1);
+  inherited Create(max(0, ThreadsPerCore), max(AdditionalThreads, 0) + 1, StackSizePerThread);
   AddMethod(@ExecuteDelayMethods);
 end;
 
@@ -253,6 +256,8 @@ begin
   end;
 
   Result := fExecuteIndex <> fAddIndex;
+  if not Result then
+    FEvent.Reset;
 end;
 
 procedure TQueueManager.DequeueObject(obj: TObject);
@@ -278,6 +283,7 @@ var
 begin
   q.Method := Method;
   Locker.Lock;
+  FEvent.SetUp;
   try
     fList[PostInc(fAddIndex)] := q;
     Inc(FMethodCount);
@@ -286,11 +292,20 @@ begin
   end;
 end;
 
+procedure TQueueManager.AddOrExecuteIfOveloaded(const Method: TQueueMethod);
+begin
+  if QueuedMethodCount >= ThreadCount then
+     Method()
+     else
+     AddMethod(Method);
+end;
+
 constructor TQueueManager.Create(const ThreadsPerCore: integer;
-  const AdditionalThreads: integer);
+  const AdditionalThreads: integer; const StackSizePerThread: PtrUInt);
 var
   i: integer;
 begin
+  FStackSizePerThread:=StackSizePerThread;
   Suspend := False;
   fRemoveRepeated := True;
   fAddIndex := 0;
@@ -300,6 +315,7 @@ begin
   FCoreCount := GetCoreCount;
   FThreadCount := max(1, AdditionalThreads + ThreadsPerCore * CoreCount);
   setlength(Threads, ThreadCount);
+  FEvent := TRTLEvent.Create;
   Clear;
   for i := 0 to ThreadCount - 1 do
     Threads[i] := TQueueThread.Create(self);
@@ -314,6 +330,7 @@ begin
   setlength(Threads, 0);
   Locker.WaitForUnlock;
   Locker.Free;
+  FEvent.Free;
   inherited Destroy;
 end;
 
@@ -321,7 +338,7 @@ end;
 
 procedure TQueueThread.WaitForNext;
 begin
-   SleepMicroseconds(EnsureRange(fManager.ThreadCount, 1, 16));
+  fManager.FEvent.WaitFor(10);
 end;
 
 procedure TQueueThread.Execute;
@@ -336,7 +353,7 @@ constructor TQueueThread.Create(Manager: TQueueManager);
 begin
   fTerminating := False;
   fManager := Manager;
-  inherited Create(False);
+  inherited Create(False, fManager.FStackSizePerThread);
 end;
 
 destructor TQueueThread.Destroy;
