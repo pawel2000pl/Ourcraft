@@ -30,9 +30,9 @@
     //better for half-sorted       
     {$ifdef StaticSort} class {$endif} procedure Quick2(var A : array of TValue); overload;
     {$ifdef StaticSort} class {$endif} procedure Quick2(var AI : array of TValue; const ALo, AHi : integer); overload;
-    //stable and always constant time
-    {$ifdef StaticSort} class {$endif} procedure Merge(var Tab : array of TValue; const a, b : integer); overload;
+    //stable and always constant time                                                                            
     {$ifdef StaticSort} class {$endif} procedure Merge(var Tab : array of TValue); overload;
+    {$ifdef StaticSort} class {$endif} procedure Merge(var Tab : array of TValue; const a, b : integer); overload;
     //check if is sorted
     {$ifdef StaticSort} class {$endif} function Sorted(const Tab : array of TValue) : boolean; overload;
     {$ifdef StaticSort} class {$endif} function Sorted(const Tab : array of TValue; const offset, n : integer) : boolean; overload;
