@@ -22,7 +22,18 @@ type
     function CheckCollision(const B : TCollisionBox; var Where : TVector3; const MaxDepth : Integer = 8) : Boolean;
     function GetHittedSide(const Where : TVector3) : TTextureMode;
     function GetNormalVectorForSide(const Side : TTextureMode) : TVector3;
-    function HittedPointToSide(const Where : TVector3) : TVector3;
+    function HittedPointToSide(const Where : TVector3) : TVector3;      
+    procedure GetIntegerBorders(var a, b : TIntVector3);
+  end;
+
+  { TVelocityBox }
+
+  TVelocityBox = record
+    CollisionBox : TCollisionBox;
+    Velocity : TVector3;
+    AngularVelocityMatrix : TMatrix3x3;
+    function TimeCalculate(const TimeInSeconds : Double) : TVelocityBox;
+    function SuggestedDelay : Double;
   end;
 
 function CreateCollosionBox(const Position : TVector3; const Rotation : TRotationVector; const Size : TSizeVector) : TCollisionBox; inline;
@@ -32,6 +43,9 @@ implementation
 
 uses
   Math;
+
+const
+  Corners : array[0..7] of TIntVector3 = ((-1, -1, -1),(-1, -1, 1), (-1, 1, -1),(-1, 1, 1), (1, -1, -1),(1, -1, 1), (1, 1, -1),(1, 1, 1));
 
 function BiggestDimension(const v : TVector3) : TAxis; inline;
 begin
@@ -68,75 +82,30 @@ begin
         Result := i;
 end;
 
+function MinIndexArray(const Values : array of Double) : specialize TArray<Integer>;
+var
+  i, m : Integer;
+begin
+  m := MinIndex(Values);
+  Result := [];
+  for i := Low(Values) to High(Values) do
+     if Values[i] = m then
+        Insert(i, Result, Length(Result));
+end;
+
 function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer) : Boolean;
 var
   SubA1, SubA2, SubB1, SubB2 : TCollisionBox;
 begin
   A.Cut(BiggestDimension(A.Size), SubA1, SubA2);
   B.Cut(BiggestDimension(B.Size), SubB1, SubB2);
-  case MinIndex([Hypot3(SubA1.Position-SubB1.Position), Hypot3(SubA1.Position-SubB2.Position), Hypot3(SubA2.Position - SubB1.Position), Hypot3(SubA2.Position - SubB2.Position)]) of
+  case MinIndex([SquaredHypot3(SubA1.Position-SubB1.Position), SquaredHypot3(SubA1.Position-SubB2.Position), SquaredHypot3(SubA2.Position - SubB1.Position), SquaredHypot3(SubA2.Position - SubB2.Position)]) of
     0: Result := CheckCollision(SubA1, SubB1, Where, MaxDepth);
     1: Result := CheckCollision(SubA1, SubB2, Where, MaxDepth);
     2: Result := CheckCollision(SubA2, SubB1, Where, MaxDepth);
     3: Result := CheckCollision(SubA2, SubB2, Where, MaxDepth);
   end;
 end;
-                    {
-function CheckSubCollision(const A, B : TCollisionBox; var Where: TVector3; const MaxDepth : Integer) : Boolean;
-var
-  axis, axis2, minAxis, minAxis2 : TAxis;
-  ia, ib, minIA, minIB : Integer;
-  tmp, MinLength : Double;
-  SubsA, SubsB : array[TAxis] of array[0..1] of TCollisionBox;
-
-  Wage : Double;
-  TempWhere : TVector3;
-begin
-  for axis := Low(TAxis) to High(TAxis) do
-  begin
-    A.Cut(axis, SubsA[axis, 0], SubsA[axis, 1]);
-    B.Cut(axis, SubsB[axis, 0], SubsB[axis, 1]);
-  end;
-                            {
-  MinLength := MaxDouble;
-  minAxis:=AxisX;
-  minAxis2:=AxisX;
-  minIA := 0;
-  minIB := 0;
-
-  for axis := Low(TAxis) to High(TAxis) do
-    for axis2 := axis to High(TAxis) do
-      for ia := 0 to 1 do
-        for ib := 0 to 1 do
-        begin
-           tmp := Hypot3(SubsA[axis, ia].Position - SubsB[axis2, ib].Position);
-           if tmp < MinLength then
-           begin
-             MinLength:=tmp;
-             minAxis:=axis;
-             minAxis2:=axis2;
-             minIA := ia;
-             minIB := ib;
-           end;
-        end;
-
-  Exit(CheckCollision(SubsA[minAxis, minIA], SubsB[minAxis2, minIB], Where, MaxDepth));   }
-  Wage := 0;
-  Where := Vector3(0, 0, 0);
-  for axis := Low(TAxis) to High(TAxis) do
-    for axis2 := axis to High(TAxis) do
-      for ia := 0 to 1 do
-        for ib := 0 to 1 do
-           if CheckCollision(SubsA[axis, ia], SubsB[axis2, ib], TempWhere{%H-}, MaxDepth) then
-           begin
-              Wage += Hypot3(SubsA[axis, ia].Size)+Hypot3(SubsB[axis2, ib].Size);
-              Where := Where + TempWhere;
-           end;
-
-  if Wage <> 0 then
-     Where := Where / Wage;
-  Exit(Wage<>0);
-end;            }
 
 function AverageCollisionPlace(const A, B : TCollisionBox) : TVector3; inline;
 var
@@ -158,13 +127,28 @@ begin
   if Distance - Epsilon <= MinDistance + Epsilon then
   begin
      Where := AverageCollisionPlace(A, B);
-     //Where := (A.Position + B.Position)/2;
      Exit(True);
   end;
   MaxDistance := (Hypot3(A.Size)+Hypot3(B.Size))/2;
   if (Distance > MaxDistance) or (MaxDepth<=0) then
      Exit(False);
   Exit(CheckSubCollision(A, B, Where, MaxDepth-1));
+end;
+
+{ TVelocityBox }
+
+function TVelocityBox.TimeCalculate(const TimeInSeconds: Double): TVelocityBox;
+begin
+  Result.CollisionBox.RotationMatrix := AngularVelocityMatrix * CollisionBox.RotationMatrix;
+  Result.Velocity := Result.CollisionBox.RotationMatrix * Transposing(CollisionBox.RotationMatrix) * Velocity;
+  Result.CollisionBox.Position := CollisionBox.Position + (TimeInSeconds/2) * (Result.CollisionBox.RotationMatrix * Result.Velocity + CollisionBox.RotationMatrix * Velocity);
+  Result.AngularVelocityMatrix := AngularVelocityMatrix;
+  Result.CollisionBox.Size := CollisionBox.Size;
+end;
+
+function TVelocityBox.SuggestedDelay: Double;
+begin
+  Exit(0.125/(abs(CollisionBox.Size[AxisX]) + abs(CollisionBox.Size[AxisY]) + abs(CollisionBox.Size[AxisZ]) + abs(Velocity[AxisX]) + abs(Velocity[AxisY]) + abs(Velocity[AxisZ]) + 1 ));
 end;
 
 { TCollisionBox }
@@ -272,6 +256,25 @@ begin
   if v[a] = 0 then
      Exit(Vector3(0, 0, 0));
   Exit(RotationMatrix * v*abs(Size[a]/v[a]) + Position);
+end;
+
+procedure TCollisionBox.GetIntegerBorders(var a, b: TIntVector3);
+var
+  v : TVector3;
+  Corner : TIntVector3;
+  x : TAxis;
+begin
+  for Corner in Corners do
+  begin
+      v := RotationMatrix*Vector3(Size[axisX]*Corner[axisX]/2, Size[axisY]*Corner[axisY]/2, Size[axisZ]*Corner[axisZ]/2) + Position;
+      for x := low(TAxis) to High(TAxis) do
+      begin
+          if v[x] < a[x] then
+             a[x] := floor(v[x])-1;
+          if v[x] > b[x] then
+             b[x] := ceil(v[x])+1;
+      end;
+  end;
 end;
 
 end.

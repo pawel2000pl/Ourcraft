@@ -1,6 +1,6 @@
 unit PhisicalBox;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+} {$Warning 'This module will be removed'}
 
 interface
 

@@ -17,7 +17,7 @@ function RunProcess(const FileName : ansistring; const Params : array of ansistr
   const Async : boolean = False) : TPid;
 procedure RunCommand(const s : ansistring);
 
-procedure RaiseException(const msg : ansistring; const Terminate : boolean = True);
+//procedure RaiseException(const msg : ansistring; const Terminate : boolean = True);
 function DumpCallStack : ansistring;
 function GetCoreCount : PtrUInt;
 function StrToIntE(const s : ansistring) : integer;
@@ -78,6 +78,17 @@ begin
   Result := Report;
 end;
 
+procedure RaiseException(const msg : ansistring; const Terminate : boolean = True);
+begin
+  writeln(StdErr, 'Error: ', msg);
+  if Terminate then
+  begin
+    writeln(StdErr, 'Stack trace:');
+    writeln(StdErr, DumpCallStack);
+    Halt(1);
+  end;
+end;
+
 function GetMicroseconds : qword;
 var
   tp : TTimeVal;
@@ -136,17 +147,6 @@ begin
   Result := StrToIntE(s);
   if Result < 0 then
     RaiseException('"' + s + '" is not a signed value');
-end;
-
-procedure RaiseException(const msg : ansistring; const Terminate : boolean = True);
-begin
-  writeln(StdErr, 'Error: ', msg);
-  if Terminate then
-  begin
-    writeln(StdErr, 'Stack trace:');
-    writeln(StdErr, DumpCallStack);
-    Halt(1);
-  end;
 end;
 
 function RunProcess(const FileName : ansistring; const Params : array of ansistring;

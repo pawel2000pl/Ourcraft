@@ -151,7 +151,7 @@ begin
   finally
     UnLock;
   end;
-  World.Queues.AddMethodDelay(@Listen, ListeningTime);
+  World.MilliTimer.AddMethod(@Listen, ListeningTime);
 end;
 
 procedure TClientService.Connect;

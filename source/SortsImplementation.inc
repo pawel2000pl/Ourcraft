@@ -251,6 +251,11 @@ begin
   Result := 1 - c / (n - 1);
 end;
 
+constructor TClassSortName.Create;
+begin
+  {$ifdef StaticSort} raise ENoConstructException.Create('Cannot create TStaticSort class - because it is static. Use non-static version (TSort) instead'); {$endif}
+end;
+
 { TBSearch }
 
 {$ifdef StaticSort} class {$endif} function TClassBSearchName.BSearch(const Tab : array of TValue; const Key : TKey;

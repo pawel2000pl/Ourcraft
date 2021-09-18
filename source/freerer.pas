@@ -157,7 +157,15 @@ begin
   fCriticalCestion.Free;
 
   for i := 0 to Length(objs) - 1 do
-    objs[i].Obj.Free;
+  begin
+    while objs[i].FreeAfter >= GetTickCount64 do
+      Yield;
+    try
+       objs[i].Obj.Free;
+    except
+      on E : Exception do ;
+    end;
+  end;
   terminating := False;
 end;
 

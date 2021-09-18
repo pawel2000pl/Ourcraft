@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, blcksock,
   OurGame, OurUtils,
   FileSaver, SaverPaths,
-  Queues, Collections, Locker;
+  Queues, TinyHashData, Locker, AsyncMilliTimer;
 
 type
   TServerService = class;
@@ -25,7 +25,7 @@ type
     destructor Destroy; override;
   end;
 
-  TSetOfServerSideRenderArea = specialize TCustomSet<TServerSideRenderArea>;
+  TSetOfServerSideRenderArea = specialize TTinyHashSet<TServerSideRenderArea>;
 
   { TServerService }
 
@@ -34,7 +34,8 @@ type
     ListeningTime = 10;
   private
     FWorld : TOurWorld;
-    FQueue : TQueueManagerWithDelays;
+    FQueue : TQueueManager;
+    FMilliTimer : TMilliTimer;
     FPort : Word;
     ListenerSocket : TTCPBlockSocket;
 
@@ -47,7 +48,8 @@ type
     procedure DisconnectAll;
   public
     property World : TOurWorld read FWorld;
-    property Queue : TQueueManagerWithDelays read FQueue;
+    property Queue : TQueueManager read FQueue;
+    property MilliTimer : TMilliTimer read FMilliTimer;
     property Port : Word read FPort;
     property AreaSet : TSetOfServerSideRenderArea read FAreaSet;
     property Lock : TLocker read FLock;
@@ -86,7 +88,7 @@ begin
   FServer.Queue.DequeueObject(Self);
   try
     FServer.Lock.Lock;
-    FServer.AreaSet.RemoveItem(Self);
+    FServer.AreaSet.RemoveFirstKey(Self);
   finally        
     FServer.Lock.Unlock;
   end;
@@ -121,8 +123,8 @@ end;
 
 procedure TServerService.DisconnectAll;
 begin
-  while AreaSet.GetCount>0 do
-    AreaSet.Get(0).Free;
+  AreaSet.ForEach(AreaSet.TForEachKeyValueStaticProcedure(@FreeObject));
+  AreaSet.Clear;
 end;
 
 constructor TServerService.Create(AWorld: TOurWorld; const APort: Word;
@@ -132,7 +134,8 @@ begin
   FPort:=APort;
   FLock := TLocker.Create;
   FAreaSet := TSetOfServerSideRenderArea.Create;
-  FQueue := TQueueManagerWithDelays.Create(1, ExpectedClientsCount+1);
+  FQueue := TQueueManager.Create(1, ExpectedClientsCount+1);
+  FMilliTimer := TMilliTimer.Create(FQueue);
   ListenerSocket := nil;
   InitListening;
 end;
@@ -142,6 +145,7 @@ begin
   FinitListening;
   DisconnectAll;
   FAreaSet.Free;
+  FMilliTimer.Free;
   FQueue.Free;
   FLock.Free;
   inherited Destroy;

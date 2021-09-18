@@ -39,6 +39,8 @@
     //check sort level (0-1) / usually useless
     {$ifdef StaticSort} class {$endif} function SortLevel(const Tab : array of TValue) : double; overload;
     {$ifdef StaticSort} class {$endif} function SortLevel(const Tab : array of TValue; const offset, n : integer) : double; overload;
+
+    constructor Create;
   end;
 
   { TBSearch }

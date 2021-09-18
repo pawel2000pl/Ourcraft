@@ -27,7 +27,7 @@ function mgGetMem(Size : ptruint) : Pointer;
 begin
   if Size <= 0 then
     exit(nil);
-  inc(Allocated, Size);
+  InterlockedExchangeAdd64(Allocated, Size);
   if Allocated > MaxMemoryAvailable then
     RaiseOutOfMemory;
   Result := MainMemoryManager.Getmem(Size);
@@ -36,23 +36,23 @@ end;
 function mgFreeMem(P : pointer) : ptruint;
 begin
   if p <> nil then
-    dec(Allocated, MainMemoryManager.MemSize(P));
+    InterlockedExchangeAdd64(Allocated, -int64(MainMemoryManager.MemSize(P)));
   Result := MainMemoryManager.Freemem(P);
 end;
 
 function mgFreeMemSize(p:pointer;Size:ptruint):ptruint;
 begin
   if p <> nil then
-    dec(Allocated, MainMemoryManager.MemSize(P));
+    InterlockedExchangeAdd64(Allocated, -int64(MainMemoryManager.MemSize(P)));
   Result := MainMemoryManager.FreememSize(P, Size);
 end;
 
 function mgReallocMem(var p:pointer;Size:ptruint):Pointer;
 begin
   if p = nil then
-    inc(Allocated, Size)
+    InterlockedExchangeAdd64(Allocated, Size)
     else
-    inc(Allocated, Size - MainMemoryManager.MemSize(p));
+    InterlockedExchangeAdd64(Allocated, Size - MainMemoryManager.MemSize(p));
   if Allocated > MaxMemoryAvailable then
     RaiseOutOfMemory;
   Result := MainMemoryManager.ReAllocMem(p, size);

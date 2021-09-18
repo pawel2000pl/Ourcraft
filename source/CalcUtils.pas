@@ -142,6 +142,8 @@ operator * (const a, b : TMatrix3x3) : TMatrix3x3;
 operator +(const a, b : TMatrix3x3) : TMatrix3x3;
 operator -(const a, b : TMatrix3x3) : TMatrix3x3;
 operator * (const a : TMatrix3x3; const b : TVector3) : TVector3;
+operator * (const a : TMatrix3x3; const b : Double) : TMatrix3x3;
+operator * (const a : Double; const b : TMatrix3x3) : TMatrix3x3;
 
 function floor(const v : TVector3) : TIntVector3; inline; overload;
 function round(const v : TVector3) : TIntVector3; inline; overload;
@@ -376,6 +378,20 @@ begin
     for j := axisX to axisZ do
       Result[i] += a[j, i] * b[j];
   end;
+end;
+
+operator*(const a: TMatrix3x3; const b: Double): TMatrix3x3;
+begin
+  Exit(b*a);
+end;
+
+operator*(const a: Double; const b: TMatrix3x3): TMatrix3x3;
+var
+  i, j : TAxis;
+begin
+  for i := low(TAxis) to High(TAxis) do
+    for j := axisX to axisZ do
+      Result[i, j] := b[i, j] * a;
 end;
 
 function Hypot3(const a, b, c : double) : double; inline;

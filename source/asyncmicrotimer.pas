@@ -5,7 +5,7 @@ unit AsyncMicroTimer;
 interface
 
 uses
-  Classes, SysUtils, Queues, Locker, ProcessUtils, SynchronizedCounter;
+  Classes, SysUtils, Queues, Locker, ProcessUtils;
 
 type
   TMicroTimerRecord = record
@@ -22,7 +22,7 @@ type
     fTerminating : Boolean;
     fManager : TQueueManager;
     fCurrentTime : QWord;
-    fMethodCount : TSynchronizedCounter;
+    fMethodCount : LongWord;
     fMethods : array[0..MicroSecondsPerMilliSecond-1] of TMicroTimerRecord;
   public
     procedure Execute;
@@ -38,9 +38,10 @@ implementation
 
 procedure TMicroTimer.Execute;
 var
-  i, j, c : Integer;
+  i, j, c, iterations : Integer;
 begin
-  while fMethodCount.Value > 0 do
+  iterations := 0;
+  while (fMethodCount > 0) and (not fTerminating) and (iterations < 16*1024) do
   begin
     fCurrentTime := GetMicroseconds;
     for i := low(fMethods) to High(fMethods) do
@@ -53,18 +54,21 @@ begin
            if Methods[j].Time <= fCurrentTime then
            begin
              fManager.AddMethod(Methods[j].Method);
-             Dec(c);
              Methods[j] := Methods[c];
-             fMethodCount.DecValue();
+             Dec(fMethodCount);
+             Dec(c);
            end
            else
              Inc(j);
+        SetLength(Methods, c);
         Locker.UnLock;
       end;
+    Inc(iterations);
   end;
   if not fTerminating then
   begin
-    SleepMicroseconds(1);
+    if fMethodCount = 0 then
+      SleepMicroseconds(1);
     fManager.AddMethod(@Execute);
   end
   else
@@ -74,16 +78,17 @@ end;
 procedure TMicroTimer.AddMethod(const Method: TQueueMethod; const DelayMicroseconds: QWord);
 var
   temp : TQueueDelayRecord;
-begin                              
+begin
+   if fTerminating then Exit;
    fCurrentTime := GetMicroseconds;
    temp.Method:=Method;
    temp.Time := fCurrentTime + DelayMicroseconds;
-   with fMethods[(fCurrentTime + DelayMicroseconds) mod MicroSecondsPerMilliSecond] do
+   with fMethods[temp.Time mod MicroSecondsPerMilliSecond] do
    begin
      Locker.Lock;
-     Insert(temp, Methods, Length(Methods));
-     Locker.Unlock;                         
-     fMethodCount.IncValue();
+     Insert(temp, Methods, Length(Methods));    
+     Inc(fMethodCount);
+     Locker.Unlock;
    end;
 end;
 
@@ -95,7 +100,7 @@ begin
   fManager := queueMgr;
   for i := Low(fMethods) to High(fMethods) do
       fMethods[i].Locker := TLocker.Create;
-  fMethodCount := TSynchronizedCounter.Create();
+  fMethodCount := 0;
   fManager.AddMethod(@Execute);
 end;
 
@@ -104,10 +109,11 @@ var
   i : Integer;
 begin
   fTerminating := True;
-  while fTerminating do;
+  while fTerminating do
+    TThread.Yield;
+  fManager.DequeueObject(Self);
   for i := Low(fMethods) to High(fMethods) do
       fMethods[i].Locker.Free;
-  fMethodCount.Free;
   inherited Destroy;
 end;
 

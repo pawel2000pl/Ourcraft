@@ -8,7 +8,7 @@ interface
 uses
   OurUtils,
   OurGame,
-  CalcUtils, Models, TextureMode, LightTypes, PhisicalBox;
+  CalcUtils, Models, TextureMode, LightTypes;
 
 type
 
@@ -54,18 +54,12 @@ end;
 
 procedure TMovingBlock.InitBoxes;
 begin
-  MainCollisionBox.Size := Vector3(1, 1, 1);
-  SetLength(PhisicalBoxes, 1);
-  PhisicalBoxes[0] := TPhisicalBox.Create;
-  PhisicalBoxes[0].Size := MainCollisionBox.Size;
-  PhisicalBoxes[0].Position := Position;
+  StateBox.CollisionBox.Size := Vector3(1, 1, 1);
 end;
 
 procedure TMovingBlock.AfterMovement;
 begin
   inherited AfterMovement;
-  PhisicalBoxes[0].Position := GetPosition;
-  PhisicalBoxes[0].Rotate := GetRotation;
   UpdateModel;
 end;
 
@@ -91,12 +85,15 @@ end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);
 begin
-   PhisicalBoxes[0].AddGlobalAcceleration(Vector3(0, -9.81, 0)); //add gravity
-   inherited Tick(DeltaTime);
-   Position := PhisicalBoxes[0].Position;
-   Rotation := PhisicalBoxes[0].Rotate;
    //writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
-   UpdateModel;
+   if Chunk = nil then writeln('Error: chunk is nil');
+  LockForWriting;
+  try
+      StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
+  finally
+      UnlockFromWriting;
+  end;
+  UpdateModel;
 end;
 
 procedure TMovingBlock.UpdateModel;
@@ -113,8 +110,8 @@ begin
   Model.Clear;
   for side := low(TTextureMode) to High(TTextureMode) do
   begin
-    for i := 0 to 3 do                  //TODO: czemu transponowane?
-        rc[i] := {Transposing}(MainCollisionBox.RotationMatrix)*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
+    for i := 0 to 3 do
+        rc[i] := StateBox.CollisionBox.RotationMatrix*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
     Model.AddWall(p, rc, TextureStandardCorners, (Creator as TMovingBlockCreator).fTexture, rl);
   end;
   Model.Unlock;

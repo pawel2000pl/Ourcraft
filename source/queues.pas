@@ -24,7 +24,7 @@ unit Queues;
 interface
 
 uses
-  Classes, SysUtils, ProcessUtils, Locker, RTLEvent, Math, Incrementations;
+  Classes, SysUtils, Locker, RTLEvent;
 
 type
 
@@ -43,6 +43,8 @@ type
     Method: TQueueMethod;
     Time: QWord;
   end;
+
+  TQueueExceptionEvent = procedure(Sender : TObject; const Method : TQueueRecord; RaisedException : Exception) of object;
 
   { TQueueThread }
 
@@ -63,22 +65,28 @@ type
   private
     fList: array[word] of TQueueRecord;
     fAddIndex, fExecuteIndex: word;
+    FOnException: TQueueExceptionEvent;
     Locker: TLocker;
     FCoreCount: integer;
     FMethodCount : Integer;
     FEvent : TRTLEvent;
     FStackSizePerThread : PtrUInt;
+    FTerminating : Boolean;
 
     FThreadCount: integer;
     Threads: array of TQueueThread;
 
     fRemoveRepeated: boolean;
     fSuspend: boolean;
+    procedure DoExceptionEvent(Sender : TObject; const Method : TQueueRecord; RaisedException : Exception);
+    procedure SetOnException(AValue: TQueueExceptionEvent);
   public
     property ThreadCount: integer read FThreadCount;
     property CoreCount: integer read FCoreCount;
     property RemoveRepeated: boolean read fRemoveRepeated write fRemoveRepeated;
     property QueuedMethodCount : Integer read FMethodCount;
+    property OnException : TQueueExceptionEvent read FOnException write SetOnException;
+    property Terminagting : Boolean read FTerminating;
     function QueueSize: integer;
 
     procedure Clear; virtual;
@@ -91,26 +99,82 @@ type
     destructor Destroy; override;
   end;
 
-  { TQueueManagerWithDelays }
+  { EQueueOverload }
 
-  TQueueManagerWithDelays = class(TQueueManager)
+  EQueueOverload = class(Exception)
   private
-    fDelayList: array of TQueueDelayRecord;
-    fDelayListCount: integer;
-    DelayLocker: TLocker;
-    procedure ExecuteDelayMethods;
+    FQueue : TQueueManager;
+    FMethod : TQueueMethod;
   public
-    procedure Clear; override;
-    procedure AddMethodDelay(const Method: TQueueMethod; const DelayMilliseconds: QWord);
-    constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0; const StackSizePerThread : PtrUInt = DefaultStackSize);
-    destructor Destroy; override;
+    function Retry : Boolean;
+    property Queue : TQueueManager read FQueue;
+    property Method : TQueueMethod read FMethod;
+    constructor Create(AQueue : TQueueManager; const AMethod : TQueueMethod);
   end;
 
+  { TObjectProcedureWithOneParameter }
+
+  generic TObjectProcedureWithOneParameter<TParameter> = class
+  type
+      TStaticConstProcedure = procedure(const x : TParameter);
+      TStaticProcedure = procedure(x : TParameter);
+      TObjectConstProcedure = procedure(const x : TParameter) of object;
+      TObjectProcedure = procedure(x : TParameter) of object;
+  private
+      fscp : TStaticConstProcedure;
+      fsp : TStaticProcedure;
+      focp : TObjectConstProcedure;
+      fop : TObjectProcedure;
+      fParameter : TParameter;
+      procedure InitNil;
+  public
+      procedure Execute;
+
+      constructor Create(const proc : TStaticConstProcedure; const Parameter : TParameter);
+      constructor Create(const proc : TStaticProcedure; const Parameter : TParameter);
+      constructor Create(const proc : TObjectConstProcedure; const Parameter : TParameter);
+      constructor Create(const proc : TObjectProcedure; const Parameter : TParameter);
+
+      class function Convert(const proc : TStaticConstProcedure; const Parameter : TParameter) : TQueueMethod; overload;
+      class function Convert(const proc : TStaticProcedure; const Parameter : TParameter) : TQueueMethod; overload;
+      class function Convert(const proc : TObjectConstProcedure; const Parameter : TParameter) : TQueueMethod; overload;
+      class function Convert(const proc : TObjectProcedure; const Parameter : TParameter) : TQueueMethod; overload;
+  end;
+
+    { TStaticProcedureAsObjectMethod }
+
+    TStaticProcedureAsObjectMethod = class
+    private
+        FProc : TProcedure;
+    public
+        procedure Execute;
+        function GetMethodPointer : TQueueMethod;
+        constructor Create(const Proc : TProcedure);
+    end;
+        
 operator = (const a, b: TQueueRecord): boolean; inline;
+function StaticProcedureToObjectMethod(const Proc : TProcedure) : TQueueMethod;
 
 implementation
 
+uses
+   Math, ctypes;
+
 {$RangeChecks off}
+
+{$ifdef Linux}                     
+{$IfNDef USECTHREADS}{$Hint In case of linking error, add the cThreads unit as the first unit in the project}{$EndIf}
+function sysconf(i : cint) : clong; cdecl; external Name 'sysconf';
+{$endif}
+
+function GetCoreCount : PtrUInt;
+begin
+  {$ifdef Linux}
+  Result := sysconf(83);
+  {$else}
+  Result := GetCPUCount;
+  {$endif}
+end;
 
 operator = (const a, b: TQueueRecord): boolean; inline;
 begin
@@ -118,78 +182,176 @@ begin
     (a.Properties.Data = b.Properties.Data);
 end;
 
-{ TQueueManagerWithDelays }
+function PostInc(var i : Integer) : Integer; inline; overload;
+begin
+    Result := i;
+    Inc(i);
+end;
 
-procedure TQueueManagerWithDelays.ExecuteDelayMethods;
+function PostInc(var i : word) : word; inline; overload;
+begin
+    Result := i;
+    Inc(i);
+end;
+
+{ EQueueOverload }
+
+function EQueueOverload.Retry: Boolean;
+begin
+  try
+    FQueue.AddMethod(FMethod);
+    Result := True;
+  except
+    on E: EQueueOverload do Result := False;
+  end;
+end;
+
+constructor EQueueOverload.Create(AQueue: TQueueManager; const AMethod: TQueueMethod);
+begin
+  FQueue := AQueue;
+  FMethod := AMethod;
+  inherited Create('Queue $' + IntToHex(QWord(FQueue), 16) + ' is overloaded. A method which was attempted to add: ' + IntToHex({%H-}QWord(TMethod(FMethod).Code), 16) +
+  ' from an object ' + IntToHex({%H-}QWord(TMethod(FMethod).Data), 16) + ' (' + TObject(TMethod(FMethod).Data).ClassName + ')');
+end;
+
+{ TObjectProcedureWithOneParameter }
+
+procedure TObjectProcedureWithOneParameter.InitNil;
+begin
+  fscp := nil;
+  fsp := nil;
+  focp := nil;
+  fop := nil;
+end;
+
+procedure TObjectProcedureWithOneParameter.Execute;
+begin
+  if fscp <> nil then
+     fscp(fParameter)
+  else if fsp <> nil then
+     fsp(fParameter)
+  else if focp <> nil then
+     focp(fParameter)
+  else if fop <> nil then
+     fop(fParameter);
+  Free;
+end;
+
+constructor TObjectProcedureWithOneParameter.Create(
+  const proc: TStaticConstProcedure; const Parameter: TParameter);
+begin
+   InitNil;
+   fParameter:=Parameter;
+   fscp := proc;
+end;
+
+constructor TObjectProcedureWithOneParameter.Create(
+  const proc: TStaticProcedure; const Parameter: TParameter);
+begin
+   InitNil;
+   fParameter:=Parameter;
+   fsp := proc;
+end;
+
+constructor TObjectProcedureWithOneParameter.Create(
+  const proc: TObjectConstProcedure; const Parameter: TParameter);
+begin
+   InitNil;
+   fParameter:=Parameter;
+   focp := proc;
+end;
+
+constructor TObjectProcedureWithOneParameter.Create(
+  const proc: TObjectProcedure; const Parameter: TParameter);
+begin
+   InitNil;
+   fParameter:=Parameter;
+   fop := proc;
+end;
+
+class function TObjectProcedureWithOneParameter.Convert(
+  const proc: TStaticConstProcedure; const Parameter: TParameter): TQueueMethod;
+begin
+  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+end;
+
+class function TObjectProcedureWithOneParameter.Convert(
+  const proc: TStaticProcedure; const Parameter: TParameter): TQueueMethod;
+begin
+  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+end;
+
+class function TObjectProcedureWithOneParameter.Convert(
+  const proc: TObjectConstProcedure; const Parameter: TParameter): TQueueMethod;
+begin
+  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+end;
+
+class function TObjectProcedureWithOneParameter.Convert(
+  const proc: TObjectProcedure; const Parameter: TParameter): TQueueMethod;
+begin
+  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+end;
+
+procedure TStaticProcedureAsObjectMethod.Execute;
+begin
+    FProc();
+    Free;
+end;
+
+function TStaticProcedureAsObjectMethod.GetMethodPointer : TQueueMethod;
+begin
+    Exit(@Execute);
+end;
+
+constructor TStaticProcedureAsObjectMethod.Create(const Proc : TProcedure);
+begin
+    FProc := Proc;
+end;
+
+function StaticProcedureToObjectMethod(const Proc : TProcedure) : TQueueMethod;
 var
-  i: integer;
-  CurrTime: QWord;
-begin
-  DelayLocker.Lock;
-  try
-    CurrTime := GetTickCount64;
-    i := 0;
-    while i < fDelayListCount do
-      if CurrTime >= fDelayList[i].Time then
-      begin
-        AddMethod(fDelayList[i].Method);
-        fDelayList[i] := fDelayList[PreDec(fDelayListCount)];
-      end
-      else
-        Inc(i);
-    setlength(fDelayList, fDelayListCount);
-  finally
-    DelayLocker.Unlock;
-    Sleep(1);
-    AddMethod(@ExecuteDelayMethods);
-  end;
-end;
-
-procedure TQueueManagerWithDelays.Clear;
-begin
-  DelayLocker.Lock;
-  try
-    fDelayListCount := 0;
-    setlength(fDelayList, fDelayListCount);
-  finally
-    DelayLocker.Unlock;
-  end;
-  inherited Clear;
-end;
-
-procedure TQueueManagerWithDelays.AddMethodDelay(const Method: TQueueMethod;
-  const DelayMilliseconds: QWord);
-begin
-  DelayLocker.Lock;
-  try
-    setlength(fDelayList, PreInc(fDelayListCount));
-    fDelayList[fDelayListCount - 1].Method := Method;
-    fDelayList[fDelayListCount - 1].Time := DelayMilliseconds + GetTickCount64;
-  finally
-    DelayLocker.Unlock;
-  end;
-end;
-
-constructor TQueueManagerWithDelays.Create(const ThreadsPerCore: integer;
-  const AdditionalThreads: integer; const StackSizePerThread: PtrUInt);
-begin
-  DelayLocker := TLocker.Create;
-  fDelayListCount := 0;
-  setlength(fDelayList, fDelayListCount);
-  inherited Create(max(0, ThreadsPerCore), max(AdditionalThreads, 0) + 1, StackSizePerThread);
-  AddMethod(@ExecuteDelayMethods);
-end;
-
-destructor TQueueManagerWithDelays.Destroy;
-var
-  dl : TLocker;
-begin
-  dl := DelayLocker;
-  inherited Destroy;
-  dl.Free;
+    tmp : TStaticProcedureAsObjectMethod;
+begin 
+    tmp := TStaticProcedureAsObjectMethod.Create(Proc);
+    Exit(tmp.GetMethodPointer);
 end;
 
 { TQueueManager }
+
+procedure TQueueManager.DoExceptionEvent(Sender: TObject; const Method: TQueueRecord; RaisedException: Exception);
+const
+  Trials = $1000;
+var
+    i : Integer;
+    SecondMessage : AnsiString;
+begin
+  if (FOnException <> nil) and Assigned(FOnException) then
+    FOnException(Sender, Method, RaisedException)
+    else
+    begin
+      SecondMessage := '';
+      if not Suspend then
+        if RaisedException is EQueueOverload then
+        begin
+          i := 0;
+          while (FMethodCount > Length(fList)*0.9) and (PostInc(i) < Trials) do
+            TThread.Yield;
+          if (FMethodCount > Length(fList)*0.9) and (i < Trials) then
+            if (RaisedException as EQueueOverload).Retry then
+              SecondMessage := ' and cannot avoid it';
+        end;
+      Writeln('Exception in queue method: ' + RaisedException.Message + SecondMessage);
+    end;
+end;
+
+procedure TQueueManager.SetOnException(AValue: TQueueExceptionEvent);
+begin
+  if (FOnException=AValue) then Exit;
+  if not Assigned(FOnException) then
+     AValue := nil;
+  FOnException:=AValue;
+end;
 
 function TQueueManager.QueueSize: integer;
 begin
@@ -216,9 +378,9 @@ var
   i: word;
 begin
   if Suspend or (FMethodCount = 0) then
-    Exit(False);
+    Exit(False);  
+  Locker.Lock;
   try
-    Locker.Lock;
     repeat
       q := fList[PostInc(fExecuteIndex)];
       if fExecuteIndex = fAddIndex then
@@ -243,7 +405,13 @@ begin
         fList[Word(fExecuteIndex-1)].Method:=nil;
         Dec(FMethodCount);
       end;
-    end;
+    end;            
+
+    Result := fExecuteIndex <> fAddIndex;
+    if Result then
+      FEvent.SetUp
+      else
+      FEvent.Reset;
   finally
     Locker.Unlock;
   end;
@@ -252,12 +420,8 @@ begin
     if (q.MethodPointer <> nil) and (q.ObjectInstance <> nil) then
       q.Method();
   except
-    on E:Exception do RaiseException('Exception in queue method: ' + E.Message, False);
+    on E:Exception do DoExceptionEvent(Self, q, E);
   end;
-
-  Result := fExecuteIndex <> fAddIndex;
-  if not Result then
-    FEvent.Reset;
 end;
 
 procedure TQueueManager.DequeueObject(obj: TObject);
@@ -281,14 +445,18 @@ procedure TQueueManager.AddMethod(const Method: TQueueMethod);
 var
   q: TQueueRecord;
 begin
+  if Terminagting then
+     Exit;
   q.Method := Method;
   Locker.Lock;
-  FEvent.SetUp;
-  try
+  try                    
+    if FMethodCount >= Length(fList)-1 then
+       raise EQueueOverload.Create(self, Method);
     fList[PostInc(fAddIndex)] := q;
     Inc(FMethodCount);
   finally
-    Locker.Unlock;
+    Locker.Unlock;   
+    FEvent.SetUp;
   end;
 end;
 
@@ -306,6 +474,8 @@ var
   i: integer;
 begin
   FStackSizePerThread:=StackSizePerThread;
+  FTerminating:=False;
+  FOnException:=nil;
   Suspend := False;
   fRemoveRepeated := True;
   fAddIndex := 0;
@@ -325,8 +495,10 @@ destructor TQueueManager.Destroy;
 var
   i: integer;
 begin
+  FTerminating := True;
+  Clear;
   for i := 0 to ThreadCount - 1 do
-    Threads[i].Free;
+    FreeAndNil(Threads[i]);
   setlength(Threads, 0);
   Locker.WaitForUnlock;
   Locker.Free;
@@ -338,7 +510,7 @@ end;
 
 procedure TQueueThread.WaitForNext;
 begin
-  fManager.FEvent.WaitFor(10);
+  fManager.FEvent.WaitFor(1);
 end;
 
 procedure TQueueThread.Execute;
@@ -359,6 +531,7 @@ end;
 destructor TQueueThread.Destroy;
 begin
   fTerminating := True;
+  fManager.FEvent.SetUp;
   WaitFor;
   inherited Destroy;
 end;

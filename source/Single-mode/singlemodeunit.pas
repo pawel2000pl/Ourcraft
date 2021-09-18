@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl,
-  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, ProcessUtils, Generics.Collections;
+  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, Generics.Collections;
 
 type
 
@@ -84,6 +84,7 @@ begin
 end;
 
 procedure TMainForm.Timer1Timer(Sender : TObject);
+
 begin
   Writeln('FPS = ', FrameCount);
   FrameCount := 0;
@@ -153,6 +154,7 @@ end;
 
 procedure TMainForm.FormDestroy(Sender : TObject);
 begin
+  Writeln('Terminating');
   RenderArea.Free;
   Camera.Free;
   World.Free;
@@ -164,6 +166,7 @@ procedure TMainForm.FormKeyPress(Sender : TObject; var Key : char);
 var
   v : TVector3;
   c : TOurChunk;
+  e : TEntity;
 begin
   if key = 'j' then
     angleY := angleY + pi / 150;
@@ -217,8 +220,8 @@ begin
   if key = 'f' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v);
-
+    e := (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
+    e.Velocity := 10*(e.Position - Camera.Position);
   end;
 
   if key = 'm' then
@@ -237,6 +240,8 @@ begin
     v := Camera.Position + Camera.ForwardVector*4;
     World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, StrToInt(key)) as TBlock);
   end;
+
+  //Writeln(Camera.Position.X:2:2, #9, Camera.Position.Y:2:2, #9, Camera.Position.Z:2:2);
 
   RenderArea.SetPosition(IntVector3(floor(Camera.Position[axisX] / ChunkSize),
     floor(Camera.Position[axisY] / ChunkSize), floor(Camera.Position[axisZ] / ChunkSize)));

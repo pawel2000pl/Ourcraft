@@ -16,8 +16,7 @@ type
   public
     function Transparency: TLight; override;
     function NeedDraw: boolean; override;
-    function Density: Double; override;
-    function Resilence: Double; override;
+    function HasCollisionBox: Boolean; override;
   end;
 
   { TAirCreator }
@@ -63,14 +62,9 @@ begin
   Result:=false;
 end;
 
-function TAir.Density: Double;
+function TAir.HasCollisionBox: Boolean;
 begin
-  Result:=1.21;
-end;
-
-function TAir.Resilence: Double;
-begin
-  Result:=0;
+  Exit(False);
 end;
 
 end.

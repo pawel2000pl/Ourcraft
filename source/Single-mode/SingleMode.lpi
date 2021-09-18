@@ -20,7 +20,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -61,7 +61,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -112,7 +112,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="52">
+    <Units Count="55">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -354,6 +354,19 @@
         <Filename Value="../Environment/MovingBlock.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit51>
+      <Unit52>
+        <Filename Value="../asyncmillitimer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="AsyncMilliTimer"/>
+      </Unit52>
+      <Unit53>
+        <Filename Value="../Collections/DataAbstractions.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit53>
+      <Unit54>
+        <Filename Value="../Collections/TinyHashData.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit54>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -363,7 +376,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib"/>
+      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
       <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>
@@ -391,7 +404,7 @@
     </Other>
   </CompilerOptions>
   <Debugging>
-    <Exceptions Count="7">
+    <Exceptions Count="8">
       <Item1>
         <Name Value="EAbort"/>
       </Item1>
@@ -413,6 +426,9 @@
       <Item7>
         <Name Value="RunError(216)"/>
       </Item7>
+      <Item8>
+        <Name Value="Exception"/>
+      </Item8>
     </Exceptions>
   </Debugging>
 </CONFIG>

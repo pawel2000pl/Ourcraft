@@ -13,7 +13,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
 5. [+] Three channels for light (red, green, blue)
 6. [+] Light with 256 levels (but light-resistance is 16/block)
-7. [+] More realistic phisics
+7. [?] More realistic phisics
      
 It's not playable yet (but almost). But you can: 
 
@@ -42,7 +42,7 @@ How to compile and run
 2. Execute "run.sh"
 3. An executable file should be in "bin/SingleMode" (other files do nothing for gameplay)
 
-or execute "make all" to install and compile and then execute "make run" to open game in single mode.
+or execute "make all" to install and compile - and then execute "make run" to open the game in single mode.
 
 In case of errors with the compilation, open with the Lazarus "source/Single-mode/SingleMode.lpr" and then click Package -> Open loaded package.
 Find "lazopenglcontext", open it and compile. Then click Run -> Build.
