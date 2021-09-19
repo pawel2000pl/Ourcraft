@@ -224,6 +224,7 @@
         <UnitName Value="TinyHashData"/>
       </Item51>
     </Files>
+    <LazDoc Paths="../doc/xml"/>
     <RequiredPkgs Count="1">
       <Item1>
         <PackageName Value="FCL"/>
