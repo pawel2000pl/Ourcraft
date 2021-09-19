@@ -24,10 +24,7 @@ unit UniversalImage;
 interface
 
 uses
-  SysUtils, Classes, Math, FpImage, fpreadbmp, fpwritebmp,
-  fpreadjpeg, fpwritejpeg, fpreadpng, fpwritepng, fpreadpnm, fpwritepnm,
-  fpreadtga, fpwritetga, fpreadtiff, fpwritetiff, fpreadxpm, fpwritexpm,
-  fpreadpcx, fpwritepcx, FPImgCanv, matrix;
+  SysUtils, Classes, Math, FpImage, FPImgCanv, matrix;
 
 type
   TPoint = record
@@ -125,6 +122,11 @@ function FpColor(red, green, blue, alpha : word) : TFPColor; inline;
 operator = (const a, b : TFPColor) : boolean; inline;
 
 implementation
+
+uses
+  fpreadbmp, fpwritebmp, fpreadjpeg, fpwritejpeg, fpreadpng, fpwritepng,
+  fpreadpnm, fpwritepnm, fpreadtga, fpwritetga, fpreadtiff, fpwritetiff,
+  fpreadxpm, fpwritexpm, fpreadpcx, fpwritepcx;
 
 function PostInc(var i : Integer) : Integer;
 begin

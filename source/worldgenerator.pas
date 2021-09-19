@@ -193,26 +193,31 @@ var
 begin
   with Chunk do
   begin
-      Stone := World.Environment.GetCreator(World.Environment.GetID('stone'));
-      glow := World.Environment.GetCreator(World.Environment.GetID('glowstone'));
+      BeginWrite;
+      try
+        Stone := World.Environment.GetCreator(World.Environment.GetID('stone'));
+        glow := World.Environment.GetCreator(World.Environment.GetID('glowstone'));
 
-      for x := 0 to ChunkSize - 1 do
-          for z := 0 to ChunkSize-1 do
-          begin
-            v := 2*GetRandom(x + Position[axisX] shl ChunkSizeLog2, z + Position[axisZ] shl ChunkSizeLog2, 0)-1;
-            //v := (cos(v*pi*2)/pi/2+v)/2;
-            //v := sin(v*pi*2)/pi/2+v;
-            //v := arctan(pi/2*v);
-            //v := 2/pi*arctan(4*v*(1+intpower(2*v, 4)));
-            //v := tan(v*pi/2);
-            h := round(EnsureRange(v / 2 / Settings.WorldScale[axisY] - Position[axisY] shl ChunkSizeLog2, -1, ChunkSize-1));
-            l := 0;
-            for y := l to h do
-                  if y mod 8 = 0 then
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateElement(Vector3(x, y, z), (Chunk.Position[axisY] and 3) shl 1 + y shr 3) as TBlock)
-                  else
-                  SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateElement(Vector3(x, y, z), 0) as TBlock);
-          end;
+        for x := 0 to ChunkSize - 1 do
+            for z := 0 to ChunkSize-1 do
+            begin
+              v := 2*GetRandom(x + Position[axisX] shl ChunkSizeLog2, z + Position[axisZ] shl ChunkSizeLog2, 0)-1;
+              //v := (cos(v*pi*2)/pi/2+v)/2;
+              //v := sin(v*pi*2)/pi/2+v;
+              //v := arctan(pi/2*v);
+              //v := 2/pi*arctan(4*v*(1+intpower(2*v, 4)));
+              //v := tan(v*pi/2);
+              h := round(EnsureRange(v / 2 / Settings.WorldScale[axisY] - Position[axisY] shl ChunkSizeLog2, -1, ChunkSize-1));
+              l := 0;
+              for y := l to h do
+                    if y mod 8 = 0 then
+                    SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, glow.CreateElement(Vector3(x, y, z), (Chunk.Position[axisY] and 3) shl 1 + y shr 3) as TBlock)
+                    else
+                    SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, stone.CreateElement(Vector3(x, y, z), 0) as TBlock);
+            end;
+      finally     
+        EndWrite;
+      end;
   end;
 end;
 

@@ -116,7 +116,7 @@ type
     FChunk : TOurChunk;
     fWorld : TOurWorld;
     FRotation: TRotationVector;
-    FLock : TReadWriteLocker;
+    FLock : TMultiReadExclusiveWriteSynchronizer;
 
     function GetVelocity: TVector3;
     procedure SetVelocity(AValue: TVector3);
@@ -309,12 +309,14 @@ type
 
   EDirectBlockAccessException = class(Exception)
   private
+     FException : Exception;
      FChunk : TOurChunk;
      FBlockCoord : TIntVector3;
-  public                                                
+  public
+     property RaisedException : Exception read FException;
      property Chunk : TOurChunk read FChunk;
      property BlockCoord : TIntVector3 read FBlockCoord;
-     constructor Create(const AMessage : AnsiString; AChunk : TOurChunk; const ABlockCoord : TIntVector3);
+     constructor Create(const AMessage : AnsiString; AChunk : TOurChunk; const ABlockCoord : TIntVector3; AnException : Exception);
   end;
 
   { TOurChunk }
@@ -323,7 +325,6 @@ type
   const
     MaxDynamicBlockChanged = ChunkSize * ChunkSize * ChunkSize div 4; //powyżej tej ilości, musi być wysłany cały chunk
   private
-
     fLockUpdateModelLight : boolean;
     fAutoLightUpdate : boolean;
     fPosition : TIntVector3;  //Coord div ChunkSize
@@ -341,7 +342,7 @@ type
     fModifiedAfterLoading : boolean;
     fLighted : boolean; //first lighting up (sun)
 
-    Entities : TEntitySet;
+    fEntities : TEntitySet;
 
     BlocksForTick : TBlockList;
     BlocksForRandomTick : TBlockList;
@@ -358,7 +359,7 @@ type
     fAnimationModels : TVertexModel;
 
     fRenderAreaCollection : TRenderAreaCollection;
-    fLocker : TReadWriteLocker;
+    fLocker : TMultiReadExclusiveWriteSynchronizer;
 
     LightFunctions : array[TLightFunctionKind] of TLightFunctions;
 
@@ -370,10 +371,14 @@ type
     procedure Generate;
     procedure LoadEverything(Stream : TStream);
     procedure LoadChanges(Stream : TStream);
+
   protected
     procedure Finalize(const DelayTime : QWord); override;
+
   public
+    property Entities : TEntitySet read fEntities;
     property RenderAreaCollection : TRenderAreaCollection read fRenderAreaCollection;
+
     procedure BeginRead;
     procedure EndRead;
     procedure BeginWrite;
@@ -394,26 +399,32 @@ type
     function GetBlockDirect(const x, y, z : integer) : TBlock;
     procedure SetBlockDirect(const x, y, z : integer; AValue : TBlock);
     property DirectBlocks[const x, y, z : integer] : TBlock read GetBlockDirect write SetBlockDirect;
-    class function IsInsert(const x, y, z : integer) : boolean; inline;
-    class function IsBorder(const x, y, z : integer) : boolean; inline;
-    procedure RegisterChangedBlock(const Coord : TBlockCoord);
+    procedure RegisterChangedBlock(const Coord : TBlockCoord);  
+    class function IsInsert(const x, y, z : integer) : boolean; static; inline;
+    class function IsBorder(const x, y, z : integer) : boolean; static; inline;
 
     //must be in-chunk Coord
     function GetLightLevel(const x, y, z : integer) : TRealLight;
     function GetSunLightLevel(const x, y, z : integer) : TLight;
     function GetBlockLightLevel(const x, y, z : integer) : TLight;
+
+  private
     procedure SetSunLightLevel(const x, y, z : Integer; const Value : TLight);
     procedure SetBlockLightLevel(const x, y, z : Integer; const Value : TLight);
 
+  public
     function GetBlockLightSource(const x, y, z : integer) : TLight;
     function GetSunLightSource(const x, y, z : integer) : TLight;
     //could be extercnal Coord
     function GetExtLightLevel(const x, y, z : integer) : TRealLight;
     function GetExtBlockLightLevel(const x, y, z : integer) : TLight;
-    function GetExtSunLightLevel(const x, y, z : integer) : TLight;          
+    function GetExtSunLightLevel(const x, y, z : integer) : TLight;
+
+  private
     procedure SetExtBlockLightLevel(const x, y, z : Integer; const Value : TLight);
     procedure SetExtSunLightLevel(const x, y, z : Integer; const Value : TLight);
 
+  public
     function GetExtBlockLightSource(const x, y, z : integer) : TLight;
     function GetExtSunLightSource(const x, y, z : integer) : TLight;
 
@@ -470,8 +481,8 @@ type
     function GetDataHashCode : PtrUInt;
 
     function GetStringCoordinatesForSaver : ansistring; overload;
-    class function GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : ansistring; overload;
-    class function GetCoordinatesFromStringForSaver(s : ansistring) : TIntVector3;
+    class function GetStringCoordinatesForSaver(const ChunkPosition : TIntVector3) : ansistring; static; overload;
+    class function GetCoordinatesFromStringForSaver(s : ansistring) : TIntVector3; static;
 
     constructor Create(defaultBlock : TBlockCreator; const MyPosition : TIntVector3; const OurWorld : TOurWorld);
     destructor Destroy; override;
@@ -480,7 +491,7 @@ type
   TOurChunkClass = class of TOurChunk;
 
   TOurChunkTable = record
-    Locker : TReadWriteLocker;
+    Locker : TMultiReadExclusiveWriteSynchronizer;
     Table : array of TOurChunk;
     Count : integer;
   end;
@@ -588,6 +599,7 @@ type
     procedure AddTime;
     procedure UpdateLightModel;
   public
+    procedure CheckOrphanedEntities;
     class function GetLastCreatedWorld : TOurWorld;
 
     property SaveAllChunks : boolean read FSaveAllChunks write FSaveAllChunks;
@@ -701,12 +713,14 @@ end;
 { EDirectBlockAccessException }
 
 constructor EDirectBlockAccessException.Create(const AMessage: AnsiString;
-  AChunk: TOurChunk; const ABlockCoord: TIntVector3);
+  AChunk: TOurChunk; const ABlockCoord: TIntVector3; AnException: Exception);
 begin
   FChunk := AChunk;
   FBlockCoord := ABlockCoord;
+  FException := AnException;
   inherited Create(AMessage + ': ' + FBlockCoord.X.ToString + #32 + FBlockCoord.Y.toString + #32 +
-      FBlockCoord.Z.toString + ' in chunk: 0x' + IntToHex(QWord(FChunk), 16));
+      FBlockCoord.Z.toString + ' in chunk: 0x' + IntToHex(QWord(FChunk), 16) + ' : ' +
+      RaisedException.Message);
 end;
 
 { TEntityCreator }
@@ -1187,6 +1201,20 @@ begin
       end;
 end;
 
+procedure TOurWorld.CheckOrphanedEntities;
+var
+  e : TEntity;
+begin
+  Entities.BeginRead;
+  try
+    for e in Entities.GetValueEnumerator do
+        if e.Chunk = nil then
+           e.AutoSwitchChunk;
+  finally
+    Entities.EndRead;
+  end;
+end;
+
 class function TOurWorld.GetLastCreatedWorld: TOurWorld;
 begin
   Exit(FLastCreatedWorld);
@@ -1403,6 +1431,7 @@ begin
   finally
     TickLocker.Unlock;
   end;
+  Queues.AddOrExecuteIfOveloaded(@CheckOrphanedEntities);
 end;
 
 procedure TOurWorld.RandomTickAuto;
@@ -1482,7 +1511,7 @@ begin
       for z := 0 to WorldSize - 1 do
       begin
         fChunks[x, y, z].Count := 0;
-        fChunks[x, y, z].Locker := TReadWriteLocker.Create;
+        fChunks[x, y, z].Locker := TMultiReadExclusiveWriteSynchronizer.Create;
       end;
   fQueues := TQueueManager.Create(1, 3);
   fMicroTimer := TMicroTimer.Create(fQueues);
@@ -1746,7 +1775,7 @@ begin
   try
     Result := fBlocks[x, y, z];
   except
-    raise EDirectBlockAccessException.Create('Error while getting block', Self, IntVector3(x, y, z));
+    on E : Exception do raise EDirectBlockAccessException.Create('Error while getting block', Self, IntVector3(x, y, z), E);
   end;
 end;
 
@@ -1809,7 +1838,7 @@ begin
     if Loaded then
       RegisterChangedBlock(BlockCoord(x, y, z));
   except
-    raise EDirectBlockAccessException.Create('Error while setting block', Self, IntVector3(x, y, z));
+    on E : Exception do raise EDirectBlockAccessException.Create('Error while setting block', Self, IntVector3(x, y, z), E);
   end;
 end;
 
@@ -2591,7 +2620,7 @@ begin
 
   NeedModelLightUpdate := AllTextureSides;
   NeedModelSolidUpdate := AllTextureSides;
-  fLocker := TReadWriteLocker.Create;
+  fLocker := TMultiReadExclusiveWriteSynchronizer.Create;
   fLoaded := False;
   fGenerated := False;
   fdefaultBlock := defaultBlock;
@@ -2607,7 +2636,7 @@ begin
   UnSolid := TBlockList.Create;
   Animated := TBlockList.Create;
   ChangedBlocks := TBlockList.Create;
-  Entities := TEntitySet.Create;
+  fEntities := TEntitySet.Create;
 
   fRenderAreaCollection := TRenderAreaCollection.Create;
 
@@ -2669,7 +2698,7 @@ begin
   fUnsolidModel.Free;
   fAnimationModels.Free;
 
-  Entities.Free;
+  fEntities.Free;
   ChangedBlocks.Free;
   BlocksForRandomTick.Free;
   BlocksForTick.Free;
@@ -2869,7 +2898,12 @@ begin
        FChunk.Entities.RemoveFirstKey(Self);
      FChunk := NewChunk;
      if (FChunk <> nil) and Assigned(FChunk) then
-        FChunk.Entities.UpdateFirst(Self);
+     begin
+       if FChunk.Loaded then
+        FChunk.Entities.UpdateFirst(Self)
+        else
+        FChunk := nil;
+     end;
   finally
     UnlockFromWriting;
   end;
@@ -3091,7 +3125,7 @@ begin
   r := Hypot3(StateBox.Velocity);
   if r <> 0 then
   begin
-    StateBox.Velocity *= e/r;
+    StateBox.Velocity *= e;
     StateBox.AngularVelocityMatrix := (1-e) * StateBox.AngularVelocityMatrix + e*IdentityMatrix;
   end;
 end;
@@ -3257,7 +3291,7 @@ end;
 
 constructor TEntity.Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
 begin
-  FLock := TReadWriteLocker.Create;
+  FLock := TMultiReadExclusiveWriteSynchronizer.Create;
   SetPosition(APosition);           
   StateBox.AngularVelocityMatrix := IdentityMatrix;
   StateBox.CollisionBox.RotationMatrix := IdentityMatrix;

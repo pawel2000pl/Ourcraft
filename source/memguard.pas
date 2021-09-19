@@ -77,7 +77,9 @@ initialization
 
 finalization
     if Allocated > 0 then
-      writeln(' [MemGuard] : Possible memory leaks: ', Allocated, 'B');
+      writeln(' [MemGuard] : Possible memory leaks: ', Allocated, 'B')
+      else
+      writeln(' [MemGuard] : No leaks detected');
     SetMemoryManager(MainMemoryManager);
 
 end.

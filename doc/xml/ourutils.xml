@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fpdoc-descriptions><package name="SingleMode"><module name="OurUtils"><element name="TBlock.NeedDraw"><short>Checks if block needs to be drawing (and rendering)</short>
+      </element>
+    <element name="TBlock.IsSolid"><short>If true block will be included to chunk model - set to false in case of irregular and small blocks. If true the model should be drawed through DrawModel, otherwise through DrawUnsolid</short>
+      </element><element name="TBlock.NeedTick"><short>If returns true OnTick method will be executing</short>
+      </element><element name="TBlock.NeedRandomTick"><short>If returns true OnRandomTick method will be executing</short>
+      </element><element name="TBlock.HasAnimation"><short>If true, updating the model will be executing on every frame (rendering through DrawAnimation)</short>
+      </element><element name="TBlock.NeedAfterPut"><short>AfterPut method will be executed after placed the block on a world</short>
+      </element><element name="TBlock.NeedNearChangeUpdate"><short>If true NearChangeUpdate method will be executed when any block in neightborhood is changed</short>
+      </element><element name="TBlock.HasCollisionBox"><short>False only for air. Or other gases etc.</short>
+      </element><element name="TBlock.IsFluid"><short>Uses fo physic behavior</short>
+      </element><element name="TBlock.Friction"><short>Uses fo physic behavior - it returns 0.3 by default. For ice it should be lower.</short>
+      </element><element name="TBlock.Resilence"><short>Entities can spring away. The value returns efficiency of the spring. The value should be higher for springs and lower for hard materials like a stone.</short>
+      </element><element name="TBlock.ResilenceMinVelocity"><short>Under the value resilence won't be working. It shouldn't be 0 or less. Default value is 1</short>
+      </element><element name="TBlock.GetCollisionBox"><short>Returns the colision box of the block. It is a simple cube by default</short>
+      </element><element name="TOurChunk.fLockUpdateModelLight"><short>Async locker for light updating</short>
+      </element><element name="TOurChunk.fAutoLightUpdate"><short>Usually true, but false when loading, generating or setting a large amount of blocks.</short>
+      </element><element name="TOurChunk.Entities"><short>Set of entities in current chunk</short>
+      </element><element name="TOurChunk.RenderAreaCollection"><short>Set of render areas which are in the chunk (if empty, chunk will be destroy)</short>
+      </element><element name="TOurChunk.Loaded"><short>Returns if chunk has been loaded (and generated). Usually true. If false, the chunk shouldn't be used.</short>
+      </element><element name="TOurChunk.Generated"><short>Returns if the chunk was generated. Should be true. It has false only when chunk has been created nearly and it hasn't been generated yet.</short>
+      </element><element name="TOurChunk.Lighted"><short>Information if it was a first lighting (after creating, generating or loading)</short>
+      </element><element name="TOurChunk.AutoLightUpdate"><short>If true, light is updated automatically. Otherwise it is needed to update it manually</short>
+      </element><element name="TOurChunk.UpdateNeightborLight"><short>Expand light of the chunk to its neightbor and expand light of the neightbors to the chunk.</short>
+      </element><element name="TOurChunk.GetBlock"><short>Returns block. It needs chunk depended coordinates.</short><descr>The coordinates could be over the range 0..ChunkSize-1.
+But then, the returned block will be from another chunk.
+It returns nil when the block does not exists (because of not loading the chunk)
+or the other chunk is not loaded.
+</descr>
+      </element><element name="TOurChunk.SetBlock"><short>Sets block. It needs chunk depended coordinates.</short><descr>The coordinates could be over the range 0..ChunkSize-1.
+But then, the block will be set on another chunk.
+It does nothing when the other chunk is not loaded.
+</descr>
+      </element><element name="TOurChunk.Blocks"><short>Property for GetBlock ans SetBlock</short>
+      </element><element name="TOurChunk.GetBlockDirect"><short>Returns block. It needs chunk depended coordinates. The coordinates cannot be over the range 0..ChunkSize-1.</short><descr>It doesn't check the ranges, but it can raise an exception in case of reading
+error.
+</descr>
+      </element><element name="TOurChunk.SetBlockDirect"><short>Sets block. It needs chunk depended coordinates.</short><descr>It doesn't check the ranges.
+It destroys an old block and sets the new block on its new place.
+It executes the methods TBlock.AfterPut etc.
+Updates the light, when the AutoLightUpdate is True.
+Raises exception in case of any error.
+</descr>
+      </element><element name="TOurChunk.DirectBlocks"><short>Property for GetBlockDirect ans SetBlockDirect</short>
+      </element><element name="TOurChunk.RegisterChangedBlock"><short>The block must register itself iwhen it is changed. Otherwise the changes could not be saved.</short>
+      </element><element name="TOurChunk.IsInsert"><short>Checks if the coordinates are in range 0..ChunkSize-1.</short>
+      </element><element name="TOurChunk.IsBorder"><short>Checks if the coordinates are in the border of a chunk.</short><descr>For example: when one of coordinates is 0 or ChunkSize-1
+</descr>
+      </element>
+    <element name="TOurChunk.GetLightLevel"><short>Returns a light value</short><descr>The value depends on the world time, block-light source and sun-light values.
+It needs a local coordinates (chunk dependent) and it must be inside the chunk (0..ChunkSize-1).
+The function does not check the ranges. An axception could be raised, but malfunction can
+be undetected.
+</descr>
+      </element><element name="TOurChunk.GetSunLightLevel"><short>Returns a sun light value</short><descr>The value is value of sun-light source. The value of the function does not
+depends on the world time.
+It needs a local coordinates (chunk dependent) and it must be inside the chunk (0..ChunkSize-1).
+The function does not check the ranges. An axception could be raised, but malfunction can
+be undetected.
+</descr>
+      </element><element name="TOurChunk.GetBlockLightLevel"><short>Returns a block-light level</short><descr>The value is value of block-light source. The value of the function does not
+depends on the world time.
+It needs a local coordinates (chunk dependent) and it must be inside the chunk (0..ChunkSize-1).
+The function does not check the ranges. An axception could be raised, but malfunction can
+be undetected.
+</descr>
+      </element><element name="TOurChunk.SetBlockDirectAuto"><short>Sets block. It needs chunk depended coordinates.</short><descr>The function executes SetBlockDirect (so it can raise an exception).
+It returnd false when the ID does not exist or it is not a block (f.e. Entity).
+</descr>
+      </element><element name="TOurChunk.GetBlockLightSource"><short>Returns a value of light source which is a block.</short>
+      </element><element name="TOurChunk.GetSunLightSource"><short>Returns a value of light source which is from sun.</short>
+      </element><element name="TOurChunk.GetExtLightLevel"><short>Returns a light value. </short><descr>Same as GetLightLevel, but it checks ranges and it can give value from another
+chunk. In case of missing chunk (unloaded) it returns a default value.
+</descr>
+      </element><element name="TOurChunk.GetExtBlockLightLevel"><descr>Same as GetBlockLightLevel, but it checks ranges and it can give value from another
+chunk. In case of missing chunk (unloaded) it returns a default value.
+</descr><short>Returns a block-light level</short>
+      </element><element name="TOurChunk.GetExtSunLightLevel"><short>Returns a sun light value</short><descr>Same as GetSunLightLevel, but it checks ranges and it can give value from another
+chunk. In case of missing chunk (unloaded) it returns a default value.
+</descr>
+      </element><element name="TOurChunk.GetExtBlockLightSource"><short>Returns a value of light source which is a block.</short><descr>Same as GetBlockLightSourceLevel, but it checks ranges and it can give value from another
+chunk. In case of missing chunk (unloaded) it returns a default value.
+</descr>
+      </element><element name="TOurChunk.GetExtSunLightSource"><short>Returns a value of light source which is from sun.</short><descr>Same as GetSunLightourceLevel, but it checks ranges and it can give value from another
+chunk. In case of missing chunk (unloaded) it returns a default value.
+</descr>
+      </element>
+    </module>
+  </package>
+</fpdoc-descriptions>

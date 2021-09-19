@@ -1,4 +1,4 @@
-all: init requires hello compile textures 
+all: init requires hello compile textures doc
 
 all_again: clean all
 
@@ -43,5 +43,7 @@ hello: init
 	
 run:
 	bin/SingleMode
+doc:
+	fpdoc --descr-dir=doc/xml --format=html --output=doc/html --package=SingleMode --input-dir=source
 
-.PHONY: all init hello compile clean clear requires texture_compiler textures all_again run rebuild
+.PHONY: all init hello compile clean clear requires texture_compiler textures all_again run rebuild doc

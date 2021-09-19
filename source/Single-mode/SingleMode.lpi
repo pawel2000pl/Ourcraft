@@ -10,6 +10,7 @@
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
     </General>
+    <LazDoc Paths="../../doc/xml"/>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>
       <Item2 Name="Debug">
@@ -20,7 +21,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -61,7 +62,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
+            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -112,7 +113,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="55">
+    <Units Count="61">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -367,6 +368,30 @@
         <Filename Value="../Collections/TinyHashData.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit54>
+      <Unit55>
+        <Filename Value="../Crypto/AnyBase2OtherBase.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit55>
+      <Unit56>
+        <Filename Value="../Crypto/DoubleInt.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit56>
+      <Unit57>
+        <Filename Value="../Crypto/RSACodeStream.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit57>
+      <Unit58>
+        <Filename Value="../Crypto/RSAKeys.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit58>
+      <Unit59>
+        <Filename Value="../Crypto/rsamultikeygenerator.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit59>
+      <Unit60>
+        <Filename Value="../Crypto/SafeRandomGenerator.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit60>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -376,7 +401,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections"/>
+      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
       <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

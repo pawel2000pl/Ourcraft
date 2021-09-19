@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fpdoc-descriptions><package name="SingleMode"><module name="LightTypes"><element name="TLight"><short>Basic type for saving light values for each channel</short>
+      </element><element name="TLongLight"><short>Same as TLight, but basic on Integers</short><descr>It has values from 0 to MAX_LIGHT_LEVEL
+</descr>
+      </element><element name="TRealLight"><short>It storages light level as real value - from 0 to 1</short>
+      </element>
+    </module>
+  </package>
+</fpdoc-descriptions>

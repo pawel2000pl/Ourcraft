@@ -13,7 +13,7 @@ Warning: this is project, some (almost all) of this features haven't been implem
 4. [+] It is not executed by Java Virtual Machine (JVM), but it is an executable file, so there is more FPS
 5. [+] Three channels for light (red, green, blue)
 6. [+] Light with 256 levels (but light-resistance is 16/block)
-7. [?] More realistic phisics
+7. [?] More realistic physics
      
 It's not playable yet (but almost). But you can: 
 
@@ -34,7 +34,10 @@ Changelog:
 * Added Perlin Noise algorithm for any count of dimenstion
 * Added simply terrain generator
 * Bug fixes and optimalization
-* Added phisic engine (it still does not work as it will, but work with a slow velocity)
+* Added physic engine (it still does not work as it will, but work with a slow velocity)
+* Temporary the physic engine is simply, but it works
+* Added some documentation
+
 
 How to compile and run
 

@@ -105,7 +105,6 @@ const
   AsLightZero : TLight = (0, 0, 0);
   AsLightMax : TLight = (MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL, MAX_LIGHT_LEVEL);
 
-
   WarmSunLight : TRealLight = (0.98, 0.97, 0.95);
 
 implementation
@@ -308,7 +307,7 @@ var
   c : TLightColor;
 begin
   for c := Low(TLightColor) to High(TLightColor) do
-    Result[c] := EnsureRange(round(Light[c]*k[c]), 0, 1);
+    Result[c] := EnsureRange(round(Light[c]*k[c]), 0, 255);
 end;
 
 function ScaleLightChannels(const Light: TRealLight; const k: TRealLight): TRealLight;

@@ -77,13 +77,9 @@ type
         TKeyValueEnumerator = specialize TCustomEnumerator<TKeyValuePair>;
 
     private
-        FWriterLocker : TRTLCriticalSection;
-        FReadersCount : LongWord;       
-        FIsWriting : Boolean;      
-        function CheckIfItIsReading : Boolean; inline;
+        FLocker : TMultiReadExclusiveWriteSynchronizer;
+        function GetLocker : TMultiReadExclusiveWriteSynchronizer; inline;
     public
-        property IsReading : Boolean read CheckIfItIsReading;
-        property IsWriting : Boolean read FIsWriting;
         procedure BeginRead;
         procedure EndRead;
         function BeginWrite : Boolean;
@@ -296,36 +292,31 @@ end;
 
 { TCustomDataContainer }
 
-function TCustomDataContainer.CheckIfItIsReading: Boolean;
+function TCustomDataContainer.GetLocker: TMultiReadExclusiveWriteSynchronizer;
 begin
-  Exit(FReadersCount > 0);
+  if FLocker = nil then
+    FLocker:=TMultiReadExclusiveWriteSynchronizer.Create;
+  Exit(FLocker);
 end;
 
 procedure TCustomDataContainer.BeginRead;
 begin                              
-   EnterCriticalSection(FWriterLocker);
-   InterlockedIncrement(FReadersCount);
-   LeaveCriticalSection(FWriterLocker);
+   GetLocker.Beginread;
 end;
 
 procedure TCustomDataContainer.EndRead;
 begin
-   InterlockedDecrement(FReadersCount);
+   GetLocker.Endread;
 end;
 
 function TCustomDataContainer.BeginWrite: Boolean;
 begin
-   EnterCriticalSection(FWriterLocker);
-   while FReadersCount > 0 do
-       TThread.Yield;
-   FIsWriting := True;
-   Exit(True);
+   Exit(GetLocker.Beginwrite);
 end;
 
 procedure TCustomDataContainer.EndWrite;
 begin
-   FIsWriting := False;
-   LeaveCriticalSection(FWriterLocker);
+   GetLocker.Endwrite;
 end;
 
 function TCustomDataContainer.GetFirstKey: TKey;
@@ -538,15 +529,16 @@ end;
 
 constructor TCustomDataContainer.Create;
 begin
-  InitCriticalSection(FWriterLocker);
-  FReadersCount := 0;
-  FIsWriting := False;
+  FLocker := nil;
   inherited Create;
 end;
 
 destructor TCustomDataContainer.Destroy;
 begin
-  DoneCriticalSection(FWriterLocker);
+  BeginWrite;
+  EndWrite;
+  if FLocker <> nil then
+      FreeAndNil(FLocker);
   inherited Destroy;
 end;
 
