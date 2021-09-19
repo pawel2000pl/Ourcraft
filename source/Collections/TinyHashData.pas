@@ -126,7 +126,6 @@ type
       procedure UpdateFirst(const Key : TKey; const Value : TValue);
   end;
 
-
   { TTinyHashAnsiStringSet }
 
   TTinyHashAnsiStringSet = class(specialize TTinyHashSet<AnsiString>)

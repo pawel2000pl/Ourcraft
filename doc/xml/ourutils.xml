@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fpdoc-descriptions><package name="SingleMode"><module name="OurUtils"><element name="TBlock.NeedDraw"><short>Checks if block needs to be drawing (and rendering)</short>
+<fpdoc-descriptions><package name="OurcraftMain"><module name="OurUtils"><element name="TBlock.NeedDraw"><short>Checks if block needs to be drawing (and rendering)</short>
       </element>
     <element name="TBlock.IsSolid"><short>If true block will be included to chunk model - set to false in case of irregular and small blocks. If true the model should be drawed through DrawModel, otherwise through DrawUnsolid</short>
       </element><element name="TBlock.NeedTick"><short>If returns true OnTick method will be executing</short>

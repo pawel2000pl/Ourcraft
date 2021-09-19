@@ -21,7 +21,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
+            <OtherUnitFiles Value="..;../lib/Synapse/source/lib;../Collections;../Crypto;../Environment"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -62,7 +62,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);.."/>
-            <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
+            <OtherUnitFiles Value="..;../lib/Synapse/source/lib;../Collections;../Crypto;../Environment"/>
             <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -105,15 +105,18 @@
         <Mode0 Name="default"/>
       </Modes>
     </RunParams>
-    <RequiredPackages Count="2">
+    <RequiredPackages Count="3">
       <Item1>
-        <PackageName Value="lazopenglcontext"/>
+        <PackageName Value="OurcraftMain"/>
       </Item1>
       <Item2>
-        <PackageName Value="LCL"/>
+        <PackageName Value="lazopenglcontext"/>
       </Item2>
+      <Item3>
+        <PackageName Value="LCL"/>
+      </Item3>
     </RequiredPackages>
-    <Units Count="61">
+    <Units Count="16">
       <Unit0>
         <Filename Value="SingleMode.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -131,267 +134,59 @@
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="../OurUtils.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="../processutils.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ProcessUtils"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="../sorts.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Sorts"/>
-      </Unit5>
-      <Unit6>
         <Filename Value="glcamera.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="GlCamera"/>
-      </Unit6>
-      <Unit7>
-        <Filename Value="../models.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Models"/>
-      </Unit7>
-      <Unit8>
-        <Filename Value="../freerer.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Freerer"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="../queues.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Queues"/>
-      </Unit9>
-      <Unit10>
-        <Filename Value="../locker.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Locker"/>
-      </Unit10>
-      <Unit11>
-        <Filename Value="../chain.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Chain"/>
-      </Unit11>
-      <Unit12>
+      </Unit3>
+      <Unit4>
         <Filename Value="../memguard.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MemGuard"/>
-      </Unit12>
-      <Unit13>
-        <Filename Value="../worldgenerator.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="WorldGenerator"/>
-      </Unit13>
-      <Unit14>
-        <Filename Value="../simplecache.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="SimpleCache"/>
-      </Unit14>
-      <Unit15>
-        <Filename Value="../arrayofnumber.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ArrayOfNumber"/>
-      </Unit15>
-      <Unit16>
-        <Filename Value="../collections.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Collections"/>
-      </Unit16>
-      <Unit17>
+      </Unit4>
+      <Unit5>
         <Filename Value="../Environment/air.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit17>
-      <Unit18>
+      </Unit5>
+      <Unit6>
         <Filename Value="../Environment/glowstone.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit18>
-      <Unit19>
+      </Unit6>
+      <Unit7>
         <Filename Value="../Environment/stone.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit19>
-      <Unit20>
-        <Filename Value="../Incrementations.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit20>
-      <Unit21>
-        <Filename Value="../customsaver.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="CustomSaver"/>
-      </Unit21>
-      <Unit22>
+      </Unit7>
+      <Unit8>
         <Filename Value="../fastcmem.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit22>
-      <Unit23>
-        <Filename Value="../filesaver.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="FileSaver"/>
-      </Unit23>
-      <Unit24>
-        <Filename Value="../saverpaths.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="SaverPaths"/>
-      </Unit24>
-      <Unit25>
-        <Filename Value="../lighttypes.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="LightTypes"/>
-      </Unit25>
-      <Unit26>
-        <Filename Value="../lib/Synapse/source/lib/blcksock.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit26>
-      <Unit27>
-        <Filename Value="../serverservice.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ServerService"/>
-      </Unit27>
-      <Unit28>
-        <Filename Value="../clientservice.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ClientService"/>
-      </Unit28>
-      <Unit29>
-        <Filename Value="../socketcommands.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="SocketCommands"/>
-      </Unit29>
-      <Unit30>
-        <Filename Value="../nearestvectors.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="NearestVectors"/>
-      </Unit30>
-      <Unit31>
-        <Filename Value="../mainourcraftdirectory.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="MainOurcraftDirectory"/>
-      </Unit31>
-      <Unit32>
-        <Filename Value="../texturemode.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="TextureMode"/>
-      </Unit32>
-      <Unit33>
-        <Filename Value="../phisicalbox.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="PhisicalBox"/>
-      </Unit33>
-      <Unit34>
-        <Filename Value="../OurGame.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit34>
-      <Unit35>
-        <Filename Value="../CalcUtils.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit35>
-      <Unit36>
-        <Filename Value="../threedimensionalarrayofboolean.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ThreeDimensionalArrayOfBoolean"/>
-      </Unit36>
-      <Unit37>
-        <Filename Value="../UniversalImage.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit37>
-      <Unit38>
-        <Filename Value="../DeterminedRandomGenerator.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit38>
-      <Unit39>
-        <Filename Value="../simpletypes.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="SimpleTypes"/>
-      </Unit39>
-      <Unit40>
-        <Filename Value="../SortsHeader.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit40>
-      <Unit41>
-        <Filename Value="../SortsImplementation.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit41>
-      <Unit42>
-        <Filename Value="../incrementation_headers.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit42>
-      <Unit43>
-        <Filename Value="../incrementation_headers_2.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit43>
-      <Unit44>
-        <Filename Value="../collisionboxes.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="CollisionBoxes"/>
-      </Unit44>
-      <Unit45>
-        <Filename Value="../archiveutils.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit45>
-      <Unit46>
-        <Filename Value="../DrawModes.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit46>
-      <Unit47>
-        <Filename Value="../incrementations.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit47>
-      <Unit48>
-        <Filename Value="../incrementations2.inc"/>
-        <IsPartOfProject Value="True"/>
-      </Unit48>
-      <Unit49>
-        <Filename Value="../prefixsi.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="PrefixSI"/>
-      </Unit49>
-      <Unit50>
-        <Filename Value="../asyncmicrotimer.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="AsyncMicroTimer"/>
-      </Unit50>
-      <Unit51>
+      </Unit8>
+      <Unit9>
         <Filename Value="../Environment/MovingBlock.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit51>
-      <Unit52>
-        <Filename Value="../asyncmillitimer.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="AsyncMilliTimer"/>
-      </Unit52>
-      <Unit53>
-        <Filename Value="../Collections/DataAbstractions.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit53>
-      <Unit54>
-        <Filename Value="../Collections/TinyHashData.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit54>
-      <Unit55>
+      </Unit9>
+      <Unit10>
         <Filename Value="../Crypto/AnyBase2OtherBase.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit55>
-      <Unit56>
+      </Unit10>
+      <Unit11>
         <Filename Value="../Crypto/DoubleInt.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit56>
-      <Unit57>
+      </Unit11>
+      <Unit12>
         <Filename Value="../Crypto/RSACodeStream.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit57>
-      <Unit58>
+      </Unit12>
+      <Unit13>
         <Filename Value="../Crypto/RSAKeys.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit58>
-      <Unit59>
+      </Unit13>
+      <Unit14>
         <Filename Value="../Crypto/rsamultikeygenerator.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit59>
-      <Unit60>
+      </Unit14>
+      <Unit15>
         <Filename Value="../Crypto/SafeRandomGenerator.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit60>
+      </Unit15>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -401,7 +196,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;../Environment;../lib/Synapse/source/lib;../Collections;../Crypto"/>
+      <OtherUnitFiles Value="..;../lib/Synapse/source/lib;../Collections;../Crypto;../Environment"/>
       <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

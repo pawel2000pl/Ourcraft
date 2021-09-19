@@ -76,10 +76,17 @@ type
         TValueEnumerator = specialize TCustomEnumerator<TValue>;
         TKeyValueEnumerator = specialize TCustomEnumerator<TKeyValuePair>;
 
-    private
+    strict private
         FLocker : TMultiReadExclusiveWriteSynchronizer;
+        FOnDestroy: TNotifyEvent;
+
+    private
         function GetLocker : TMultiReadExclusiveWriteSynchronizer; inline;
+        procedure SetOnDestroy(AValue: TNotifyEvent);
+
     public
+        property OnDestroy : TNotifyEvent read FOnDestroy write SetOnDestroy;
+
         procedure BeginRead;
         procedure EndRead;
         function BeginWrite : Boolean;
@@ -119,6 +126,8 @@ type
         procedure ForEach(const proc : TForEachVarValueProcedure); virtual; overload;
         procedure ForEach(const proc : TForEachKeyVarValueStaticProcedure); virtual; overload;
         procedure ForEach(const proc : TForEachVarValueStaticProcedure); virtual; overload;
+
+        procedure BeforeDestruction; override;
 
         constructor Create; override;
         destructor Destroy; override;
@@ -297,6 +306,14 @@ begin
   if FLocker = nil then
     FLocker:=TMultiReadExclusiveWriteSynchronizer.Create;
   Exit(FLocker);
+end;
+
+procedure TCustomDataContainer.SetOnDestroy(AValue: TNotifyEvent);
+begin
+  if FOnDestroy=AValue then Exit;
+  if not Assigned(AValue) then
+    FOnDestroy:=nil;
+  FOnDestroy:=AValue;
 end;
 
 procedure TCustomDataContainer.BeginRead;
@@ -527,18 +544,28 @@ begin
    end;
 end;
 
+procedure TCustomDataContainer.BeforeDestruction;
+begin
+  if FOnDestroy <> nil then
+      FOnDestroy(self);
+  inherited BeforeDestruction;
+end;
+
 constructor TCustomDataContainer.Create;
 begin
   FLocker := nil;
+  FOnDestroy:=nil;
   inherited Create;
 end;
 
 destructor TCustomDataContainer.Destroy;
 begin
-  BeginWrite;
-  EndWrite;
   if FLocker <> nil then
-      FreeAndNil(FLocker);
+  begin                   
+    BeginWrite;
+    EndWrite;
+    FreeAndNil(FLocker);
+  end;
   inherited Destroy;
 end;
 

@@ -9,15 +9,9 @@ uses
   cthreads,
   {$ENDIF}
   {$ENDIF}
-  MainOurcraftDirectory,
   Interfaces, // this includes the LCL widgetset
-  Forms, lazopenglcontext, SingleModeUnit, OurData, OurUtils, ProcessUtils,
-  Sorts, GlCamera, Models, Freerer, Queues, Locker, Chain, WorldGenerator,
-  DeterminedRandomGenerator, SimpleCache, CustomSaver, FileSaver,
-  SaverPaths, LightTypes, ServerService, ClientService, SocketCommands,
-  NearestVectors, CollisionBoxes, TextureMode, PhisicalBox, CalcUtils, OurGame,
-  SimpleTypes, ThreeDimensionalArrayOfBoolean, UniversalImage, PrefixSI,
-  AsyncMicroTimer, AsyncMilliTimer, ArrayOfNumber, MovingBlock;
+  Forms, lazopenglcontext, SingleModeUnit, OurData, air, glowstone, MovingBlock,
+  stone, GlCamera;
 
 {$R *.res}
 

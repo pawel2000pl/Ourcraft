@@ -1,4 +1,4 @@
-program OutCraft;
+program OurCraft;
 
 {$mode objfpc}
 {$RangeChecks off}
