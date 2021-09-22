@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fpdoc-descriptions><package name="OurcraftMain"><module name="Queues"><element name="TQueueThread"><short>Class which creates a new thread and does all necessary work for TQueueManager. DO NOT CREATE IT: ONLY FOR INTERNAL USAGE OF  TQueueManager!</short>
+      </element><element name="TQueueManager.ThreadCount"><short>Returns the count of runnung (created) threads.</short>
+      </element><element name="TQueueManager.CoreCount"><short>Returns the count of cores in the current machine.</short>
+      </element><element name="TQueueManager.RemoveRepeated"><short>If true - while beginning of executing a method, every other records in the queue with the same method will be deleted.</short>
+      </element><element name="TQueueManager.QueuedMethodCount"><short>Returns the count of methods (with repetitions) in the queue.</short>
+      </element><element name="TQueueManager.OnException"><short>Event executed in case of unhandled exception.</short><descr>Every unhandled exception is handled in order to prevent the thread from stopping.
+Even if the method is nil, no thread will stop.
+</descr>
+      </element><element name="TQueueManager.Terminagting"><short>It should be False during the regular working. It is switched to True when the destructor is executing.</short><descr>When True, no method can be added to the queue.
+</descr>
+      </element><element name="TQueueManager.QueueSize"><short>Same as QueuedMethodCount, but the value is calculated dynamically.</short>
+      </element><element name="TQueueManager.Clear"><short>Removes all methods from the queue.</short>
+      </element><element name="TQueueManager.Suspend"><short>When true, executing the methods is suspended. </short><descr>CPU usage (by the queue's threads) is less than 1%.
+</descr>
+      </element><element name="TQueueManager.ExecuteMethod"><short>Executes one method from the queue.</short><descr>Mainly for internal use of TQueueThread, but it can be executed externally.
+</descr>
+      </element><element name="TQueueManager.DequeueObject"><short>Removes all methods from the queue which are from the object in a parameter.</short>
+      </element><element name="TQueueManager.AddMethod"><short>Enqueues a method.</short>
+      </element><element name="TQueueManager.AddOrExecuteIfOveloaded"><short>Enqueues a method like AddMethod() or executes in a current thread.</short><descr>AddOrExecuteIfOverloaded executes in the same thread when QueuedMethodCount &gt;= ThreadCount.
+Otherwise it executes AddMethod.
+</descr>
+      </element>
+    </module>
+  </package>
+</fpdoc-descriptions>

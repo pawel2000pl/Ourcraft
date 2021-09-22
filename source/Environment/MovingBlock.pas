@@ -25,7 +25,8 @@ type
        destructor Destroy; override;
        procedure Render; override;
        procedure Tick(const DeltaTime: QWord); override;
-       procedure UpdateModel;
+       procedure UpdateModel; override;
+       procedure UpdateModelLight; override;
   end;
 
   { TMovingBlockCreator }
@@ -114,6 +115,20 @@ begin
         rc[i] := StateBox.CollisionBox.RotationMatrix*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
     Model.AddWall(p, rc, TextureStandardCorners, (Creator as TMovingBlockCreator).fTexture, rl);
   end;
+  Model.Unlock;
+end;
+
+procedure TMovingBlock.UpdateModelLight;
+var
+  i : Integer; 
+  rl : TColor3b;
+  c : ^TColor3b;
+begin           
+  rl := GetLightLevel(Position);
+  Model.Lock;
+  c := Model.ColorPtr;
+  for i := 0 to Model.Count-1 do
+      c[i] := rl;
   Model.Unlock;
 end;
 

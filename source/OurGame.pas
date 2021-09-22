@@ -46,7 +46,7 @@ type
     procedure AfterLoading; virtual;
     function GetType : TElementType; virtual; abstract;
     function CreateElement(const Coords : TVector3; const SubID : integer = 0) : TEnvironmentElement; virtual; abstract;
-    function getTextID : ansistring; virtual;
+    function GetTextID : ansistring; virtual;
     function GetID : integer;
     property Environment : TEnvironment read fEnvironment;
     property ID : integer read fID write SetID;
@@ -241,7 +241,7 @@ begin
   //Do nothing?
 end;
 
-function TElementCreator.getTextID: ansistring;
+function TElementCreator.GetTextID: ansistring;
 var
   cs : AnsiString;
   i : integer;

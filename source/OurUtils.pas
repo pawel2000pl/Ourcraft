@@ -163,6 +163,9 @@ type
 
     function MovementResistance : Double; virtual;
 
+    procedure UpdateModel; virtual; abstract;
+    procedure UpdateModelLight; virtual;
+
     function GetBlockCollisionBox(const LocalBlockPosition: TIntVector3; out CollisionBox : TCollisionBox): Boolean;
     function FindCollision(const FromTime, ToTime : Double; Blocks : TCollisionBoxSet; var Where : TVector3; const MaxDepth : Integer = 8) : Double;
     procedure ComputeMovement(const DeltaTime : Double); virtual;
@@ -376,6 +379,7 @@ type
     procedure Finalize(const DelayTime : QWord); override;
 
   public
+    procedure UpdateEntitiesLight;
     property Entities : TEntitySet read fEntities;
     property RenderAreaCollection : TRenderAreaCollection read fRenderAreaCollection;
 
@@ -1723,6 +1727,21 @@ begin
   Save;
 end;
 
+procedure TOurChunk.UpdateEntitiesLight;
+var
+  e : TEntity;
+begin
+  if Entities.Count = 0 then
+     Exit;
+  Entities.BeginRead;
+  try
+    for e in Entities.GetValueEnumerator do
+        e.UpdateModelLight;
+  finally
+    Entities.EndRead;
+  end;
+end;
+
 procedure TOurChunk.BeginRead;
 begin
   fLocker.BeginRead;
@@ -2121,6 +2140,7 @@ begin
     end;
     fModels[side].Unlock;
   end;
+  UpdateEntitiesLight;
 end;
 
 procedure TOurChunk.ForceUpdateModelLight;
@@ -2839,7 +2859,7 @@ end;
 
 procedure TBlock.SaveToStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord);
 begin
-  Stream.WriteDWord(GetID);
+  Stream.WriteAnsiString(GetTextID);
   Stream.WriteDWord(GetSubID);
 end;
 
@@ -2849,7 +2869,7 @@ var
   ReadedID, ReadedSubID : integer;
 begin
   StreamPosition := Stream.Position;
-  ReadedID := Stream.ReadDWord;
+  ReadedID := Chunk.World.OurGame.Environment.GetID(Stream.ReadAnsiString);
   ReadedSubID := Stream.ReadDWord;
   if (ReadedID <> GetID) or (ReadedSubID <> GetSubID) then
   begin
@@ -3133,6 +3153,11 @@ end;
 function TEntity.MovementResistance: Double;
 begin
   Exit(0.01);
+end;
+
+procedure TEntity.UpdateModelLight;
+begin
+  UpdateModel;
 end;
 
 function TEntity.GetBlockCollisionBox(const LocalBlockPosition: TIntVector3; out CollisionBox : TCollisionBox): Boolean;
