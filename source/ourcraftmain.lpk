@@ -11,7 +11,7 @@
         <UnitOutputDirectory Value="../bin/lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Files Count="51">
+    <Files Count="52">
       <Item1>
         <Filename Value="OurUtils.pas"/>
         <UnitName Value="OurUtils"/>
@@ -223,6 +223,10 @@
         <Filename Value="Collections/TinyHashData.pas"/>
         <UnitName Value="TinyHashData"/>
       </Item51>
+      <Item52>
+        <Filename Value="FastLZ77.pas"/>
+        <UnitName Value="FastLZ77"/>
+      </Item52>
     </Files>
     <LazDoc Paths="../doc/xml"/>
     <RequiredPkgs Count="1">

@@ -16,7 +16,7 @@ uses
   DeterminedRandomGenerator, SimpleTypes, CollisionBoxes, ArchiveUtils, 
   DrawModes, PhisicalBox, PrefixSI, AsyncMicroTimer, AsyncMilliTimer, 
   Incrementations, synacode, synafpc, synaip, synautil, synsock, 
-  DataAbstractions, TinyHashData, LazarusPackageIntf;
+  DataAbstractions, TinyHashData, FastLZ77, LazarusPackageIntf;
 
 implementation
 

@@ -12,7 +12,13 @@ type
   TLightColor = (lcRed, lcGreen, lcBlue);
   TLight = packed array[TLightColor] of Byte;
   TLongLight = array[TLightColor] of Integer;
-  TRealLight = array[TLightColor] of Single;
+
+  TColor3f = array[TLightColor] of Single;   
+  TRealLight = TColor3f;
+
+  TColor3b = packed record
+    r, g, b : byte;
+  end;
 
   { TLightHelper }
 

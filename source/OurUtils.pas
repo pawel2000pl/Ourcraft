@@ -12,7 +12,8 @@ uses
   SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
   Locker, ThreeDimensionalArrayOfBoolean, TinyHashData, OurGame,
   Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors,
-  TextureMode, CollisionBoxes, AsyncMicroTimer, AsyncMilliTimer, ProcessUtils;
+  TextureMode, CollisionBoxes, AsyncMicroTimer, AsyncMilliTimer, ProcessUtils,
+  FastLZ77;
 
 const
   ChunkSizeLog2 = 4;
@@ -2509,19 +2510,30 @@ end;
 procedure TOurChunk.SaveToStream(Stream : TStream);
 var
   x, y, z : integer;
+  MS : TMemoryStream;
 begin
   Stream.WriteByte(0);
   Stream.WriteBuffer(FPosition, SizeOf(FPosition));
-  for x := 0 to ChunkSize - 1 do
-    for y := 0 to ChunkSize - 1 do
-      for z := 0 to ChunkSize - 1 do
-        DirectBlocks[x, y, z].SaveToStream(Stream, Self, BlockCoord(x, y, z));
-  ChangedBlocks.Clear;
+  BeginRead;           
+  MS := TMemoryStream.Create;
+  try
+    for x := 0 to ChunkSize - 1 do
+      for y := 0 to ChunkSize - 1 do
+        for z := 0 to ChunkSize - 1 do
+          DirectBlocks[x, y, z].SaveToStream(MS, Self, BlockCoord(x, y, z));
+    ChangedBlocks.Clear;  
+  finally
+    EndRead;
+  end;
+  MS.Position:=0;
+  FastLZ77Stream(MS, Stream, fl77Compress);
+  MS.Free;
 end;
 
 procedure TOurChunk.SaveChangesToStream(Stream : TStream);
 var
   c : TBlockCoord;
+  MS : TMemoryStream;
 begin
   if ChangedBlocks.Count > MaxDynamicBlockChanged then
     SaveToStream(Stream)
@@ -2531,12 +2543,21 @@ begin
       exit;
     Stream.WriteByte(1);
     Stream.WriteBuffer(FPosition, SizeOf(FPosition));
-    for c in ChangedBlocks.GetValueEnumerator do
-    begin
-      Stream.WriteBuffer(c, SizeOf(c));
-      DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(Stream, Self, c);
+    BeginRead;
+    try
+      MS := TMemoryStream.Create;
+      for c in ChangedBlocks.GetValueEnumerator do
+      begin
+        MS.WriteBuffer(c, SizeOf(c));
+        DirectBlocks[c[axisX], c[axisY], c[axisZ]].SaveToStream(MS, Self, c);
+      end;
+      ChangedBlocks.Clear;   
+    finally
+      EndRead;
     end;
-    ChangedBlocks.Clear;
+    MS.Position:=0;
+    FastLZ77Stream(MS, Stream, fl77Compress);
+    MS.Free;
   end;
   c := NilBlockCoord;
   Stream.WriteBuffer(c, SizeOf(c));
@@ -2545,15 +2566,25 @@ end;
 procedure TOurChunk.LoadEverything(Stream : TStream);
 var
   x, y, z : integer;
-begin
+  MS : TMemoryStream;
+begin                         
+  MS := TMemoryStream.Create;
+  FastLZ77Stream(Stream, MS, fl77Uncompress);  //uwaga: czy nie jest wymagane dopisanie informacji o rozmiarze zapisu?
+  MS.Position:=0;
   AutoLightUpdate := False;
-  for x := 0 to ChunkSize - 1 do
-    for y := 0 to ChunkSize - 1 do
-      for z := 0 to ChunkSize - 1 do
-        DirectBlocks[x, y, z].LoadFromStream(Stream, Self, BlockCoord(x, y, z));
+  BeginWrite;
+  try
+    for x := 0 to ChunkSize - 1 do
+      for y := 0 to ChunkSize - 1 do
+        for z := 0 to ChunkSize - 1 do
+          DirectBlocks[x, y, z].LoadFromStream(MS, Self, BlockCoord(x, y, z));
+  finally
+    EndWrite;
+  end;
   AutoLightUpdate := True;
   RelightArea(0, 0, 0, ChunkSize - 1, ChunkSize - 1, ChunkSize - 1); 
   ChangedBlocks.Clear;
+  MS.Free;
 end;
 
 procedure TOurChunk.LoadChanges(Stream : TStream);
@@ -2561,6 +2592,7 @@ var
   c : TBlockCoord;
   MinCoords, MaxCoords : TIntVector3;
   a : TAxis;
+  MS : TMemoryStream;
 begin
   if fGenerated then
   begin
@@ -2573,21 +2605,30 @@ begin
     MaxCoords := IntVector3(ChunkSize - 1, ChunkSize - 1, ChunkSize - 1);
     Generate;
   end;
-  AutoLightUpdate := False;
-  while True do
-  begin
-    Stream.ReadBuffer(c{%H-}, SizeOf(c));
-    if c = NilBlockCoord then
-      break;
-    DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(Stream, Self, c);
-    for a := Low(TAxis) to High(TAxis) do
+  MS := TMemoryStream.Create;
+  FastLZ77Stream(Stream, MS, fl77Uncompress);
+  MS.Position:=0;
+  BeginWrite;
+  try
+    AutoLightUpdate := False;
+    while True do
     begin
-      UpdateIfGreater(MaxCoords[a], c[a]);
-      UpdateIfLesser(MinCoords[a], c[a]);
+      MS.ReadBuffer(c{%H-}, SizeOf(c));
+      if c = NilBlockCoord then
+        break;
+      DirectBlocks[c[axisX], c[axisY], c[axisZ]].LoadFromStream(MS, Self, c);
+      for a := Low(TAxis) to High(TAxis) do
+      begin
+        UpdateIfGreater(MaxCoords[a], c[a]);
+        UpdateIfLesser(MinCoords[a], c[a]);
+      end;
     end;
+  finally
+    EndWrite;
   end;
   AutoLightUpdate := True;
   ChangedBlocks.Clear;
+  MS.Free;
   RelightArea(MinCoords.X, MinCoords.Y, MinCoords.Z, MaxCoords.X, MaxCoords.Y, MaxCoords.Z);
 end;
 
@@ -2866,17 +2907,19 @@ end;
 function TBlock.LoadFromStream(Stream : TStream; Chunk : TOurChunk; const Coord : TBlockCoord) : boolean;
 var
   StreamPosition : integer;
+  ReadedTextID : AnsiString;
   ReadedID, ReadedSubID : integer;
 begin
   StreamPosition := Stream.Position;
-  ReadedID := Chunk.World.OurGame.Environment.GetID(Stream.ReadAnsiString);
+  ReadedTextID := Stream.ReadAnsiString;
+  ReadedID := Chunk.World.OurGame.Environment.GetID(ReadedTextID);
   ReadedSubID := Stream.ReadDWord;
   if (ReadedID <> GetID) or (ReadedSubID <> GetSubID) then
   begin
     Stream.Position := StreamPosition;
     //warning: this class could be destroyed after this line
     if not Chunk.SetBlockDirectAuto(Coord[axisX], Coord[axisY], Coord[axisZ], ReadedID, ReadedSubID) then
-      raise Exception.Create('Invalid ID in stream');
+      raise Exception.Create('Invalid ID in stream: ' + ReadedTextID);
     Chunk.GetBlockDirect(Coord[axisX], Coord[axisY], Coord[axisZ]).LoadFromStream(Stream, Chunk, Coord);
     Result := False;
   end

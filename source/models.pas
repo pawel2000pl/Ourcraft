@@ -10,12 +10,6 @@ uses
 
 type
 
-  TColor3f = TRealLight;
-
-  TColor3b = packed record
-    r, g, b : byte;
-  end;
-
   TLightedSide = array[0..3] of TColor3f; //saved with conversion
 
   TTexturedCuboid = record
