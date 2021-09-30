@@ -210,8 +210,8 @@ constructor EQueueOverload.Create(AQueue: TQueueManager; const AMethod: TQueueMe
 begin
   FQueue := AQueue;
   FMethod := AMethod;
-  inherited Create('Queue $' + IntToHex(QWord(FQueue), 16) + ' is overloaded. A method which was attempted to add: ' + IntToHex({%H-}QWord(TMethod(FMethod).Code), 16) +
-  ' from an object ' + IntToHex({%H-}QWord(TMethod(FMethod).Data), 16) + ' (' + TObject(TMethod(FMethod).Data).ClassName + ')');
+  inherited Create('Queue $' + IntToHex(PQWord(@FQueue)^, 16) + ' is overloaded. A method which was attempted to add: ' + IntToHex({%H-}PQWord(@TMethod(FMethod).Code)^, 16) +
+  ' from an object ' + IntToHex({%H-}PQWord(@TMethod(FMethod).Data)^, 16) + ' (' + TObject(TMethod(FMethod).Data).ClassName + ')');
 end;
 
 { TObjectProcedureWithOneParameter }
@@ -271,26 +271,38 @@ end;
 
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TStaticConstProcedure; const Parameter: TParameter): TQueueMethod;
+var
+  obj : TObjectProcedureWithOneParameter;
 begin
-  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+  obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
+  Result := @obj.Execute;
 end;
 
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TStaticProcedure; const Parameter: TParameter): TQueueMethod;
+var
+  obj : TObjectProcedureWithOneParameter;
 begin
-  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+  obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
+  Result := @obj.Execute;
 end;
 
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TObjectConstProcedure; const Parameter: TParameter): TQueueMethod;
+var
+  obj : TObjectProcedureWithOneParameter;
 begin
-  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+  obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
+  Result := @obj.Execute;
 end;
 
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TObjectProcedure; const Parameter: TParameter): TQueueMethod;
+var
+  obj : TObjectProcedureWithOneParameter;
 begin
-  Result := @TObjectProcedureWithOneParameter.Create(proc, Parameter).Execute;
+  obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
+  Result := @obj.Execute;
 end;
 
 procedure TStaticProcedureAsObjectMethod.Execute;
