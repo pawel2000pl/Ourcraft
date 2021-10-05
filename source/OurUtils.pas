@@ -2954,19 +2954,33 @@ end;
 { TEntity }
 
 procedure TEntity.SwitchChunk(NewChunk: TOurChunk);
-begin
+begin                 
+  LockForWriting;
   try
-    LockForWriting;
     if (FChunk <> nil) and Assigned(FChunk) then
-       FChunk.Entities.RemoveFirstKey(Self);
-     FChunk := NewChunk;
-     if (FChunk <> nil) and Assigned(FChunk) then
-     begin
-       if FChunk.Loaded then
-        FChunk.Entities.UpdateFirst(Self)
-        else
-        FChunk := nil;
-     end;
+    begin
+      FChunk.Entities.BeginWrite;
+      try
+        FChunk.Entities.RemoveFirstKey(Self);
+      finally
+        FChunk.Entities.EndWrite;
+      end;
+    end;
+    FChunk := NewChunk;
+    if (FChunk <> nil) and Assigned(FChunk) then
+    begin
+      if FChunk.Loaded then
+      begin
+        FChunk.Entities.BeginWrite;
+        try
+          FChunk.Entities.UpdateFirst(Self);
+        finally
+          FChunk.Entities.EndWrite;
+        end;
+      end
+      else
+         FChunk := nil;
+    end;
   finally
     UnlockFromWriting;
   end;
@@ -3377,7 +3391,12 @@ destructor TEntity.Destroy;
 begin
   LockForWriting;
   SwitchChunk(nil);
-  World.Entities.RemoveFirstKey(Self);
+  World.Entities.BeginWrite;
+  try
+    World.Entities.RemoveFirstKey(Self);
+  finally
+    World.Entities.EndWrite;
+  end;
   UnlockFromWriting;
   FLock.Free;
   inherited Destroy;

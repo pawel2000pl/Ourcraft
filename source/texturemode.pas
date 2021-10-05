@@ -21,16 +21,16 @@ type
 
 const
   TextureStandardModeCoord : TCubeCorners = (
-    ((1, 1, 1), (1, 1, 0), (1, 0, 0), (1, 0, 1)),
-    ((0, 1, 0), (0, 1, 1), (0, 0, 1), (0, 0, 0)),
-    ((1, 1, 0), (1, 1, 1), (0, 1, 1), (0, 1, 0)),
-    ((1, 0, 1), (1, 0, 0), (0, 0, 0), (0, 0, 1)),
-    ((0, 1, 1), (1, 1, 1), (1, 0, 1), (0, 0, 1)),
-    ((1, 1, 0), (0, 1, 0), (0, 0, 0), (1, 0, 0)));
+    ((1, 1, 1), (1, 0, 1), (1, 0, 0), (1, 1, 0)),
+    ((0, 1, 0), (0, 0, 0), (0, 0, 1), (0, 1, 1)),
+    ((1, 1, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)),
+    ((1, 0, 1), (0, 0, 1), (0, 0, 0), (1, 0, 0)),
+    ((0, 1, 1), (0, 0, 1), (1, 0, 1), (1, 1, 1)),
+    ((1, 1, 0), (1, 0, 0), (0, 0, 0), (0, 1, 0)));
 
   AllTextureSides = [tmNorth, tmSouth, tmUp, tmDown, tmEast, tmWest];
 
-  TextureStandardCorners : TTextureCorners = ((0, 0), (1, 0), (1, 1), (0, 1));
+  TextureStandardCorners : TTextureCorners = ((0, 0), (0, 1), (1, 1), (1, 0));
 
   OppositeSide : array[TTextureMode] of TTextureMode =
     (tmSouth, tmNorth, tmDown, tmUp, tmWest, tmEast);
