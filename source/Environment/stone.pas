@@ -12,7 +12,8 @@ type
 
   TStone = class(TBlock)
   public
-    procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord); override;
+    procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord;
+      VertexModel: TVertexModel); override;
          //TODO: Draw
   end;
 
@@ -59,9 +60,9 @@ end;
 
 { TStone }
 
-procedure TStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord);
+procedure TStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord; VertexModel: TVertexModel);
 begin
-  Chunk.GetVertexModel(side).AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
+  VertexModel.AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
 end;
 
 end.

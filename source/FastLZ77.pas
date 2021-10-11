@@ -184,7 +184,6 @@ begin
     FastLZ77.Free;
 end;
 
-
 function FastLZ77Stream(Source, Dest : TStream; const Direction : TFastLZ77Direction) : PtrUInt; overload;
 begin
     Exit(FastLZ77Stream(Source, Dest, Source.Size - Source.Position, Direction));

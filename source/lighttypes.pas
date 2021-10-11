@@ -20,6 +20,8 @@ type
     r, g, b : byte;
   end;
 
+  PColor3b = ^TColor3b;
+
   { TLightHelper }
 
   TLightHelper = type helper for TLight

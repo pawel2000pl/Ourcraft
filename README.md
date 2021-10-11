@@ -19,7 +19,7 @@ It's not playable yet (but almost). But you can:
 
 * Fly: WASD, Space (Up) and X (Down)
 * Move camera: IJKL 
-* Spawn the first entity "MovingBlock": F
+* Spawn the first entity "MovingBlock": F (a stone block will be placed), or G (a glowstone block will be placed)
 * Edit blocks: N (air), M (stone), 0-7 (colored lightstone); only in constant and determined distance
 
 Changelog:

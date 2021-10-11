@@ -6,6 +6,7 @@ interface
 {DO NOT USE YET}
 
 uses
+  SysUtils, math,
   OurUtils,
   OurGame,
   CalcUtils, Models, TextureMode, LightTypes;
@@ -17,7 +18,9 @@ type
   TMovingBlock = class(TEntity)
   private
        Model : TVertexModel;
+       PlacingBlock : TBlock;
        procedure InitBoxes;
+       function GetPlacingBlock : TBlock;
   protected
        procedure AfterMovement; override;
   public
@@ -27,6 +30,10 @@ type
        procedure Tick(const DeltaTime: QWord); override;
        procedure UpdateModel; override;
        procedure UpdateModelLight; override;
+
+       procedure SetPlacingBlock(Block : TBlock);
+       procedure PlaceBlock;
+       procedure FittingToGrid;
   end;
 
   { TMovingBlockCreator }
@@ -58,6 +65,13 @@ begin
   StateBox.CollisionBox.Size := Vector3(1, 1, 1);
 end;
 
+function TMovingBlock.GetPlacingBlock: TBlock;
+begin
+  if PlacingBlock = nil then
+     Exit(GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock);
+  Exit(PlacingBlock);
+end;
+
 procedure TMovingBlock.AfterMovement;
 begin
   inherited AfterMovement;
@@ -69,12 +83,15 @@ begin
   InitBoxes;
   inherited Create(TheWorld, MyCreator, APosition);
   Model := TVertexModel.Create;
+  PlacingBlock := nil;
   UpdateModel;
   AfterMovement;
 end;
 
 destructor TMovingBlock.Destroy;
 begin
+  if PlacingBlock <> nil then
+     FreeAndNil(PlacingBlock);
   Model.Free;
   inherited Destroy;
 end;
@@ -86,8 +103,14 @@ end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);
 begin
-   //writeln(Position[AxisX]:2:2, #9, Position[AxisY]:2:2, #9, Position[AxisZ]:2:2);
-   if Chunk = nil then writeln('Error: chunk is nil');
+  if Chunk = nil then writeln('Error: chunk is nil');
+  if SquaredHypot3(Velocity) < 1e-2 then
+  begin
+    FittingToGrid;
+    if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
+      PlaceBlock;
+  end;
+
   LockForWriting;
   try
       StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
@@ -105,10 +128,13 @@ var
   rl : TRealLight;
   i : Integer;
 begin
+  if Chunk = nil then Exit;
+
   rl := GetLightLevel(Position);
   p := Position;
   Model.Lock;
   Model.Clear;
+
   for side := low(TTextureMode) to High(TTextureMode) do
   begin
     for i := 0 to 3 do
@@ -130,6 +156,33 @@ begin
   for i := 0 to Model.Count-1 do
       c[i] := rl;
   Model.Unlock;
+end;
+
+procedure TMovingBlock.SetPlacingBlock(Block: TBlock);
+begin
+  if PlacingBlock <> nil then
+     FreeAndNil(PlacingBlock);
+  PlacingBlock := Block;
+end;
+
+procedure TMovingBlock.PlaceBlock;
+var
+  IntPosition : TIntVector3;
+begin
+  IntPosition := floor(Position);
+  World.SetBlock(IntPosition[axisX], IntPosition[axisY], IntPosition[axisZ], GetPlacingBlock);
+  PlacingBlock := nil;
+  Unregister;
+  World.FreeThread.FreeObject(Self);
+end;
+
+procedure TMovingBlock.FittingToGrid;
+var
+  delta : TVector3;
+begin
+  delta := floor(Position) - Position + 0.5;
+  Velocity := Velocity + delta;
+  Position := Position + delta/16;
 end;
 
 { TMovingBlockCreator }

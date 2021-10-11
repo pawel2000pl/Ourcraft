@@ -35,6 +35,9 @@ type
   TIntVector3 = array[TAxis] of integer; //chunk in world
   TBlockCoord = array[TAxis] of byte; //in chunk
 
+  PVector3 = ^TVector3;
+  PIntVector3 = ^TIntVector3;
+
 const
   IdentityMatrix : TMatrix3x3 = ((1, 0, 0), (0, 1, 0), (0, 0, 1));
 
@@ -148,6 +151,7 @@ operator * (const a : Double; const b : TMatrix3x3) : TMatrix3x3;
 function floor(const v : TVector3) : TIntVector3; inline; overload;
 function round(const v : TVector3) : TIntVector3; inline; overload;
 function ceil(const v : TVector3) : TIntVector3; inline; overload;
+function sign(const v : TVector3) : TIntVector3; inline; overload;
 
 function Normalize(const v : TVector3) : TVector3; overload; inline;
 function Normalize(const v : TVector3; const Default : TVector3) : TVector3; overload; inline;
@@ -433,6 +437,11 @@ begin
   Result[axisX] := ceil(v[axisX]);
   Result[axisY] := ceil(v[axisY]);
   Result[axisZ] := ceil(v[axisZ]);
+end;
+
+function sign(const v: TVector3): TIntVector3;
+begin
+  Exit(IntVector3(Math.Sign(v[AxisX]), Math.Sign(v[AxisY]), Math.Sign(v[AxisZ])));
 end;
 
 function Normalize(const v : TVector3) : TVector3;

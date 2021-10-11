@@ -118,6 +118,7 @@ type
     fWorld : TOurWorld;
     FRotation: TRotationVector;
     FLock : TMultiReadExclusiveWriteSynchronizer;
+    FUnregistered : Boolean;
 
     function GetVelocity: TVector3;
     procedure SetVelocity(AValue: TVector3);
@@ -133,6 +134,8 @@ type
     procedure SetPosition(const AValue : TVector3; const UpdateBoxes : Boolean);
     procedure AfterMovement; virtual;
     function GetLightLevel(const Point : TVector3) : TRealLight;
+    function Unregistered : Boolean; inline;
+    procedure Unregister;
   public
     procedure AutoSwitchChunk;
     procedure LockForReading;
@@ -224,9 +227,9 @@ type
     function GetCollisionBox({%H-}Chunk : TOurChunk; const Coord : TBlockCoord) : TCollisionBox; virtual;
 
     ///TBlockCoord is relative in-chunk coord
-    procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord); virtual;
-    procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
-    procedure DrawAnimation({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
+    procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord; {%H-}VertexModel : TVertexModel); virtual;
+    procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; {%H-}VertexModel : TVertexModel); virtual;
+    procedure DrawAnimation({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; {%H-}VertexModel : TVertexModel); virtual;
     procedure OnTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; const {%H-}DeltaTime : QWord); virtual;
     procedure OnRandomTick({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
     procedure AfterPut({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord); virtual;
@@ -1432,11 +1435,11 @@ begin
             fChunks[x, y, z].Locker.Beginread;
           end;
           fChunks[x, y, z].Locker.Endread;
-        end;
+        end;                  
+    CheckOrphanedEntities;
   finally
     TickLocker.Unlock;
   end;
-  Queues.AddOrExecuteIfOveloaded(@CheckOrphanedEntities);
 end;
 
 procedure TOurWorld.RandomTickAuto;
@@ -1544,6 +1547,8 @@ begin
 
   while Entities.Count > 0 do
     Entities.GetFirstValue.Free;
+  fEntities.BeginWrite;
+  fEntities.EndWrite;
   fEntities.Free;
                                
   fMicroTimer.Free;
@@ -1808,55 +1813,60 @@ var
   CheckCoord : TIntVector3;
   RenderArea : TRenderArea;
 begin
-  try
-    fb := fBlocks[x, y, z];
-    if AValue = nil then
-      fBlocks[x, y, z] := fdefaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock
-    else
-      fBlocks[x, y, z] := AValue;
-
-    RelistBlock(x, y, z);
-
-    if fBlocks[x, y, z].NeedAfterPut then
-      fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
-
-    fModifiedAfterLoading := True;
-    Coord := BlockCoord(x, y, z);
-    NeedModelSolidUpdate := AllTextureSides;
-    for side := Low(TTextureMode) to High(TTextureMode) do
-    begin
-      c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY],
-        z + TextureModeSidesI[side][axisZ]);
-      if c <> nil then
-      begin
-        CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
-        if c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NeedNearChangeUpdate then
-          c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NearChangeUpdate(c, OppositeSide[side], coord);
-        include(c.NeedModelSolidUpdate, OppositeSide[side]);
-      end;
-    end;
-
-    if fAutoLightUpdate then
-      RelightArea(x, y, z, x, y, z);
-
-    RenderAreaCollection.BeginRead;
+  try  
+    BeginWrite;
     try
-      for RenderArea in RenderAreaCollection.GetValueEnumerator do
-        if RenderArea.OnChunkChange <> nil then
-           RenderArea.OnChunkChange(BlockCoord(x, y, z), Self);
-    finally                      
-        RenderAreaCollection.EndRead;
-    end;
-
-    if fb <> nil then
-    begin
-      if fb.ID <> fdefaultBlock.ID then
-        World.FreeThread.FreeObject(fb)
+      fb := fBlocks[x, y, z];
+      if AValue = nil then
+        fBlocks[x, y, z] := fdefaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock
       else
-        World.FreeThread.FreeObject(fb, 10);
+        fBlocks[x, y, z] := AValue;
+
+      RelistBlock(x, y, z);
+
+      if fBlocks[x, y, z].NeedAfterPut then
+        fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
+
+      fModifiedAfterLoading := True;
+      Coord := BlockCoord(x, y, z);
+      NeedModelSolidUpdate := AllTextureSides;
+      for side := Low(TTextureMode) to High(TTextureMode) do
+      begin
+        c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY],
+          z + TextureModeSidesI[side][axisZ]);
+        if c <> nil then
+        begin
+          CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
+          if c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NeedNearChangeUpdate then
+            c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NearChangeUpdate(c, OppositeSide[side], coord);
+          include(c.NeedModelSolidUpdate, OppositeSide[side]);
+        end;
+      end;
+
+      if fAutoLightUpdate then
+        RelightArea(x, y, z, x, y, z);
+
+      RenderAreaCollection.BeginRead;
+      try
+        for RenderArea in RenderAreaCollection.GetValueEnumerator do
+          if RenderArea.OnChunkChange <> nil then
+             RenderArea.OnChunkChange(BlockCoord(x, y, z), Self);
+      finally
+          RenderAreaCollection.EndRead;
+      end;
+
+      if fb <> nil then
+      begin
+        if fb.ID <> fdefaultBlock.ID then
+          World.FreeThread.FreeObject(fb)
+        else
+          World.FreeThread.FreeObject(fb, 10);
+      end;
+      if Loaded then
+        RegisterChangedBlock(BlockCoord(x, y, z));
+    finally
+        EndWrite;
     end;
-    if Loaded then
-      RegisterChangedBlock(BlockCoord(x, y, z));
   except
     on E : Exception do raise EDirectBlockAccessException.Create('Error while setting block', Self, IntVector3(x, y, z), E);
   end;
@@ -2314,7 +2324,7 @@ begin
                 TextureModeSidesI[side][axisY], z + TextureModeSidesI[side][axisZ]);
 
               if (b <> nil) and (b.Transparency > AsLightZero) then
-                d.DrawModel(self, side, BlockCoord(x, y, z));
+                d.DrawModel(self, side, BlockCoord(x, y, z), VertexModels[side]);
             end;
           end;
     finally
@@ -2330,7 +2340,7 @@ var
 begin
   fUnsolidModel.Clear;
   for coord in UnSolid.GetValueEnumerator do
-    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).DrawUnsolid(self, coord);
+    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).DrawUnsolid(self, coord, UnsolidModel);
 end;
 
 procedure TOurChunk.UpdateAnimationModel;
@@ -2339,8 +2349,7 @@ var
 begin
   fAnimationModels.Clear;
   for coord in Animated.GetValueEnumerator do
-    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).DrawAnimation(self,
-      coord);
+    GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).DrawAnimation(self, coord, AnimationModel);
 end;
 
 procedure TOurChunk.Tick(const DeltaTime: QWord);
@@ -2861,17 +2870,19 @@ begin
 end;
 
 procedure TBlock.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
-  const Coord: TBlockCoord);
+  const Coord: TBlockCoord; VertexModel: TVertexModel);
 begin
   //do nothing: this is only to provide abstract error
 end;
 
-procedure TBlock.DrawUnsolid(Chunk: TOurChunk; const Coord: TBlockCoord);
+procedure TBlock.DrawUnsolid(Chunk: TOurChunk; const Coord: TBlockCoord;
+  VertexModel: TVertexModel);
 begin
   //do nothing: this is only to provide abstract error
 end;
 
-procedure TBlock.DrawAnimation(Chunk: TOurChunk; const Coord: TBlockCoord);
+procedure TBlock.DrawAnimation(Chunk: TOurChunk; const Coord: TBlockCoord;
+  VertexModel: TVertexModel);
 begin
   //do nothing: this is only to provide abstract error
 end;
@@ -3070,6 +3081,24 @@ begin
   Result[lcRed] := 0;
   Result[lcGreen] := 0;
   Result[lcBlue] := 0;
+end;
+
+function TEntity.Unregistered: Boolean;
+begin
+  Exit(FUnregistered);
+end;
+
+procedure TEntity.Unregister;
+begin
+  FUnregistered := True;
+  World.Queues.DequeueObject(Self);
+  World.Entities.BeginWrite;
+  try
+    World.Entities.RemoveFirstKey(Self);
+  finally
+    World.Entities.EndWrite;
+  end;
+  SwitchChunk(nil);
 end;
 
 procedure TEntity.AutoSwitchChunk;
@@ -3377,6 +3406,7 @@ begin
   SetPosition(APosition);           
   StateBox.AngularVelocityMatrix := IdentityMatrix;
   StateBox.CollisionBox.RotationMatrix := IdentityMatrix;
+  FUnregistered := False;
   inherited Create(MyCreator);
   fWorld := nil;
   SetWorld(TheWorld);
@@ -3389,15 +3419,8 @@ end;
 
 destructor TEntity.Destroy;
 begin
-  LockForWriting;
-  SwitchChunk(nil);
-  World.Entities.BeginWrite;
-  try
-    World.Entities.RemoveFirstKey(Self);
-  finally
-    World.Entities.EndWrite;
-  end;
-  UnlockFromWriting;
+  if not FUnregistered then
+    Unregister;
   FLock.Free;
   inherited Destroy;
 end;

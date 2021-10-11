@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   OpenGLContext, OurGame, OurUtils, GLext, gl,
-  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, Generics.Collections;
+  CalcUtils, Math, GlCamera, WorldGenerator, FileSaver, Generics.Collections, MovingBlock;
 
 type
 
@@ -67,11 +67,11 @@ begin
   glEnable(GL_FOG);
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
-                      
+
   InitGame;
 
-  glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SINGLE_COLOR);
-  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
+  //glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SINGLE_COLOR);
+  //glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
 
   Camera.Width := Width;
   Camera.Height := Height;
@@ -218,12 +218,20 @@ begin
     end;
   end;
 
-  
+
   if key = 'f' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
     e := (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
     e.Velocity := 10*(e.Position - Camera.Position);
+  end;
+
+  if key = 'g' then
+  begin
+    v := Camera.Position + Camera.ForwardVector*4;
+    e := (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
+    e.Velocity := 10*(e.Position - Camera.Position);
+    (e as TMovingBlock).SetPlacingBlock(Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, 0) as TBlock);
   end;
 
   if key = 'm' then
