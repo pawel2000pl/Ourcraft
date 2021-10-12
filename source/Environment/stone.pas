@@ -12,9 +12,7 @@ type
 
   TStone = class(TBlock)
   public
-    procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord;
-      VertexModel: TVertexModel); override;
-         //TODO: Draw
+    procedure CreateDarkModel(var DarkModel: TDarkModel; const sides: TTextureDrawSides); override;
   end;
 
   { TStoneCreator }
@@ -60,9 +58,12 @@ end;
 
 { TStone }
 
-procedure TStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord; VertexModel: TVertexModel);
+procedure TStone.CreateDarkModel(var DarkModel: TDarkModel; const sides: TTextureDrawSides);
+var
+  side : TTextureMode;
 begin
-  VertexModel.AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture, Chunk.GetLightedSide(Coord, Side));
+  for side in sides do
+    DarkModel.AddWall(TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TStoneCreator).fTexture);
 end;
 
 end.

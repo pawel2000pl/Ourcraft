@@ -44,6 +44,6 @@ hello: init
 run:
 	bin/SingleMode
 doc:
-	fpdoc --descr-dir=doc/xml --format=html --output=doc/html --package=OurcraftMain --input-dir=source
+	fpdoc --show-private --descr-dir=doc/xml --format=html --output=doc/html --package=OurcraftMain --input-dir=source
 
 .PHONY: all init hello compile clean clear requires texture_compiler textures all_again run rebuild doc

@@ -85,6 +85,8 @@ chunk. In case of missing chunk (unloaded) it returns a default value.
 chunk. In case of missing chunk (unloaded) it returns a default value.
 </descr>
       </element>
+    <element name="TBlock.CreateDarkModel.sides"><short>Should be overwriten (otherwise the block could be unvisibled). Used for DrawModel.</short>
+      </element>
     </module>
   </package>
 </fpdoc-descriptions>

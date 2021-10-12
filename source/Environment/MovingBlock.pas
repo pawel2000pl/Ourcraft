@@ -6,7 +6,7 @@ interface
 {DO NOT USE YET}
 
 uses
-  SysUtils, math,
+  SysUtils,
   OurUtils,
   OurGame,
   CalcUtils, Models, TextureMode, LightTypes;
@@ -19,6 +19,7 @@ type
   private
        Model : TVertexModel;
        PlacingBlock : TBlock;
+       DarkModel : TDarkModel;
        procedure InitBoxes;
        function GetPlacingBlock : TBlock;
   protected
@@ -68,7 +69,7 @@ end;
 function TMovingBlock.GetPlacingBlock: TBlock;
 begin
   if PlacingBlock = nil then
-     Exit(GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock);
+     PlacingBlock := GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock;
   Exit(PlacingBlock);
 end;
 
@@ -84,6 +85,7 @@ begin
   inherited Create(TheWorld, MyCreator, APosition);
   Model := TVertexModel.Create;
   PlacingBlock := nil;
+  SetPlacingBlock(nil);
   UpdateModel;
   AfterMovement;
 end;
@@ -123,10 +125,10 @@ end;
 procedure TMovingBlock.UpdateModel;
 var
   p : TVector3;
-  side : TTextureMode;
   rc : TRectangleCorners;
   rl : TRealLight;
-  i : Integer;
+  i, j : Integer;
+  halfVector : TVector3;
 begin
   if Chunk = nil then Exit;
 
@@ -135,12 +137,14 @@ begin
   Model.Lock;
   Model.Clear;
 
-  for side := low(TTextureMode) to High(TTextureMode) do
+  halfVector := Vector3(-0.5, -0.5, -0.5);
+  for i := 0 to DarkModel.AddCount-1 do
   begin
-    for i := 0 to 3 do
-        rc[i] := StateBox.CollisionBox.RotationMatrix*(TextureStandardModeCoord[side][i]+Vector3(-0.5, -0.5, -0.5));
-    Model.AddWall(p, rc, TextureStandardCorners, (Creator as TMovingBlockCreator).fTexture, rl);
+      for j := low(DarkModel.WallCorners[i]) to High(DarkModel.WallCorners[i]) do
+         rc[j] := StateBox.CollisionBox.RotationMatrix*(DarkModel.WallCorners[i][j]+halfVector);
+      Model.AddWall(p, rc, DarkModel.TextureCorners[i], DarkModel.TextureRects[i], max(rl, LightLevelToFloat(GetPlacingBlock.LightSource)));
   end;
+
   Model.Unlock;
 end;
 
@@ -162,7 +166,9 @@ procedure TMovingBlock.SetPlacingBlock(Block: TBlock);
 begin
   if PlacingBlock <> nil then
      FreeAndNil(PlacingBlock);
-  PlacingBlock := Block;
+  PlacingBlock := Block;   
+  DarkModel := TDarkModel.Empty;
+  GetPlacingBlock.CreateDarkModel(DarkModel, AllTextureSides);
 end;
 
 procedure TMovingBlock.PlaceBlock;

@@ -226,6 +226,8 @@ type
     function ResilenceMinVelocity : Double; virtual;
     function GetCollisionBox({%H-}Chunk : TOurChunk; const Coord : TBlockCoord) : TCollisionBox; virtual;
 
+    procedure CreateDarkModel(var {%H-}DarkModel : TDarkModel; const {%H-}sides : TTextureDrawSides); virtual;
+
     ///TBlockCoord is relative in-chunk coord
     procedure DrawModel({%H-}Chunk : TOurChunk; {%H-}Side : TTextureMode; const {%H-}Coord : TBlockCoord; {%H-}VertexModel : TVertexModel); virtual;
     procedure DrawUnsolid({%H-}Chunk : TOurChunk; const {%H-}Coord : TBlockCoord; {%H-}VertexModel : TVertexModel); virtual;
@@ -2869,10 +2871,20 @@ begin
   Result.RotationMatrix := IdentityMatrix;
 end;
 
-procedure TBlock.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
-  const Coord: TBlockCoord; VertexModel: TVertexModel);
+procedure TBlock.CreateDarkModel(var DarkModel: TDarkModel; const sides: TTextureDrawSides);
 begin
   //do nothing: this is only to provide abstract error
+end;
+
+procedure TBlock.DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord; VertexModel: TVertexModel);
+var
+  i : Integer;
+  DarkModel : TDarkModel;
+begin
+  DarkModel := TDarkModel.Empty;
+  CreateDarkModel(DarkModel, [side]);
+  for i := 0 to DarkModel.AddCount-1 do
+    VertexModel.AddWall(RealCoord(Chunk.Position, Coord), DarkModel.WallCorners[i], DarkModel.TextureCorners[i], DarkModel.TextureRects[i], Chunk.GetLightedSide(Coord, Side));
 end;
 
 procedure TBlock.DrawUnsolid(Chunk: TOurChunk; const Coord: TBlockCoord;

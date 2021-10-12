@@ -16,8 +16,7 @@ type
     FSubID : LongWord;
   public
     function GetSubID: integer; override;
-    procedure DrawModel(Chunk: TOurChunk; Side: TTextureMode; const Coord: TBlockCoord;
-      VertexModel: TVertexModel); override;
+    procedure CreateDarkModel(var DarkModel: TDarkModel; const sides: TTextureDrawSides); override;
     function LightSource: TLight; override;
     constructor Create(MyCreator: TElementCreator);
   end;
@@ -75,10 +74,12 @@ begin
   Result:=FSubID;
 end;
 
-procedure TGlowStone.DrawModel(Chunk: TOurChunk; Side: TTextureMode;
-  const Coord: TBlockCoord; VertexModel: TVertexModel);
+procedure TGlowStone.CreateDarkModel(var DarkModel: TDarkModel; const sides: TTextureDrawSides);
+var
+  side : TTextureMode;
 begin
-  VertexModel.AddWall(RealCoord(Chunk.Position, Coord), TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture, Chunk.GetLightedSide(coord, side));
+  for side in sides do
+    DarkModel.AddWall(TextureStandardModeCoord[side], TextureStandardCorners, (Creator as TGlowStoneCreator).fTexture);
 end;
 
 function TGlowStone.LightSource: TLight;

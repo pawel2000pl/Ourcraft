@@ -1,6 +1,6 @@
 unit Models;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$ModeSwitch advancedrecords}
 
 interface
 
@@ -22,6 +22,18 @@ type
     Left, Right, Top, Bottom : Single;
   end;
   PTextureRect = ^TTextureRect;
+
+  { TDarkModel }
+
+  TDarkModel = record
+    AddCount : PtrUInt;
+    WallCorners : array of TRectangleCorners;
+    TextureCorners : array of TTextureCorners;
+    TextureRects : array of PTextureRect;
+
+    class function Empty : TDarkModel; static;
+    procedure AddWall(const _WallCorners : TRectangleCorners; const _TextureCorners : TTextureCorners; const _TextureRect : PTextureRect);
+  end;
 
   { TTextureRectSorter }
 
@@ -75,28 +87,33 @@ type
     fCount : integer;
     fRealCount : integer;
     Editing : TLocker;
-    function GetColor(const index : integer) : TColor3b;
-    function GetColorPtr: Pointer;
-    function GetTexture(const index : integer) : TTexture2d;
-    function GetTexturePtr: Pointer;
-    function GetVertex(const index : integer) : TVector3;
-    function GetVertexPtr: Pointer;
+    function GetColor(const index : integer) : TColor3b; inline;
+    procedure SetColor(const index : integer; const AValue: TColor3b); inline;
+    function GetColorPtr: Pointer; inline;
+    function GetTexture(const index : integer) : TTexture2d; inline;
+    function GetTexturePtr: Pointer; inline;
+    function GetVertex(const index : integer) : TVector3; inline;
+    function GetVertexPtr: Pointer; inline;
+    procedure SetTexture(const index : integer; const AValue: TTexture2d); inline;
+    procedure SetVector(const index : integer; const AValue: TVector3); inline;
     procedure UpdateLength(const OverSize : boolean = True);
   public
     procedure Lock;
     procedure Unlock;
 
     property Count : integer read fCount;
-    property Color[const index : integer] : TColor3b read GetColor;
-    property Vertex[const index : integer] : TVector3 read GetVertex;
-    property Texture[const index : integer] : TTexture2d read GetTexture;
+
+    //functions do not check range
+    property Color[const index : integer] : TColor3b read GetColor write SetColor;
+    property Vertex[const index : integer] : TVector3 read GetVertex write SetVector;
+    property Texture[const index : integer] : TTexture2d read GetTexture write SetTexture;
 
     property ColorPtr : Pointer read GetColorPtr;
     property VertexPtr : Pointer read GetVertexPtr;
     property TexturePtr : Pointer read GetTexturePtr;
 
-    class procedure BeginDraw; inline;
-    class procedure EndDraw; inline;
+    class procedure BeginDraw; static; inline;
+    class procedure EndDraw; static; inline;
     procedure JustDraw; inline;
     procedure Draw; inline;
 
@@ -178,11 +195,35 @@ begin
   Result[lcBlue] := s;
 end;
 
+{ TDarkModel }
+
+class function TDarkModel.Empty: TDarkModel;
+begin
+  Result.AddCount:=0;
+  Result.WallCorners := [];
+  Result.TextureCorners := [];
+  Result.TextureRects := [];
+end;
+
+procedure TDarkModel.AddWall(const _WallCorners: TRectangleCorners;
+  const _TextureCorners: TTextureCorners; const _TextureRect: PTextureRect);
+begin
+  Insert(_WallCorners, WallCorners, High(WallCorners));
+  Insert(_TextureCorners, TextureCorners, High(TextureCorners));
+  Insert(_TextureRect, TextureRects, High(TextureRects));
+  Inc(AddCount);
+end;
+
 { TVertexModel }
 
 function TVertexModel.GetColor(const index: integer): TColor3b;
 begin
   Result := fColor[index];
+end;
+
+procedure TVertexModel.SetColor(const index: integer; const AValue: TColor3b);
+begin
+  fColor[Index] := AValue;
 end;
 
 function TVertexModel.GetColorPtr: Pointer;
@@ -208,6 +249,17 @@ end;
 function TVertexModel.GetVertexPtr: Pointer;
 begin
   Result := @fVertex[0];
+end;
+
+procedure TVertexModel.SetTexture(const index: integer; const AValue: TTexture2d
+  );
+begin
+  fTexture[index] := AValue;
+end;
+
+procedure TVertexModel.SetVector(const index: integer; const AValue: TVector3);
+begin
+  fVertex[Index] := AValue;
 end;
 
 procedure TVertexModel.UpdateLength(const OverSize : boolean);
@@ -285,7 +337,9 @@ begin
   AddWall(Position, WallCornersCoords, TextureCorners, Tex, LightLevelToFloat(LightLevel));
 end;
 
-procedure TVertexModel.AddWall(const Position: TVector3; const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners; const Tex: PTextureRect; const LightLevel: TColor3f);
+procedure TVertexModel.AddWall(const Position: TVector3;
+  const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners;
+  const Tex: PTextureRect; const LightLevel: TRealLight);
 var
   side : TLightedSide;
 begin
