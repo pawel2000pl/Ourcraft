@@ -83,11 +83,13 @@ operator <> (const a, b : TLongLight) : boolean; inline;
 operator >= (const a, b : TLongLight) : boolean; inline;
 operator <= (const a, b : TLongLight) : boolean; inline;
 
-operator := (const a : TLongLight) : TLight;
-operator := (const a : TLight) : TLongLight;
+operator := (const a : TLongLight) : TLight; inline;
+operator := (const a : TLight) : TLongLight; inline;
 
-operator * (const a : TRealLight; const b : Double) : TRealLight;
+operator * (const a : TRealLight; const b : Double) : TRealLight; inline;
 
+procedure UpdateIfGreater(var a : TLight; const b : TLight); overload;
+procedure UpdateIfLesser(var a : TLight; const b : TLight); overload;
 procedure UpdateIfGreater(var a : TLongLight; const b : TLongLight); overload;
 procedure UpdateIfLesser(var a : TLongLight; const b : TLongLight); overload;
 procedure UpdateIfGreater(var a : TRealLight; const b : TRealLight); overload;
@@ -222,6 +224,24 @@ var
 begin
   for c := Low(TLightColor) to High(TLightColor) do
     Result[c] := a[c] * b;
+end;
+
+procedure UpdateIfGreater(var a: TLight; const b: TLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] > a[c] then
+         a[c] := b[c];
+end;
+
+procedure UpdateIfLesser(var a: TLight; const b: TLight);
+var
+  c : TLightColor;
+begin
+  for c := Low(TLightColor) to High(TLightColor) do
+      if b[c] < a[c] then
+         a[c] := b[c];
 end;
 
 procedure UpdateIfGreater(var a: TLongLight; const b: TLongLight);

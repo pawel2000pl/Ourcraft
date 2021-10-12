@@ -22,6 +22,7 @@ type
        DarkModel : TDarkModel;
        procedure InitBoxes;
        function GetPlacingBlock : TBlock;
+       procedure MoveDynamicLight;
   protected
        procedure AfterMovement; override;
   public
@@ -31,6 +32,9 @@ type
        procedure Tick(const DeltaTime: QWord); override;
        procedure UpdateModel; override;
        procedure UpdateModelLight; override;
+
+       procedure OnLeaveChunk(AChunk: TOurChunk); override;
+       procedure OnEnterChunk(AChunk: TOurChunk); override;
 
        procedure SetPlacingBlock(Block : TBlock);
        procedure PlaceBlock;
@@ -73,6 +77,20 @@ begin
   Exit(PlacingBlock);
 end;
 
+procedure TMovingBlock.MoveDynamicLight;
+var
+  Info : TDynamicLightRecord;
+begin
+  if Chunk = nil then
+     Exit;
+  Info.Value := GetPlacingBlock.LightSource;
+  if Info.Value <> AsLightZero then
+  begin
+    Info.Coord := Round(Position);
+    Chunk.MoveDynamicLightSource(Self, Info);
+  end;
+end;
+
 procedure TMovingBlock.AfterMovement;
 begin
   inherited AfterMovement;
@@ -112,13 +130,13 @@ begin
     if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
       PlaceBlock;
   end;
-
   LockForWriting;
   try
       StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
   finally
       UnlockFromWriting;
   end;
+  MoveDynamicLight;
   UpdateModel;
 end;
 
@@ -132,7 +150,7 @@ var
 begin
   if Chunk = nil then Exit;
 
-  rl := GetLightLevel(Position);
+  rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
   p := Position;
   Model.Lock;
   Model.Clear;
@@ -142,7 +160,7 @@ begin
   begin
       for j := low(DarkModel.WallCorners[i]) to High(DarkModel.WallCorners[i]) do
          rc[j] := StateBox.CollisionBox.RotationMatrix*(DarkModel.WallCorners[i][j]+halfVector);
-      Model.AddWall(p, rc, DarkModel.TextureCorners[i], DarkModel.TextureRects[i], max(rl, LightLevelToFloat(GetPlacingBlock.LightSource)));
+      Model.AddWall(p, rc, DarkModel.TextureCorners[i], DarkModel.TextureRects[i], rl);
   end;
 
   Model.Unlock;
@@ -153,13 +171,30 @@ var
   i : Integer; 
   rl : TColor3b;
   c : ^TColor3b;
-begin           
-  rl := GetLightLevel(Position);
+begin
+  rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
   Model.Lock;
   c := Model.ColorPtr;
   for i := 0 to Model.Count-1 do
       c[i] := rl;
   Model.Unlock;
+end;
+
+procedure TMovingBlock.OnLeaveChunk(AChunk: TOurChunk);
+begin
+  AChunk.RemoveDynamicLightSource(Self);
+end;
+
+procedure TMovingBlock.OnEnterChunk(AChunk: TOurChunk);
+var
+  Info : TDynamicLightRecord;
+begin     exit;
+  Info.Value := GetPlacingBlock.LightSource;
+  if Info.Value <> AsLightZero then
+  begin
+    Info.Coord := Round(Position);
+    AChunk.AddDynamicLightSource(Self, Info);
+  end;
 end;
 
 procedure TMovingBlock.SetPlacingBlock(Block: TBlock);

@@ -14,10 +14,11 @@ type
   TLocker = class
   private
     fCriticalSection : TRTLCriticalSection;
-    fIsLocked : Boolean;
+    fIsLocked : LongWord;
+    function GetIsLocked: Boolean;
   public
     procedure WaitForUnlock;
-    property IsLocked : Boolean read fIsLocked;
+    property IsLocked : Boolean read GetIsLocked;
     function TryLock : Boolean;
     procedure Lock;
     procedure Unlock;
@@ -95,6 +96,11 @@ end;
 
 { TLocker }
 
+function TLocker.GetIsLocked: Boolean;
+begin
+  Exit(fIsLocked>0);
+end;
+
 procedure TLocker.WaitForUnlock;
 begin
   Lock;
@@ -104,31 +110,32 @@ end;
 function TLocker.TryLock: Boolean;
 begin
    Result := LongBool(TryEnterCriticalsection(fCriticalSection));
-   fIsLocked := true;
+   if Result then
+     InterlockedIncrement(fIsLocked);
 end;
 
 procedure TLocker.Lock;
 begin
    EnterCriticalsection(fCriticalSection);
-   fIsLocked := true;
+   InterlockedIncrement(fIsLocked);
 end;
 
 procedure TLocker.Unlock;
 begin
-   fIsLocked := false;
+   InterlockedDecrement(fIsLocked);
    LeaveCriticalsection(fCriticalSection);
 end;
 
 constructor TLocker.Create;
 begin
   inherited;
-  fIsLocked := false;
+  fIsLocked := 0;
   InitCriticalSection(fCriticalSection);
 end;
 
 destructor TLocker.Destroy;
 begin
-  if IsLocked then
+  while IsLocked do
     Unlock;
   DoneCriticalsection(fCriticalSection);
   inherited Destroy;

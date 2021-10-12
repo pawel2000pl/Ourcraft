@@ -10,6 +10,11 @@
         <OtherUnitFiles Value="Environment;lib/Synapse/source/lib;Collections"/>
         <UnitOutputDirectory Value="../bin/lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <IgnoredMessages idx6058="True"/>
+        </CompilerMessages>
+      </Other>
     </CompilerOptions>
     <Files Count="52">
       <Item1>

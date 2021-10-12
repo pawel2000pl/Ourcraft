@@ -87,6 +87,14 @@ chunk. In case of missing chunk (unloaded) it returns a default value.
       </element>
     <element name="TBlock.CreateDarkModel.sides"><short>Should be overwriten (otherwise the block could be unvisibled). Used for DrawModel.</short>
       </element>
+    <element name="TOurChunk.GetDynamicLightLevel"><short>Returns a dynamic-light level</short><descr>The value is value of dynamic-light source. The value of the function does not
+depends on the world time.
+It needs a local coordinates (chunk dependent) and it must be inside the chunk (0..ChunkSize-1).
+The function does not check the ranges. An axception could be raised, but malfunction can
+be undetected.
+</descr>
+      </element><element name="TOurChunk.SetDynamicLightLevel"><short>Returns a value of light source which is from dynamic sources (Entities)</short>
+      </element>
     </module>
   </package>
 </fpdoc-descriptions>
