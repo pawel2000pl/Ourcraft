@@ -1512,7 +1512,11 @@ begin
     Entities.BeginRead;
     try
       for Entity in Entities.GetValueEnumerator do
-          Entity.ComputeMovement(DeltaTime);
+        if Entity.Chunk <> nil then
+          if Queues.QueuedMethodCount <= Queues.CoreCount shr 1 then
+             Queues.AddMethod(specialize TObjectProcedureWithOneParameter<Double>.Convert(@Entity.ComputeMovement, DeltaTime))
+          else
+             Entity.ComputeMovement(DeltaTime);
     finally
       Entities.EndRead;
     end;
@@ -2459,21 +2463,36 @@ end;
 procedure TOurChunk.Tick(const DeltaTime: QWord);
 var
   coord : TBlockCoord;
+  EntityCopy : TEntitySet;
   e : TEntity;
+  EntityCount : Integer;
 begin
   if (not Loaded) or Finishing then
     Exit;
+  EntityCount := Entities.Count;
+  if EntityCount > 0 then
+  begin
+    EntityCopy := TEntitySet.Create(EntityCount+1);
+    Entities.BeginRead;
+    try
+       Entities.ForEach(@EntityCopy.Add);
+    finally
+      Entities.EndRead;
+    end;
+    for e in EntityCopy.GetValueEnumerator do
+      e.Tick(DeltaTime);
+    EntityCopy.Free;
+  end;
+
   BeginRead;
   try
     for coord in BlocksForTick.GetValueEnumerator do
       GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord, DeltaTime);
-    for e in Entities.GetValueEnumerator do
-      e.Tick(DeltaTime);
   finally
     EndRead;
   end;
   if fNeedDynamicLightUpdate then
-    World.Queues.AddOrExecuteIfOveloaded(@RelightDynamicLight);
+    World.Queues.AddMethod(@RelightDynamicLight);
 end;
 
 procedure TOurChunk.RandomTick(const Count : integer);

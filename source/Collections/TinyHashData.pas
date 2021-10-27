@@ -422,7 +422,8 @@ begin
   for i := 0 to FHashRange-1 do
     for j := 0 to Length(FData[i])-1 do
       FreeAndNil(FData[i][j]);
-  SetLength(FData, MinHashSize, 0);
+  FHashRange:=MinHashSize;
+  SetLength(FData, FHashRange, 0);
   FCount := 0;
 end;
 
@@ -471,7 +472,7 @@ end;
 constructor TTinyHashData.Create(const HashSize: PtrUInt);
 begin
   FAutoOptimizing := True;
-  FHashRange := HashSize;
+  FHashRange := Max(2, HashSize);
   SetLength(FData, FHashRange, 0);
   inherited Create;
 end;
@@ -523,7 +524,6 @@ begin
 end;
 
 procedure TTinyHashKeyMap.UpdateFirst(const Key: TKey; const Value: TValue);
-
 var
     HashCode : PtrUInt;
     i : PtrInt;

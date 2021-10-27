@@ -141,7 +141,11 @@ begin
         objs[i] := objs[PreDec(n)];
         fCriticalCestion.Unlock;
         if Assigned(o) then
-          o.Free;
+          try
+            o.Free;
+          except
+            on E : Exception do ;
+          end;
         fCriticalCestion.Lock;
       end
       else

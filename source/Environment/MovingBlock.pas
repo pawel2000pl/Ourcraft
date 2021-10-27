@@ -138,14 +138,14 @@ end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);
 begin
-  if Chunk = nil then
+  if (Chunk = nil) then
      Exit;
   if SquaredHypot3(Velocity) < 1e-2 then
   begin
     FittingToGrid;
     if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
     begin
-      World.Queues.AddMethod(@PlaceBlock);
+      PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
       Exit;
     end;
   end;             
@@ -162,7 +162,7 @@ var
   i, j : Integer;
   halfVector : TVector3;
 begin
-  if Chunk = nil then Exit;
+  if (Chunk = nil) then Exit;
 
   rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
   p := Position;
@@ -238,7 +238,7 @@ begin
     PlacingBlockLocker.Unlock;
   end;
   Unregister;
-  World.FreeThread.FreeObject(Self);
+  World.FreeThread.FreeObject(Self, 100);
 end;
 
 procedure TMovingBlock.FittingToGrid;
