@@ -25,7 +25,7 @@ unit CalcUtils;
 interface
 
 uses
-  Classes, Math;
+  Classes, Math, Incrementations;
 
 type
   TAxis = (AxisX = 0, AxisY = 1, AxisZ = 2);
@@ -124,7 +124,8 @@ type
     function Mask(const BitMask : Byte) : TBlockCoord; inline;
   end;
 
-operator +(const a, b : TIntVector3) : TIntVector3; inline;
+operator +(const a, b : TIntVector3) : TIntVector3; inline;  
+operator +(const a : TIntVector3; const b : Integer) : TIntVector3; inline;
 operator -(const a, b : TIntVector3) : TIntVector3; inline;
 operator * (const a : TIntVector3; const b : integer) : TIntVector3; inline;
 operator * (const a : integer; const b : TIntVector3) : TIntVector3; inline;
@@ -188,6 +189,11 @@ function DecreaseVector(const v : TVector3; const d : Double) : TVector3;
 function BiggestDimension(const v : TVector3) : TVector3;
 function NormalizeDimensionsIndepedently(const v : TVector3) : TVector3;
 
+procedure UpdateIfLesser(var Vector : TIntVector3; const Test : TIntVector3); overload;
+procedure UpdateIfGreater(var Vector : TIntVector3; const Test : TIntVector3); overload;
+
+function CycledShr(const i : Integer; const value : PtrUInt) : Integer; inline;
+
 generic procedure Swap<T>(var a, b : T);
 generic procedure MinToLeft<T>(var a, b : T);
 generic procedure MaxToLeft<T>(var a, b : T);
@@ -205,6 +211,13 @@ begin
   Result[axisX] := a[axisX] + b[axisX];
   Result[axisY] := a[axisY] + b[axisY];
   Result[axisZ] := a[axisZ] + b[axisZ];
+end;
+
+operator+(const a: TIntVector3; const b: Integer): TIntVector3;
+begin
+  Result[AxisX] := a[AxisX] + b;
+  Result[AxisY] := a[AxisY] + b;
+  Result[AxisZ] := a[AxisZ] + b;
 end;
 
 operator-(const a, b: TIntVector3): TIntVector3;
@@ -808,7 +821,28 @@ begin
     Result[a] := sign(v[a]);
 end;
 
-generic   procedure Swap<T>(var a, b : T);
+procedure UpdateIfLesser(var Vector: TIntVector3; const Test: TIntVector3);
+begin
+  UpdateIfLesser(Vector[AxisX], Test[AxisX]);
+  UpdateIfLesser(Vector[AxisY], Test[AxisY]);
+  UpdateIfLesser(Vector[AxisZ], Test[AxisZ]);
+end;
+
+procedure UpdateIfGreater(var Vector: TIntVector3; const Test: TIntVector3);
+begin
+  UpdateIfGreater(Vector[AxisX], Test[AxisX]);
+  UpdateIfGreater(Vector[AxisY], Test[AxisY]);
+  UpdateIfGreater(Vector[AxisZ], Test[AxisZ]);
+end;
+
+function CycledShr(const i : Integer; const value : PtrUInt) : Integer; inline;
+begin
+     if i < 0 then
+        Exit(-1-((-1-i) shr value));
+     Exit(i shr value);
+end;
+
+generic procedure Swap<T>(var a, b : T);
 var
   x : T;
 begin

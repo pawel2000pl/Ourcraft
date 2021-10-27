@@ -3,13 +3,11 @@ unit MovingBlock;
 {$mode objfpc}
 interface
 
-{DO NOT USE YET}
-
 uses
   SysUtils,
   OurUtils,
   OurGame,
-  CalcUtils, Models, TextureMode, LightTypes;
+  CalcUtils, Models, TextureMode, LightTypes, Locker;
 
 type
 
@@ -19,12 +17,15 @@ type
   private
        Model : TVertexModel;
        PlacingBlock : TBlock;
+       PlacingBlockLocker : TLocker;
        DarkModel : TDarkModel;
+       FDynamicLightTimeUpdate : QWord;
        procedure InitBoxes;
        function GetPlacingBlock : TBlock;
        procedure MoveDynamicLight;
   protected
-       procedure AfterMovement; override;
+       procedure AfterMovement; override;    
+       function GetDefaultBlock : TBlock; virtual; //creating
   public
        constructor Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
        destructor Destroy; override;
@@ -72,16 +73,26 @@ end;
 
 function TMovingBlock.GetPlacingBlock: TBlock;
 begin
-  if PlacingBlock = nil then
-     PlacingBlock := GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock;
-  Exit(PlacingBlock);
+  PlacingBlockLocker.Lock;
+  try
+    if (PlacingBlock = nil) or (not Assigned(PlacingBlock)) then
+      PlacingBlock := GetDefaultBlock;
+  finally
+    Result := PlacingBlock;
+    PlacingBlockLocker.Unlock;
+  end;
+end;
+
+function TMovingBlock.GetDefaultBlock: TBlock;
+begin
+  Result :=  GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock;
 end;
 
 procedure TMovingBlock.MoveDynamicLight;
 var
   Info : TDynamicLightRecord;
 begin
-  if Chunk = nil then
+  if (Chunk = nil) or (GetTickCount64 - FDynamicLightTimeUpdate < World.DynamicLightUpdateInterval) then
      Exit;
   Info.Value := GetPlacingBlock.LightSource;
   if Info.Value <> AsLightZero then
@@ -89,6 +100,7 @@ begin
     Info.Coord := Round(Position);
     Chunk.MoveDynamicLightSource(Self, Info);
   end;
+  FDynamicLightTimeUpdate := GetTickCount64;
 end;
 
 procedure TMovingBlock.AfterMovement;
@@ -98,12 +110,14 @@ begin
 end;
 
 constructor TMovingBlock.Create(TheWorld: TOurWorld; MyCreator: TElementCreator; const APosition: TVector3);
-begin             
+begin                        
   InitBoxes;
-  inherited Create(TheWorld, MyCreator, APosition);
   Model := TVertexModel.Create;
+  FDynamicLightTimeUpdate := GetTickCount64;
   PlacingBlock := nil;
-  SetPlacingBlock(nil);
+  PlacingBlockLocker := TLocker.Create;
+  inherited Create(TheWorld, MyCreator, APosition);
+  GetPlacingBlock.CreateDarkModel(DarkModel, AllTextureSides);
   UpdateModel;
   AfterMovement;
 end;
@@ -113,6 +127,7 @@ begin
   if PlacingBlock <> nil then
      FreeAndNil(PlacingBlock);
   Model.Free;
+  PlacingBlockLocker.Free;
   inherited Destroy;
 end;
 
@@ -123,19 +138,18 @@ end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);
 begin
-  if Chunk = nil then writeln('Error: chunk is nil');
+  if Chunk = nil then
+     Exit;
   if SquaredHypot3(Velocity) < 1e-2 then
   begin
     FittingToGrid;
     if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
-      PlaceBlock;
-  end;
-  LockForWriting;
-  try
-      StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
-  finally
-      UnlockFromWriting;
-  end;
+    begin
+      World.Queues.AddMethod(@PlaceBlock);
+      Exit;
+    end;
+  end;             
+  StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
   MoveDynamicLight;
   UpdateModel;
 end;
@@ -188,7 +202,7 @@ end;
 procedure TMovingBlock.OnEnterChunk(AChunk: TOurChunk);
 var
   Info : TDynamicLightRecord;
-begin     exit;
+begin
   Info.Value := GetPlacingBlock.LightSource;
   if Info.Value <> AsLightZero then
   begin
@@ -199,9 +213,14 @@ end;
 
 procedure TMovingBlock.SetPlacingBlock(Block: TBlock);
 begin
-  if PlacingBlock <> nil then
-     FreeAndNil(PlacingBlock);
-  PlacingBlock := Block;   
+  PlacingBlockLocker.Lock;
+  try
+    if PlacingBlock <> nil then
+       FreeAndNil(PlacingBlock);
+    PlacingBlock := Block;
+  finally
+    PlacingBlockLocker.Unlock;
+  end;
   DarkModel := TDarkModel.Empty;
   GetPlacingBlock.CreateDarkModel(DarkModel, AllTextureSides);
 end;
@@ -210,9 +229,14 @@ procedure TMovingBlock.PlaceBlock;
 var
   IntPosition : TIntVector3;
 begin
-  IntPosition := floor(Position);
-  World.SetBlock(IntPosition[axisX], IntPosition[axisY], IntPosition[axisZ], GetPlacingBlock);
-  PlacingBlock := nil;
+  PlacingBlockLocker.Lock;
+  try
+    IntPosition := floor(Position);
+    if World.SetBlock(IntPosition[axisX], IntPosition[axisY], IntPosition[axisZ], GetPlacingBlock) then
+      PlacingBlock := nil;
+  finally
+    PlacingBlockLocker.Unlock;
+  end;
   Unregister;
   World.FreeThread.FreeObject(Self);
 end;

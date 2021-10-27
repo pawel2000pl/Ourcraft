@@ -5,7 +5,7 @@ unit WorldGenerator;
 interface
 
 uses
-  Classes, SysUtils, Math, OurUtils, CalcUtils, OurGame, DeterminedRandomGenerator, ArrayOfNumber;
+  Classes, SysUtils, Math, OurUtils, OurConstants, CalcUtils, OurGame, DeterminedRandomGenerator, ArrayOfNumber;
 
 type
 

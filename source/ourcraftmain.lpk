@@ -16,7 +16,7 @@
         </CompilerMessages>
       </Other>
     </CompilerOptions>
-    <Files Count="52">
+    <Files Count="54">
       <Item1>
         <Filename Value="OurUtils.pas"/>
         <UnitName Value="OurUtils"/>
@@ -232,6 +232,14 @@
         <Filename Value="FastLZ77.pas"/>
         <UnitName Value="FastLZ77"/>
       </Item52>
+      <Item53>
+        <Filename Value="chunklight.pas"/>
+        <UnitName Value="chunklight"/>
+      </Item53>
+      <Item54>
+        <Filename Value="ourconstants.pas"/>
+        <UnitName Value="ourconstants"/>
+      </Item54>
     </Files>
     <LazDoc Paths="../doc/xml"/>
     <RequiredPkgs Count="1">

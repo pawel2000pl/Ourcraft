@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fpdoc-descriptions><package name="OurcraftMain"><module name="ChunkLight"><element name="TChunkLight"><short>Class for managing the lighting of chunks</short>
+      </element><element name="TChunkLight.Value"><short>It contains values of light. </short><descr>The values will be calculated by the class.
+It should be reference to an instance of TThickLightCube, but it is not obligatory.
+</descr>
+      </element><element name="TChunkLight.Source"><short>The class should reference to instance TLightCube which contains sources.</short><descr>For example - if it will reference to an instance of TQueryLightCube, it could
+checks (after setting up events) the light source of TBlock classes.
+</descr>
+      </element><element name="TChunkLight.Resistance"><descr>For example - if it will reference to an instance of TQueryLightCube, it could
+checks (after setting up events) the light resistance of TBlock classes.
+</descr><short>The class should reference to instance TLightCube which contains sources.</short>
+      </element><element name="TChunkLight.DepthResistance"><short>Depth resistance contains how much maxDepth, which is a parameter of AddLight method, will be decreased  in case of recurency which goes in the side.</short><descr>It should has values 0 or 1
+</descr>
+      </element><element name="TChunkLight.EndWrite"><short>Ends the writing block of the class.</short><descr>When the count of locks will be zero, it will execute OnLightUpdate event.
+The sync parameter determines if use synchronizing between threads.
+</descr>
+      </element><element name="TChunkLight.BeginWrite"><short>Locks the class for writting - begin the writing block</short><descr>The sync parameter determines if use synchronizing between threads.
+</descr>
+      </element><element name="TChunkLight.BeginRead"><short>Locks the class for reading</short>
+      </element><element name="TChunkLight.EndRead"><short>Ends the reading block of the class.</short>
+      </element><element name="TChunkLight.OnNeightborQuery"><short>Query for neightbored instances of TChunkLight</short>
+      </element><element name="TChunkLight.OnLightUpdate"><short>Executed automatically after the unlocking the class from writing</short>
+      </element><element name="TChunkLight.AddLight"><short>Adds light at point</short><descr>It needs relative coordinates - but they could be over the ranges of chunk size.
+</descr>
+      </element><element name="TChunkLight.RelightArea"><short>Relights selected area.</short><descr>It needs relative coordinates - but they could be over the ranges of chunk size.
+
+The method removes all light from a selected area and from the places where
+the light from this area has any effect.
+Then the method adds a light from every sources which are on the area
+where the light was removed.
+</descr>
+      </element><element name="TChunkLight.RelightBlock"><short>Alias for RelightArea(x, y, z, x, y, z)</short>
+      </element><element name="TChunkLight.Create"><short>Creates the class. </short><descr>The instance become an owner of all clasess given in parameters, so they will be freed with the class instance.
+</descr>
+      </element><element name="TChunkLight.Editing"><short>Determines if the LightChunk is during any editing</short>
+      </element>
+    </module>
+  </package>
+</fpdoc-descriptions>

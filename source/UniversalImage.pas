@@ -1,5 +1,5 @@
 {
-  Copyright (C) 2020 Paweł Bielecki pawelek24@op.pl / pbielecki2000@gmail.com
+  Copyright (C) 2021 Paweł Bielecki pawelek24@op.pl / pbielecki2000@gmail.com
 
   This source is free software; you can redistribute it and/or modify it under
   the terms of the GNU General Public License as published by the Free
@@ -36,6 +36,8 @@ type
   { TUniversalImage }
 
   TUniversalImage = class(TFPCustomImage)
+  private
+    function GetCanvas: TFPImageCanvas;
   protected
     FData : array of array of TFPColor;
     FCanvas : TFPImageCanvas;
@@ -47,7 +49,7 @@ type
     function GetInternalPixel(x, y : integer) : integer; override; //Ignores Palette
     procedure SetInternalPixel(x, y : integer; Value : integer); override;
   public
-    property Canvas : TFPImageCanvas read FCanvas;
+    property Canvas : TFPImageCanvas read GetCanvas;
   
     //need FreeMem()
     function GetGLBuffer : PLongWord; //RGBA
@@ -67,13 +69,14 @@ type
     procedure SaveToFile(const FileName : ansistring; const UseAlpha : Boolean); overload; //only PNG 
     procedure SaveToFile(const FileName : ansistring; const Quality : Integer); overload; //only JPG
 
-    procedure LoadFromFile(const FileName : ansistring); overload;
+    procedure LoadFromFile(const FileName : ansistring); overload;                                                                               
+    procedure SetSize(AWidth, AHeight : integer); override;
+    procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage; const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
+
     constructor CreateEmpty; virtual;
     constructor Create(AWidth, AHeight : integer); override;
     constructor CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); virtual;
     destructor Destroy; override;
-    procedure SetSize(AWidth, AHeight : integer); override;
-    procedure Draw(const PositionX, PositionY : integer; Img : TUniversalImage; const Transparency : double = 0; DrawFunction : TDrawFunction = nil);
   end;
 
   { TUniversalTransformationImage }
@@ -439,6 +442,13 @@ begin
     end;
 end;
 
+function TUniversalImage.GetCanvas: TFPImageCanvas;
+begin
+  if FCanvas = nil then
+     FCanvas := TFPImageCanvas.Create(Self);
+  Exit(FCanvas);
+end;
+
 function TUniversalImage.GetReader(const Ext : ansistring) : TFPCustomImageReader;
 begin
   if SameText(Ext, '.bmp') then
@@ -535,7 +545,7 @@ begin
   setlength(FData, AWidth, AHeight);
   inherited Create(AWidth, AHeight);
   SetUsePalette(False);
-  FCanvas := TFPImageCanvas.Create(Self);
+  FCanvas := nil;
 end;
 
 constructor TUniversalImage.CreateSubImage(Image : TUniversalImage; const Left, Top, Right, Bottom : Integer); 
@@ -553,9 +563,10 @@ end;
 
 destructor TUniversalImage.Destroy;
 begin
-    FCanvas.Free;
-    SetLength(FData, 0, 0);
-    inherited Destroy;
+  if Canvas <> nil then
+    FreeAndNil(FCanvas);
+  SetLength(FData, 0, 0);
+  inherited Destroy;
 end;
 
 procedure TUniversalImage.SetSize(AWidth, AHeight : integer);

@@ -6,7 +6,7 @@ interface
 uses
   OurUtils,
   OurGame,
-  CalcUtils, LightTypes;
+  CalcUtils, LightTypes, OurConstants;
 
 type
 

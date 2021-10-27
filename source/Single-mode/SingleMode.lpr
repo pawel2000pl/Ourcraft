@@ -5,13 +5,13 @@ program SingleMode;
 uses
   {$IFDEF UNIX}
   {$IFDEF UseCThreads}
-  cmem {fastcmem}, {$ifdef DEBUGBUILD}{ heaptrc, }MemGuard, {$endif}
+  cmem {fastcmem}, {$ifdef DEBUGBUILD} {heaptrc,} MemGuard, {$endif}
   cthreads,
   {$ENDIF}
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, lazopenglcontext, SingleModeUnit, OurData, air, glowstone, MovingBlock,
-  stone, GlCamera;
+  stone, GlCamera, ChunkLight;
 
 {$R *.res}
 
