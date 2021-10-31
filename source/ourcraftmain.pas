@@ -17,7 +17,7 @@ uses
   DrawModes, PhisicalBox, PrefixSI, AsyncMicroTimer, AsyncMilliTimer, 
   Incrementations, synacode, synafpc, synaip, synautil, synsock, 
   DataAbstractions, TinyHashData, FastLZ77, ChunkLight, OurConstants, 
-  LazarusPackageIntf;
+  LightCubes, JenkinsHash, LazarusPackageIntf;
 
 implementation
 

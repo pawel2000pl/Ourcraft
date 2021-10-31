@@ -133,7 +133,9 @@ end;
 
 procedure TMovingBlock.Render;
 begin
-   Model.JustDraw;
+  Model.Lock;
+  Model.JustDraw;
+  Model.Unlock;
 end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);

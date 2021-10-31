@@ -10,10 +10,10 @@ interface
 
 uses
   SysUtils, Classes, Math, strutils, Models, CalcUtils, Sorts, Freerer, Queues,
-  Locker, ThreeDimensionalArrayOfBoolean, TinyHashData, OurGame,
+  Locker, TinyHashData, OurGame,
   Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors,
   TextureMode, CollisionBoxes, AsyncMicroTimer, AsyncMilliTimer, ProcessUtils,
-  FastLZ77, OurConstants, ChunkLight;
+  FastLZ77, OurConstants, ChunkLight, LightCubes;
 
 type
 
@@ -321,7 +321,7 @@ type
   end;
 
   TDynamicLightSourceMap = specialize TTinyHashKeyMap<TEntity, TDynamicLightRecord>;
-  TDynamicLightCoordMap = specialize TTinyHashKeyMap<TIntVector3, TLight>;
+  TDynamicLightCoordMap = TCoordKeyLightValueMap;
   TOurChunkArray = array of TOurChunk;
 
 
@@ -1755,8 +1755,8 @@ begin
     c1 := (fDynamicLight.Source as TRareLightCube).Count;
     if c1 > 0 then
     begin
-      for c in ca do
-         c.fDynamicLight.BeginWrite(False);
+      //for c in ca do
+      //   c.fDynamicLight.BeginWrite(False);
       fDynamicLight.Source.Clear;
     end;
 
@@ -1774,10 +1774,11 @@ begin
     end;
 
     fDynamicLight.EndWrite();
-    if c1 > 0 then
+
+    {if c1 > 0 then
       for c in ca do
          c.fDynamicLight.EndWrite(False);
-
+     }
     fLockUpdateModelLight := False;
     UnLockNeightborLightUpdate;
 
@@ -1791,7 +1792,7 @@ procedure TOurChunk.UpdateEntitiesLight;
 var
   e : TEntity;
 begin
-  if Entities.Count = 0 then
+  if (Entities.Count = 0) or fDynamicLight.Editing then
      Exit;
   Entities.BeginRead;
   try
@@ -2276,13 +2277,8 @@ var
   i : integer;
   l : TRealLight;
 begin
-  if fLockUpdateModelLight or (NeedModelLightUpdate = []) then
+  if fLockUpdateModelLight or (NeedModelLightUpdate = []) or (fBlockLight.Editing or fSunLight.Editing or fDynamicLight.Editing) then
     exit;
-  if  (fBlockLight.Editing or fSunLight.Editing or fDynamicLight.Editing) then
-  begin
-      World.Queues.AddMethod(@UpdateModelLight);
-      Exit;
-  end;
   try
     fLockUpdateModelLight := True;
     for side in NeedModelLightUpdate do
@@ -2850,6 +2846,8 @@ begin
   fSunLight := TChunkLight.Create(TZeroedThickLightCube.Create, TZeroedThickLightCube.Create, TQueryLightCube.Create(@GetLightResistance, nil), @GetNeightborSunChunkLight, @QueueLightUpdate, @OnChangeLightLevel);
   fDynamicLight := TChunkLight.Create(TZeroedThickLightCube.Create, TRareLightCube.Create, TQueryLightCube.Create(@GetLightResistance, nil), @GetNeightborDynamicChunkLight, nil, @OnChangeLightLevel);
 
+  fSunLight.DefaultDepthResistance[tmDown] := 0;
+
   fDynamicLightSources := TDynamicLightSourceMap.Create(7);
   NeedModelLightUpdate := AllTextureSides;
   NeedModelSolidUpdate := AllTextureSides;
@@ -2927,14 +2925,14 @@ begin
   fUnsolidModel.Free;
   fAnimationModels.Free;
 
-  fDynamicLightSources.Free;
-  fEntities.Free;
-  ChangedBlocks.Free;
-  BlocksForRandomTick.Free;
-  BlocksForTick.Free;
-  UnSolid.Free;
-  Animated.Free;
-  fLocker.Free;
+  FreeAndNil(fDynamicLightSources);
+  FreeAndNil(fEntities);
+  FreeAndNil(ChangedBlocks);
+  FreeAndNil(BlocksForRandomTick);
+  FreeAndNil(BlocksForTick);
+  FreeAndNil(UnSolid);
+  FreeAndNil(Animated);
+  FreeAndNil(fLocker);
 
   fBlockLight.Free;
   fSunLight.Free;

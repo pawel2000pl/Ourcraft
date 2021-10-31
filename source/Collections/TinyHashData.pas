@@ -74,8 +74,7 @@ type
     procedure Optimize;
     procedure AutoOptimize;
 
-    function FindFirst(const Key : TKey) : TValue; override; overload;
-    function FindAll(const Key : TKey) : TValueArray; override; overload;
+    function TryFindFirst(const Key: TKey; var Value: TValue): Boolean; override;
     procedure FindAll(const Key : TKey; var List : TValueArray); override; overload;
 
     procedure FindFirstIndex(const Key : TKey; out HashCode : PtrUInt; out Index : PtrInt);
@@ -325,21 +324,16 @@ begin
   FAutoOptimizing := True;
 end;
 
-function TTinyHashData.FindFirst(const Key: TKey): TValue;
+function TTinyHashData.TryFindFirst(const Key: TKey; var Value: TValue): Boolean;
 var
   i : PtrInt;
   HashCode : PtrUInt;
 begin
   FindFirstIndex(Key, HashCode, i);
   if i < 0 then
-     raise ENotFoundKeyException.Create('Cannot find the key');
-  Exit(FData[HashCode][i].Value);
-end;
-
-function TTinyHashData.FindAll(const Key: TKey): TValueArray;
-begin
-  Result := [];
-  FindAll(Key, Result);
+     Exit(False);
+  Value := FData[HashCode][i].Value;
+  Exit(True);
 end;
 
 procedure TTinyHashData.FindAll(const Key: TKey; var List: TValueArray);

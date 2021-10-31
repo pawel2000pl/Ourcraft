@@ -39,6 +39,7 @@ type
     property Blue : byte read GetBlue write SetBlue;
     function Value : integer;
     function MinValue : integer;
+    function MaxValue : integer;
     function White : TLight;
 
     procedure RangeCheck;
@@ -455,6 +456,11 @@ end;
 function TLightHelper.MinValue: integer;
 begin
   Result := min(Self[lcRed], min(Self[lcGreen], Self[lcBlue]));
+end;
+
+function TLightHelper.MaxValue: integer;
+begin
+  Result := max(Self[lcRed], max(Self[lcGreen], Self[lcBlue]));
 end;
 
 function TLightHelper.White: TLight;

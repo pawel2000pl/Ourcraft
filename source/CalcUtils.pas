@@ -200,6 +200,9 @@ generic procedure MaxToLeft<T>(var a, b : T);
 generic procedure MinToRight<T>(var a, b : T);
 generic procedure MaxToRight<T>(var a, b : T);
 
+generic procedure UpdateIfLesser<T>(var X : T; const V : T); overload;
+generic procedure UpdateIfGreater<T>(var X : T; const V : T); overload;
+
 implementation
 
 const
@@ -823,16 +826,16 @@ end;
 
 procedure UpdateIfLesser(var Vector: TIntVector3; const Test: TIntVector3);
 begin
-  UpdateIfLesser(Vector[AxisX], Test[AxisX]);
-  UpdateIfLesser(Vector[AxisY], Test[AxisY]);
-  UpdateIfLesser(Vector[AxisZ], Test[AxisZ]);
+  Incrementations.UpdateIfLesser(Vector[AxisX], Test[AxisX]);
+  Incrementations.UpdateIfLesser(Vector[AxisY], Test[AxisY]);
+  Incrementations.UpdateIfLesser(Vector[AxisZ], Test[AxisZ]);
 end;
 
 procedure UpdateIfGreater(var Vector: TIntVector3; const Test: TIntVector3);
 begin
-  UpdateIfGreater(Vector[AxisX], Test[AxisX]);
-  UpdateIfGreater(Vector[AxisY], Test[AxisY]);
-  UpdateIfGreater(Vector[AxisZ], Test[AxisZ]);
+  Incrementations.UpdateIfGreater(Vector[AxisX], Test[AxisX]);
+  Incrementations.UpdateIfGreater(Vector[AxisY], Test[AxisY]);
+  Incrementations.UpdateIfGreater(Vector[AxisZ], Test[AxisZ]);
 end;
 
 function CycledShr(const i : Integer; const value : PtrUInt) : Integer; inline;
@@ -871,6 +874,18 @@ end;
 generic procedure MaxToRight<T>(var a, b : T);
 begin
      specialize MinToLeft<T>(a, b);
+end;
+
+generic procedure UpdateIfLesser<T>(var X : T; const V : T); overload;
+begin
+     if V < X then
+        X := V;
+end;
+
+generic procedure UpdateIfGreater<T>(var X : T; const V : T); overload;   
+begin
+     if V > X then
+        X := V;
 end;
 
 end.

@@ -95,9 +95,10 @@ type
         function GetFirstKey : TKey; virtual;
         function GetFirstValue : TValue; virtual;
         function GetFirstKeyValue : TKeyValuePair; virtual;
-
-        function FindFirst(const Key : TKey) : TValue; virtual; abstract; overload;
-        function FindAll(const Key : TKey) : TValueArray; virtual; abstract; overload;
+                                                                 
+        function TryFindFirst(const Key : TKey; var Value : TValue) : Boolean; virtual; abstract;
+        function FindFirst(const Key : TKey) : TValue; virtual; overload;
+        function FindAll(const Key : TKey) : TValueArray; virtual; overload;
         procedure FindAll(const Key : TKey; var List : TValueArray); virtual; abstract; overload;
 
         function Contain(const Key : TKey) : Boolean; virtual;
@@ -379,6 +380,19 @@ begin
    finally
      enum.Free;
    end;
+end;
+
+function TCustomDataContainer.FindFirst(const Key: TKey): TValue;
+begin
+  Result := Default(TValue);
+  if not TryFindFirst(Key, Result) then
+    raise ENotFoundKeyException.Create('Cannot find the key');
+end;
+
+function TCustomDataContainer.FindAll(const Key: TKey): TValueArray;
+begin
+  Result := [];
+  FindAll(Key, Result);
 end;
 
 function TCustomDataContainer.Contain(const Key: TKey): Boolean;
