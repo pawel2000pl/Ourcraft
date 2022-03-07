@@ -272,7 +272,7 @@ end;
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TStaticConstProcedure; const Parameter: TParameter): TQueueMethod;
 var
-  obj : TObjectProcedureWithOneParameter;
+  {%H-}obj : TObjectProcedureWithOneParameter;
 begin
   obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
   Result := @obj.Execute;
@@ -281,7 +281,7 @@ end;
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TStaticProcedure; const Parameter: TParameter): TQueueMethod;
 var
-  obj : TObjectProcedureWithOneParameter;
+  {%H-}obj : TObjectProcedureWithOneParameter;
 begin
   obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
   Result := @obj.Execute;
@@ -290,7 +290,7 @@ end;
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TObjectConstProcedure; const Parameter: TParameter): TQueueMethod;
 var
-  obj : TObjectProcedureWithOneParameter;
+  {%H-}obj : TObjectProcedureWithOneParameter;
 begin
   obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
   Result := @obj.Execute;
@@ -299,7 +299,7 @@ end;
 class function TObjectProcedureWithOneParameter.Convert(
   const proc: TObjectProcedure; const Parameter: TParameter): TQueueMethod;
 var
-  obj : TObjectProcedureWithOneParameter;
+  {%H-}obj : TObjectProcedureWithOneParameter;
 begin
   obj := TObjectProcedureWithOneParameter.Create(proc, Parameter);
   Result := @obj.Execute;

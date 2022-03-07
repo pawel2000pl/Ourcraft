@@ -40,7 +40,7 @@ type
         x, y, z : Integer;
       public
         function MoveNext: Boolean;
-        function GetCurrent: TIntVector3;
+        function GetCurrent: TIntVector3; inline;
         property Current : TIntVector3 read GetCurrent;
         constructor Create(const S : TThreeDimensionalSignedArrayOfAnything);
       end;
@@ -99,7 +99,7 @@ begin
   instance := S;
   cubeMin:=S.GetCubeMin;
   cubeMax:=S.GetCubeMax;
-  x := cubeMin.X;
+  x := cubeMin.X-1;
   y := cubeMin.Y;
   z := cubeMin.Z;
 end;
@@ -125,11 +125,11 @@ begin
 end;
 
 function TThreeDimensionalSignedArrayOfAnything.GetCubeMin: TIntVector3;
-begin                //TODO: Optimalizatoion?
+begin
   Result := IntVector3(
-         not max(max(fArrays[0, 0, 0].fWidth, fArrays[0, 1, 0].fWidth), max(fArrays[0, 1, 1].fWidth, fArrays[0, 1, 1].fWidth))+fOffsetX,
-         not max(max(fArrays[0, 0, 0].fHeight, fArrays[1, 0, 0].fHeight), max(fArrays[1, 0, 1].fHeight, fArrays[1, 0, 1].fHeight))+fOffsetY,
-         not max(max(fArrays[0, 0, 0].fDepth, fArrays[0, 1, 0].fDepth), max(fArrays[1, 1, 0].fDepth, fArrays[1, 1, 0].fDepth))+fOffsetZ);
+         -max(max(fArrays[0, 0, 0].fWidth, fArrays[0, 1, 0].fWidth), max(fArrays[0, 1, 1].fWidth, fArrays[0, 1, 1].fWidth))+fOffsetX,
+         -max(max(fArrays[0, 0, 0].fHeight, fArrays[1, 0, 0].fHeight), max(fArrays[1, 0, 1].fHeight, fArrays[1, 0, 1].fHeight))+fOffsetY,
+         -max(max(fArrays[0, 0, 0].fDepth, fArrays[0, 1, 0].fDepth), max(fArrays[1, 1, 0].fDepth, fArrays[1, 1, 0].fDepth))+fOffsetZ);
 end;
 
 function TThreeDimensionalSignedArrayOfAnything.GetCubeMax: TIntVector3;

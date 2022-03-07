@@ -12,12 +12,12 @@ uses
   Queues, WorldGenerator, SimpleCache, ArrayOfNumber, Collections, 
   CustomSaver, FileSaver, SaverPaths, LightTypes, ServerService, 
   ClientService, SocketCommands, NearestVectors, MainOurcraftDirectory, 
-  TextureMode, OurGame, ThreeDimensionalArrayOfBoolean, UniversalImage, 
-  DeterminedRandomGenerator, SimpleTypes, CollisionBoxes, ArchiveUtils, 
-  DrawModes, PhisicalBox, PrefixSI, AsyncMicroTimer, AsyncMilliTimer, 
-  Incrementations, synacode, synafpc, synaip, synautil, synsock, 
-  DataAbstractions, TinyHashData, FastLZ77, ChunkLight, OurConstants, 
-  LightCubes, JenkinsHash, threedimensionalarrayofanything, LazarusPackageIntf;
+  TextureMode, OurGame, UniversalImage, DeterminedRandomGenerator, 
+  SimpleTypes, CollisionBoxes, ArchiveUtils, DrawModes, PhisicalBox, PrefixSI, 
+  AsyncMicroTimer, AsyncMilliTimer, Incrementations, synacode, synafpc, 
+  synaip, synautil, synsock, DataAbstractions, TinyHashData, FastLZ77, 
+  ChunkLight, OurConstants, LightCubes, JenkinsHash, 
+  ThreeDimensionalArrayOfAnything, LazarusPackageIntf;
 
 implementation
 

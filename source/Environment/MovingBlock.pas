@@ -91,10 +91,10 @@ end;
 procedure TMovingBlock.MoveDynamicLight;
 var
   Info : TDynamicLightRecord;
-begin
-  if (Chunk = nil) or (GetTickCount64 - FDynamicLightTimeUpdate < World.DynamicLightUpdateInterval) then
-     Exit;
+begin                            
   Info.Value := GetPlacingBlock.LightSource;
+  if (Info.Value = AsLightZero) or (Chunk = nil) or (GetTickCount64 - FDynamicLightTimeUpdate < World.DynamicLightUpdateInterval) then
+     Exit;
   if Info.Value <> AsLightZero then
   begin
     Info.Coord := Round(Position);

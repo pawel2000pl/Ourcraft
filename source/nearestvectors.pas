@@ -7,10 +7,10 @@ interface
 uses
   CalcUtils;
 
-function GetCoordPriorityByDistanceCount: integer;
-function GetCoordPriorityByDistance(const i: integer): TIntVector3;
-function GetCoordPriorityByDistanceLength(const i: integer): double;
-function GetInverseCoordPriorityByDistance(const x, y, z: integer): integer;
+function GetCoordPriorityByDistanceCount: integer; inline;
+function GetCoordPriorityByDistance(const i: integer): TIntVector3; inline;
+function GetCoordPriorityByDistanceLength(const i: integer): double; inline;
+function GetInverseCoordPriorityByDistance(const x, y, z: integer): integer; inline;
 
 implementation
 

@@ -334,7 +334,7 @@ type
   public
     constructor Create(AChunk : TOurChunk; const x, y, z : integer; AValue : TBlock);
     procedure SetBlock;
-    class function CreateMethodPointer(AChunk : TOurChunk; const x, y, z : integer; AValue : TBlock) : TQueueMethod;
+    class function CreateMethodPointer(AChunk : TOurChunk; const x, y, z : integer; AValue : TBlock) : TQueueMethod; inline;
   end;
 
   { TOurChunk }
@@ -420,7 +420,6 @@ type
     procedure RegisterChangedBlock(const Coord : TBlockCoord);  
     class function IsInsert(const x, y, z : integer) : boolean; static; inline;
     class function IsBorder(const x, y, z : integer) : boolean; static; inline;
-
 
   private
 
@@ -1594,7 +1593,7 @@ begin
   fTime := 0;
   fTimeTicks := 0;
   fLightTime := 0;
-  fDynamicLightUpdateInterval := 50;
+  fDynamicLightUpdateInterval := 150;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
@@ -1796,8 +1795,6 @@ procedure TOurChunk.RelightDynamicLight;
 var
   lr : TDynamicLightRecord;
   c1, c2 : Integer;
-  c : TOurChunk;
-  ca : TOurChunkArray;
 begin
   if fNeedDynamicLightUpdate and (not fLockUpdateModelLight) then
   begin
@@ -1805,16 +1802,10 @@ begin
     fLockUpdateModelLight := True;  
     fNeedDynamicLightUpdate := False;
 
-    ca := GetNeightborArray;
-
     fDynamicLight.BeginWrite();
     c1 := (fDynamicLight.Source as TRareLightCube).Count;
     if c1 > 0 then
-    begin
-      //for c in ca do
-      //   c.fDynamicLight.BeginWrite(False);
       fDynamicLight.Source.Clear;
-    end;
 
     fDynamicLightSources.BeginRead;
     try         
@@ -1831,10 +1822,6 @@ begin
 
     fDynamicLight.EndWrite();
 
-    {if c1 > 0 then
-      for c in ca do
-         c.fDynamicLight.EndWrite(False);
-     }
     fLockUpdateModelLight := False;
     UnLockNeightborLightUpdate;
 
@@ -2382,20 +2369,18 @@ var
   Value : TDynamicLightRecord;
   Coord : TIntVector3;
 begin
-    fLockUpdateModelLight := True;
+  fLockUpdateModelLight := True;
+  fDynamicLightSources.BeginWrite;
+  try
     for Value in Values do
     begin                    
       coord := Value.Coord - Position * ChunkSize;
       if IsInsert(coord.x, coord.y, coord.z) then
-      begin                 
-        fDynamicLightSources.BeginWrite;
-        try
           fDynamicLightSources.Add(Owner, Value);
-        finally
-          fDynamicLightSources.EndWrite;
-        end;
-      end;
-    end;
+    end;   
+  finally
+    fDynamicLightSources.EndWrite;
+  end;
   fLockUpdateModelLight := False;   
   fNeedDynamicLightUpdate:=True;
   //SetNeightborsDynamicLightUpdateToTrue;

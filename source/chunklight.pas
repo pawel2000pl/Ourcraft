@@ -73,8 +73,6 @@ type
     property OnLightUpdate : TUpdatedLightEvent read FOnLightUpdate write SetOnLightUpdate;
     property OnBlockLightUpdate : TUpdatedBlockLight read FOnBlockLightUpdate write SetOnBlockLightUpdate;
 
-    //procedure AddLight(const x, y, z: integer; LightLevel: TLongLight; const maxDepth: integer = ADD_LIGHT_DEFAULT_DEPTH; const Force: boolean = False);
-
     procedure RelightArea(const x1, y1, z1, x2, y2, z2 : integer);
     procedure RelightBlock(const x, y, z : integer);
     procedure RelightAll;
@@ -250,16 +248,6 @@ var
   buf2 : TThreeDimensionalSignedArrayOfBoolean;
   UsedChunks : TChunkLightSet;
 
-  function UseChunk(c : TChunkLight) : TChunkLight;
-  begin
-    if not UsedChunks.Contain(c) then
-    begin
-       c.BeginWrite(False);
-       UsedChunks.Add(c);
-    end;
-    Exit(c);
-  end;
-
   procedure RemoveLight(const Coord : TIntVector3; const LightLevel : TLongLight; Colors : TLightColors);
   var
     OldLight : TLongLight;
@@ -269,9 +257,6 @@ var
   begin
     if buf2.DataByVector[Coord] then
        Exit;
-    //or ((Coord[axisX] > x1) and (Coord[axisX] < x2) and (Coord[axisY] > y1) and
-      //(Coord[axisY] < y2) and (Coord[axisZ] > z1) and (Coord[axisZ] < z2)) then
-      //exit;
 
     c := NeightborQuery(Coord);
     if (c = nil) then
@@ -330,6 +315,16 @@ var
         AddLight(Coord + TextureModeSidesI[side], LightLevel, maxDepth - DepthResistance[side], False);
   end;
 
+  function UseChunk(c : TChunkLight) : TChunkLight;
+  begin
+    if not UsedChunks.Contain(c) then
+    begin
+       c.BeginWrite(False);
+       UsedChunks.Add(c);
+    end;
+    Exit(c);
+  end;
+
   procedure ApplyChanges;
   var
     c : TChunkLight;
@@ -358,7 +353,7 @@ var
   x, y, z, d : integer;
   NewCoord : TIntVector3;
   v : TLongLight;
-  Iterator : TIntVector3;
+  coord : TIntVector3;
 begin
   UsedChunks := TChunkLightSet.Create(13);
 
@@ -382,19 +377,19 @@ begin
 
     d := max(ADD_LIGHT_DEFAULT_DEPTH, x2+y2+z2-x1-y1-z1);
 
-    for Iterator in buf2 do
-      if buf2.DataByVector[Iterator] then
+    for coord in buf2 do
+      if buf2.DataByVector[coord] then
       begin
-        if (NeightborQuery(Iterator) = nil) then
+        if (NeightborQuery(coord) = nil) then
           Continue;
         v := AsLight(LENGTH_LIGHT_RESISTANCE);
         for side := Low(TTextureMode) to High(TTextureMode) do
         begin
-          NewCoord := Iterator + TextureModeSidesI[side];
+          NewCoord := coord + TextureModeSidesI[side];
           if not buf2.DataByVector[NewCoord] then
             UpdateIfGreater(v, GetValueExt(NewCoord));
         end;
-        AddLight(Iterator, v - LENGTH_LIGHT_RESISTANCE, d, True);
+        AddLight(coord, v - LENGTH_LIGHT_RESISTANCE, d, True);
       end;
 
     ApplyChanges;
