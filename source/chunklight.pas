@@ -5,9 +5,12 @@ unit ChunkLight;
 interface
 
 uses
-  Classes, SysUtils, math, LightTypes, OurConstants, TinyHashData, CalcUtils, TextureMode, Incrementations, LightCubes;
+  Classes, SysUtils, math, LightTypes, OurConstants, TinyHashData, CalcUtils, TextureMode, Incrementations, LightCubes, ThreeDimensionalArrayOfAnything;
 
 type
+
+  TThreeDimensionalSignedArrayOfTLight = specialize TThreeDimensionalSignedArrayOfAnything<TLight>;
+  TThreeDimensionalSignedArrayOfBoolean = specialize TThreeDimensionalSignedArrayOfAnything<Boolean>;
 
   TChunkLight = class;
 
@@ -243,7 +246,8 @@ type
     TLightColors = set of TLightColor;
 
 var
-  buf : TCoordKeyLightValueMap;
+  buf : TThreeDimensionalSignedArrayOfTLight;
+  buf2 : TThreeDimensionalSignedArrayOfBoolean;
   UsedChunks : TChunkLightSet;
 
   function UseChunk(c : TChunkLight) : TChunkLight;
@@ -263,9 +267,12 @@ var
     side : TTextureMode;
     c : TChunkLight;
   begin
-    if buf.Contain(Coord) or ((Coord[axisX] > x1) and (Coord[axisX] < x2) and (Coord[axisY] > y1) and
-      (Coord[axisY] < y2) and (Coord[axisZ] > z1) and (Coord[axisZ] < z2)) then
-      exit;
+    if buf2.DataByVector[Coord] then
+       Exit;
+    //or ((Coord[axisX] > x1) and (Coord[axisX] < x2) and (Coord[axisY] > y1) and
+      //(Coord[axisY] < y2) and (Coord[axisZ] > z1) and (Coord[axisZ] < z2)) then
+      //exit;
+
     c := NeightborQuery(Coord);
     if (c = nil) then
       exit;
@@ -278,7 +285,8 @@ var
     if Colors = [] then
       exit;
 
-    buf.Add(Coord, AsLightZero);
+    buf.DataByVector[Coord] := AsLightZero;
+    buf2.DataByVector[Coord] := True;
 
     for lc := low(TLightColor) to High(TLightColor) do
       if OldLight[lc] = 0 then
@@ -302,7 +310,9 @@ var
     MaskedCoord := Coord.Mask(ChunkSizeMask);
     LightLevel := max(LightLevel - c.Resistance[MaskedCoord.X, MaskedCoord.Y, MaskedCoord.Z], c.Source[MaskedCoord.X, MaskedCoord.Y, MaskedCoord.Z]);
 
-    if not buf.TryFindFirst(Coord, OldLight{%H-}) then
+    if buf2.DataByVector[Coord] then
+        OldLight := buf.DataByVector[Coord]
+    else
         OldLight := c.Value[MaskedCoord.X, MaskedCoord.Y, MaskedCoord.Z];
 
     if Force then
@@ -311,7 +321,8 @@ var
       if (maxDepth < 0) or (OldLight >= LightLevel) then
         exit;
 
-    buf.UpdateFirst(Coord, max(OldLight, LightLevel));
+    buf.DataByVector[Coord] := max(OldLight, LightLevel);
+    buf2.DataByVector[Coord] := True;
 
     LightLevel := LightLevel-LENGTH_LIGHT_RESISTANCE;
     if (maxDepth > 0) and (LightLevel.Value > 0) then
@@ -322,26 +333,24 @@ var
   procedure ApplyChanges;
   var
     c : TChunkLight;
-    kv : TCoordKeyLightValueMap.TKeyValuePair;
+    coord : TIntVector3;
     Masked : TIntVector3;
   begin
-    for kv in buf.GetKeyValueEnumerator do
-    begin
-      c := NeightborQuery(kv.Key);
-      if c = nil then
-         Exit;
-      UseChunk(c);
-      Masked := kv.Key.Mask(ChunkSizeMask);
-      c.Value[Masked.x, Masked.y, Masked.z] := kv.Value;
-      if c.FOnBlockLightUpdate <> nil then
-        c.FOnBlockLightUpdate(Masked.x, Masked.y, Masked.z);
-    end;
+    for coord in buf2 do
+      if buf2.DataByVector[coord] then
+      begin
+        c := NeightborQuery(coord);
+        if c = nil then
+           Continue;
+        UseChunk(c);
+        Masked := coord.Mask(ChunkSizeMask);
+        c.Value[Masked.x, Masked.y, Masked.z] := buf.DataByVector[coord];
+        if c.FOnBlockLightUpdate <> nil then
+          c.FOnBlockLightUpdate(Masked.x, Masked.y, Masked.z);
+      end;
 
     for c in UsedChunks.GetKeyEnumerator do
-    begin
-      if c.OnLightUpdate <> nil then
         c.EndWrite(False);
-    end;
   end;
 
 var
@@ -349,17 +358,21 @@ var
   x, y, z, d : integer;
   NewCoord : TIntVector3;
   v : TLongLight;
-  Iterator : TCoordKeyLightValueMap.TKeyValuePair;
+  Iterator : TIntVector3;
 begin
   UsedChunks := TChunkLightSet.Create(13);
 
   try
-    buf := TCoordKeyLightValueMap.Create((abs((x2-x1+1)*(y2-y1+1)*(z2-z1+1)) + (GetValueExt((x1+x2) div 2, (y1+y2) div 2, (z1+z2) div 2).MaxValue)**3 div 3));
+    buf := TThreeDimensionalSignedArrayOfTLight.Create(x1, y1, z1);
+    buf2 := TThreeDimensionalSignedArrayOfBoolean.Create(x1, y1, z1);
 
     for x := x1+1 to x2-1 do
       for y := y1+1 to y2-1 do
         for z := z1+1 to z2-1 do
-          buf.Add(IntVector3(x, y, z), AsLightZero);
+        begin
+          buf[x, y, z] := AsLightZero;
+          buf2[x, y, z] := True;
+        end;
 
     for x := x1 to x2 do
       for y := y1 to y2 do
@@ -369,23 +382,25 @@ begin
 
     d := max(ADD_LIGHT_DEFAULT_DEPTH, x2+y2+z2-x1-y1-z1);
 
-    for Iterator in buf.GetKeyValueEnumerator do
-    begin
-      if (NeightborQuery(Iterator.Key) = nil) then
-        Continue;
-      v := AsLight(LENGTH_LIGHT_RESISTANCE);
-      for side := Low(TTextureMode) to High(TTextureMode) do
+    for Iterator in buf2 do
+      if buf2.DataByVector[Iterator] then
       begin
-        NewCoord := Iterator.Key + TextureModeSidesI[side];
-        if not buf.Contain(NewCoord) then
-          UpdateIfGreater(v, GetValueExt(NewCoord));
+        if (NeightborQuery(Iterator) = nil) then
+          Continue;
+        v := AsLight(LENGTH_LIGHT_RESISTANCE);
+        for side := Low(TTextureMode) to High(TTextureMode) do
+        begin
+          NewCoord := Iterator + TextureModeSidesI[side];
+          if not buf2.DataByVector[NewCoord] then
+            UpdateIfGreater(v, GetValueExt(NewCoord));
+        end;
+        AddLight(Iterator, v - LENGTH_LIGHT_RESISTANCE, d, True);
       end;
-      AddLight(Iterator.Key, v - LENGTH_LIGHT_RESISTANCE, d, True);
-    end;
 
     ApplyChanges;
   finally
     buf.Free;
+    buf2.Free;
     UsedChunks.Free;
   end;
 end;

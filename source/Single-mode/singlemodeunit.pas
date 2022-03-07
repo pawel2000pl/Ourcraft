@@ -238,18 +238,18 @@ begin
   if key = 'm' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('stone')).CreateElement(v, 0) as TBlock);
+    World.SetBlockAsync(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('stone')).CreateElement(v, 0) as TBlock);
   end;
   if key = 'n' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(v, 0) as TBlock);
+    World.SetBlockAsync(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(0).CreateElement(v, 0) as TBlock);
   end;
 
   if key in ['0'..'7'] then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    World.SetBlock(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, StrToInt(key)) as TBlock);
+    World.SetBlockAsync(floor(v[axisX]), floor(v[axisY]), floor(v[axisZ]), Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, StrToInt(key)) as TBlock);
   end;
 
   //Writeln(Camera.Position.X:2:2, #9, Camera.Position.Y:2:2, #9, Camera.Position.Z:2:2);

@@ -1,6 +1,6 @@
 object MainForm: TMainForm
   Left = 484
-  Height = 544
+  Height = 541
   Top = 174
   Width = 797
   Caption = 'OurCraft'
@@ -8,7 +8,7 @@ object MainForm: TMainForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyPress = FormKeyPress
-  LCLVersion = '2.0.10.0'
+  LCLVersion = '2.2.0.4'
   object Timer1: TTimer
     OnTimer = Timer1Timer
     Left = 11

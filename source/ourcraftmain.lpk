@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <Name Value="OurcraftMain"/>
     <Type Value="RunAndDesignTime"/>
     <CompilerOptions>
@@ -16,7 +16,7 @@
         </CompilerMessages>
       </Other>
     </CompilerOptions>
-    <Files Count="56">
+    <Files Count="57">
       <Item1>
         <Filename Value="OurUtils.pas"/>
         <UnitName Value="OurUtils"/>
@@ -246,9 +246,14 @@
       </Item55>
       <Item56>
         <Filename Value="jenkinshash.pas"/>
-        <UnitName Value="jenkinshash"/>
+        <UnitName Value="JenkinsHash"/>
       </Item56>
+      <Item57>
+        <Filename Value="threedimensionalarrayofanything.pas"/>
+        <UnitName Value="ThreeDmensionalArrayOfAnything"/>
+      </Item57>
     </Files>
+    <CompatibilityMode Value="True"/>
     <LazDoc Paths="../doc/xml"/>
     <RequiredPkgs Count="1">
       <Item1>

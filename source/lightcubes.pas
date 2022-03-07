@@ -104,7 +104,7 @@ end;
 
 function TCoordKeyLightValueMap.CreateHash(const Key: TIntVector3): PtrUInt;
 begin
-  Exit(JenkinsHash.jenkins_one_at_a_time_hash(@Key, SizeOf(Key)));
+  Exit(specialize jenkins_one_at_a_time_hash<TIntVector3>(Key));
 end;
 
 { TQueryLightCube }

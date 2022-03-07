@@ -168,9 +168,11 @@ function CreateRotateMatrix(const Rotate : TRotationVector) : TMatrix3x3; overlo
 function CreateRotateMatrixZXY(const Rotate : TRotationVector) : TMatrix3x3; //zxy (Ourcraft default)
 function CreateRotateMatrix(const Rotate : TRotationVector; const FirstAxis, SecondAxis, ThirdAxis : TAxis) : TMatrix3x3; overload;
 function CreateRotateMatrixFromVector(const vector : TVector3) : TMatrix3x3;
-function IntVector3(const x, y, z : integer) : TIntVector3; inline;
-function Vector3(const x, y, z : double) : TVector3; inline;
-function BlockCoord(const x, y, z : byte) : TBlockCoord; inline;
+
+//is without const faster / is with register faster ?
+function IntVector3(x, y, z : integer) : TIntVector3; register; inline;
+function Vector3(x, y, z : double) : TVector3; register; inline;
+function BlockCoord(x, y, z : byte) : TBlockCoord; register; inline;
 
 function Hypot3(const a, b, c : double) : double; overload; inline;
 function Hypot3(const vector : TVector3) : double; overload; inline;  
@@ -331,21 +333,21 @@ begin
   Result[AxisZ, AxisZ] := c+sqr(u[axisZ])*(1-c);
 end;
 
-function IntVector3(const x, y, z : integer) : TIntVector3; inline;
+function IntVector3(x, y, z: integer): TIntVector3; register;
 begin
   Result[axisX] := x;
   Result[axisY] := y;
   Result[axisZ] := z;
 end;
 
-function Vector3(const x, y, z : double) : TVector3; inline;
+function Vector3(x, y, z: double): TVector3; register;
 begin
   Result[axisX] := x;
   Result[axisY] := y;
   Result[axisZ] := z;
 end;
 
-function BlockCoord(const x, y, z : byte) : TBlockCoord; inline;
+function BlockCoord(x, y, z: byte): TBlockCoord; register;
 begin
   Result[axisX] := x;
   Result[axisY] := y;

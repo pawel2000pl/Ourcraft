@@ -134,8 +134,11 @@ end;
 procedure TMovingBlock.Render;
 begin
   Model.Lock;
-  Model.JustDraw;
-  Model.Unlock;
+  try
+     Model.JustDraw;
+  finally      
+     Model.Unlock;
+  end;
 end;
 
 procedure TMovingBlock.Tick(const DeltaTime: QWord);
@@ -169,17 +172,19 @@ begin
   rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
   p := Position;
   Model.Lock;
-  Model.Clear;
+  try
+    Model.Clear;
 
-  halfVector := Vector3(-0.5, -0.5, -0.5);
-  for i := 0 to DarkModel.AddCount-1 do
-  begin
-      for j := low(DarkModel.WallCorners[i]) to High(DarkModel.WallCorners[i]) do
-         rc[j] := StateBox.CollisionBox.RotationMatrix*(DarkModel.WallCorners[i][j]+halfVector);
-      Model.AddWall(p, rc, DarkModel.TextureCorners[i], DarkModel.TextureRects[i], rl);
+    halfVector := Vector3(-0.5, -0.5, -0.5);
+    for i := 0 to DarkModel.AddCount-1 do
+    begin
+        for j := low(DarkModel.WallCorners[i]) to High(DarkModel.WallCorners[i]) do
+           rc[j] := StateBox.CollisionBox.RotationMatrix*(DarkModel.WallCorners[i][j]+halfVector);
+        Model.AddWall(p, rc, DarkModel.TextureCorners[i], DarkModel.TextureRects[i], rl);
+    end;
+  finally
+    Model.Unlock;
   end;
-
-  Model.Unlock;
 end;
 
 procedure TMovingBlock.UpdateModelLight;
@@ -190,10 +195,13 @@ var
 begin
   rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
   Model.Lock;
-  c := Model.ColorPtr;
-  for i := 0 to Model.Count-1 do
-      c[i] := rl;
-  Model.Unlock;
+  try
+    c := Model.ColorPtr;
+    for i := 0 to Model.Count-1 do
+        c[i] := rl;
+  finally        
+    Model.Unlock;
+  end;
 end;
 
 procedure TMovingBlock.OnLeaveChunk(AChunk: TOurChunk);

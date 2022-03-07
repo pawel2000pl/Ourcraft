@@ -324,6 +324,18 @@ type
   TDynamicLightCoordMap = TCoordKeyLightValueMap;
   TOurChunkArray = array of TOurChunk;
 
+  { TSetBlockAsyncQuery }
+
+  TSetBlockAsyncQuery = class sealed
+  private
+    fx, fy, fz : integer;
+    fValue : TBlock;
+    fChunk : TOurChunk;
+  public
+    constructor Create(AChunk : TOurChunk; const x, y, z : integer; AValue : TBlock);
+    procedure SetBlock;
+    class function CreateMethodPointer(AChunk : TOurChunk; const x, y, z : integer; AValue : TBlock) : TQueueMethod;
+  end;
 
   { TOurChunk }
 
@@ -399,6 +411,7 @@ type
     //local Coord                              
     function GetBlock(const x, y, z : integer) : TBlock;
     procedure SetBlock(const x, y, z : integer; AValue : TBlock);
+    procedure SetBlockAsync(const x, y, z : integer; AValue : TBlock);
     function SetBlockDirectAuto(const x, y, z, ID, SubID : integer) : boolean; //return false, if ID is not a block
     property Blocks[const x, y, z : integer] : TBlock read GetBlock write SetBlock;
     function GetBlockDirect(const x, y, z : integer) : TBlock;
@@ -663,6 +676,7 @@ type
     function GetChunkFromBlockCoors(const x, y, z : integer) : TOurChunk;
     function GetBlock(const x, y, z : integer) : TBlock;
     function SetBlock(const x, y, z : integer; AValue : TBlock) : Boolean;
+    function SetBlockAsync(const x, y, z : integer; AValue : TBlock) : Boolean;
     function GetBlockInformation(const x, y, z : integer) : TBlockInformation;
 
     procedure UnloadChunk(const ChunkX, ChunkY, ChunkZ : integer);
@@ -740,6 +754,32 @@ begin
         v[a] := TextureStandardModeCoord[side][i][a] * EntityShape.Size[a] - EntityShape.Center[a];
       Result.Corners[side][i] := c * v;
     end;
+end;
+
+{ TSetBlockAsyncQuery }
+
+constructor TSetBlockAsyncQuery.Create(AChunk: TOurChunk; const x, y, z: integer; AValue: TBlock);
+begin
+  fChunk := AChunk;
+  fx := x;
+  fy := y;
+  fz := z;
+  fValue := AValue;
+end;
+
+procedure TSetBlockAsyncQuery.SetBlock;
+begin
+ if not fChunk.Finishing then
+    fChunk.SetBlock(fx, fy, fz, fValue);
+ fChunk.World.FreeThread.FreeObject(Self);
+end;
+
+class function TSetBlockAsyncQuery.CreateMethodPointer(AChunk: TOurChunk; const x, y, z: integer; AValue: TBlock): TQueueMethod;
+var
+  {%H-}instance : TSetBlockAsyncQuery;
+begin
+  instance := TSetBlockAsyncQuery.Create(AChunk, x, y, z, AValue);
+  Exit(@instance.SetBlock);
 end;
 
 { EDirectBlockAccessException }
@@ -1321,6 +1361,17 @@ begin
   Exit(True);
 end;
 
+function TOurWorld.SetBlockAsync(const x, y, z: integer; AValue: TBlock): Boolean;
+var
+  Chunk : TOurChunk;
+begin
+  Chunk := GetChunkFromBlockCoors(x, y, z);
+  if Chunk = nil then
+    Exit(False);
+  Chunk.SetBlockAsync(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, AValue);
+  Exit(True);
+end;
+
 function TOurWorld.GetBlockInformation(const x, y, z : integer) : TBlockInformation;
 var
   c : TOurChunk;
@@ -1666,6 +1717,11 @@ begin
   c := GetNeightborFromBlockCoord(x, y, z);
   if (c <> nil) then
     c.SetBlockDirect(x and ChunkSizeMask, y and ChunkSizeMask, z and ChunkSizeMask, AValue);
+end;
+
+procedure TOurChunk.SetBlockAsync(const x, y, z: integer; AValue: TBlock);
+begin
+  World.Queues.AddMethod(TSetBlockAsyncQuery.CreateMethodPointer(Self, x, y, z, AValue));
 end;
 
 procedure TOurChunk.Load;
