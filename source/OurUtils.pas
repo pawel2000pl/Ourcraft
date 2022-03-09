@@ -351,6 +351,7 @@ type
     NeedModelLightUpdate : set of TTextureMode;
     NeedModelSolidUpdate : set of TTextureMode;
     fWorld : TOurWorld;
+    fLastDynamicLightUpdateTime : QWord;
 
     fLoaded : boolean;
     fGenerated : boolean;
@@ -1593,7 +1594,7 @@ begin
   fTime := 0;
   fTimeTicks := 0;
   fLightTime := 0;
-  fDynamicLightUpdateInterval := 150;
+  fDynamicLightUpdateInterval := 50;
   for x := 0 to WorldSize - 1 do
     for y := 0 to WorldSize - 1 do
       for z := 0 to WorldSize - 1 do
@@ -1803,24 +1804,26 @@ begin
     fNeedDynamicLightUpdate := False;
 
     fDynamicLight.BeginWrite();
-    c1 := (fDynamicLight.Source as TRareLightCube).Count;
-    if c1 > 0 then
-      fDynamicLight.Source.Clear;
+    try
+      c1 := (fDynamicLight.Source as TRareLightCube).Count;
+      if c1 > 0 then
+        fDynamicLight.Source.Clear;
 
-    fDynamicLightSources.BeginRead;
-    try         
-      c2 := fDynamicLightSources.Count;
-      if c2 > 0 then
-        for lr in fDynamicLightSources.GetValueEnumerator do
-          fDynamicLight.Source[lr.Coord.x - fPosition.X * ChunkSize, lr.Coord.y - fPosition.Y * ChunkSize, lr.Coord.z - fPosition.Z * ChunkSize] := lr.Value;
+      fDynamicLightSources.BeginRead;
+      try
+        c2 := fDynamicLightSources.Count;
+        if c2 > 0 then
+          for lr in fDynamicLightSources.GetValueEnumerator do
+            fDynamicLight.Source[lr.Coord.x - fPosition.X * ChunkSize, lr.Coord.y - fPosition.Y * ChunkSize, lr.Coord.z - fPosition.Z * ChunkSize] := lr.Value;
 
-      if (c1 > 0) or (c2 > 0) then
-          fDynamicLight.RelightAll;
+        if (c1 > 0) or (c2 > 0) then
+            fDynamicLight.RelightAll;
+      finally
+        fDynamicLightSources.EndRead;
+      end;
     finally
-      fDynamicLightSources.EndRead;
+        fDynamicLight.EndWrite();
     end;
-
-    fDynamicLight.EndWrite();
 
     fLockUpdateModelLight := False;
     UnLockNeightborLightUpdate;
@@ -1828,6 +1831,7 @@ begin
     if (c1 > 0) or (c2 > 0) then
        UpdateNeightborLight;
 
+    fLastDynamicLightUpdateTime := GetTickCount64;
   end;
 end;
 
@@ -2278,8 +2282,7 @@ begin
   Result := cv;
 end;
 
-function TOurChunk.GetSmoothLightLevel(const v: TVector3;
-  const side: TTextureMode): TRealLight;
+function TOurChunk.GetSmoothLightLevel(const v: TVector3; const side: TTextureMode): TRealLight;
 var
   i : integer;
   x, y, z : integer;
@@ -2414,7 +2417,7 @@ begin
   Begin
     fNeedDynamicLightUpdate := True;
     fLockUpdateModelLight := False;  
-    SetNeightborsDynamicLightUpdateToTrue;
+    //SetNeightborsDynamicLightUpdateToTrue;
   end;
 end;
 
@@ -2528,7 +2531,7 @@ begin
   finally
     EndRead;
   end;
-  if fNeedDynamicLightUpdate then
+  if fNeedDynamicLightUpdate and (GetTickCount64 - fLastDynamicLightUpdateTime >= World.DynamicLightUpdateInterval) then
     World.Queues.AddMethod(@RelightDynamicLight);
 end;
 
@@ -2938,6 +2941,7 @@ begin
   fUnsolidModel := TVertexModel.Create;
   fAnimationModels := TVertexModel.Create;
 
+  fLastDynamicLightUpdateTime := GetTickCount64;
 end;
 
 destructor TOurChunk.Destroy;
@@ -3179,19 +3183,13 @@ end;
 { TEntity }
 
 procedure TEntity.SwitchChunk(NewChunk: TOurChunk);
+var
+  OldChunk : TOurChunk;
 begin                 
   LockForWriting;
   try
-    if (FChunk <> nil) and Assigned(FChunk) then
-    begin
-      FChunk.Entities.BeginWrite;
-      try
-        FChunk.Entities.RemoveFirstKey(Self);
-      finally
-        FChunk.Entities.EndWrite;
-      end;
-      OnLeaveChunk(FChunk);
-    end;
+    OldChunk := FChunk;
+    
     FChunk := NewChunk;
     if (FChunk <> nil) and Assigned(FChunk) then
     begin
@@ -3208,6 +3206,18 @@ begin
       else
          FChunk := nil;
     end;
+
+    if (OldChunk <> nil) and Assigned(OldChunk) then
+    begin
+      OldChunk.Entities.BeginWrite;
+      try
+        OldChunk.Entities.RemoveFirstKey(Self);
+      finally
+        OldChunk.Entities.EndWrite;
+      end;
+      OnLeaveChunk(OldChunk);
+    end;
+
   finally
     UnlockFromWriting;
   end;

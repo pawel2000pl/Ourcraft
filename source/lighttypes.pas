@@ -126,6 +126,7 @@ uses
 function LightLevelToFloat(const AverageLevel: Single): Single; inline;
 begin
   Result := {AverageLevel/MAX_LIGHT_LEVEL;//}(AverageLevel/MAX_LIGHT_LEVEL + sqrt(MAX_LIGHT_LEVEL/8/((MAX_LIGHT_LEVEL+1)-AverageLevel) - 1/(MAX_LIGHT_LEVEL+1)) * (AverageLevel + 1) / (MAX_LIGHT_LEVEL+1) + 1/(MAX_LIGHT_LEVEL*1.4))/2;
+  Result := EnsureRange(Result, 0, 1);
 end;
 
 operator+(const a, b: TLongLight): TLongLight;

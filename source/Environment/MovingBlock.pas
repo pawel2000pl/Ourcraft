@@ -85,7 +85,7 @@ end;
 
 function TMovingBlock.GetDefaultBlock: TBlock;
 begin
-  Result :=  GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock;
+  Result := GetEnvironment.GetCreator(GetEnvironment.GetID('STONE')).CreateElement(Floor(Position)) as TBlock;
 end;
 
 procedure TMovingBlock.MoveDynamicLight;
@@ -136,7 +136,7 @@ begin
   Model.Lock;
   try
      Model.JustDraw;
-  finally      
+  finally
      Model.Unlock;
   end;
 end;
@@ -194,6 +194,7 @@ var
   c : ^TColor3b;
 begin
   rl := max(GetLightLevel(Position), LightLevelToFloat(GetPlacingBlock.LightSource));
+
   Model.Lock;
   try
     c := Model.ColorPtr;
