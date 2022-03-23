@@ -7,7 +7,7 @@ uses
   SysUtils,
   OurUtils,
   OurGame,
-  CalcUtils, Models, TextureMode, LightTypes, Locker;
+  CalcUtils, Models, TextureMode, LightTypes, Locker;//, WavefrontModels;
 
 type
 
@@ -153,7 +153,7 @@ begin
       PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
       Exit;
     end;
-  end;             
+  end;
   StateBox.Velocity += Vector3(0, -9.81, 0) * (DeltaTime/1000);
   MoveDynamicLight;
   UpdateModel;
@@ -166,6 +166,8 @@ var
   rl : TRealLight;
   i, j : Integer;
   halfVector : TVector3;
+
+  //waveModel : TWaveFrontModel;
 begin
   if (Chunk = nil) then Exit;
 
@@ -174,7 +176,14 @@ begin
   Model.Lock;
   try
     Model.Clear;
+      {
+    waveModel := TWaveFrontModel.Create;
+    waveModel.LoadFromFile('/home/pawel24pl/Pulpit/Programy/Ourcraft/models/exported/sheep.obj');
+    waveModel.RenderToModel('body_Cube', Model, (Creator.Environment.Game as TOurGame).Textures.GetTexture('sheep'), rl);
+    waveModel.Free;
 
+    Model.Rotate(StateBox.CollisionBox.RotationMatrix);
+    Model.Move(p);       }
     halfVector := Vector3(-0.5, -0.5, -0.5);
     for i := 0 to DarkModel.AddCount-1 do
     begin

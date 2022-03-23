@@ -106,7 +106,6 @@ type
   public
     property Environment : TEnvironment read fEnvironment;
     property Textures : TTextureManager read fTextures;
-    function GetEnvironment: TEnvironment;
 
     constructor Create;
     destructor Destroy; override;
@@ -265,11 +264,6 @@ begin
 end;
 
 { TOurGame }
-
-function TOurGame.GetEnvironment: TEnvironment;
-begin
-  Result := fEnvironment;
-end;
 
 constructor TOurGame.Create;
 begin

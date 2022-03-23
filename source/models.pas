@@ -80,13 +80,19 @@ type
   TVertexModel = class
   const
     BufferedCount = 32;
+    cfNone = GL_NONE;
+    cfFrontAndBack = GL_FRONT_AND_BACK;
+    cfBack = GL_BACK;
+    cfFront = GL_FRONT;
   private
+    fCullFace: GLenum;
     fVertex : array of TVector3;
     fColor : array of TColor3b;
     fTexture : array of TTexture2d;
     fCount : integer;
     fRealCount : integer;
     Editing : TLocker;
+    class var PrevCullFace : GLenum;
     function GetColor(const index : integer) : TColor3b; inline;
     procedure SetColor(const index : integer; const AValue: TColor3b); inline;
     function GetColorPtr: Pointer; inline;
@@ -94,18 +100,20 @@ type
     function GetTexturePtr: Pointer; inline;
     function GetVertex(const index : integer) : TVector3; inline;
     function GetVertexPtr: Pointer; inline;
+    procedure SetCullFace(AValue: GLenum);
     procedure SetTexture(const index : integer; const AValue: TTexture2d); inline;
-    procedure SetVector(const index : integer; const AValue: TVector3); inline;
+    procedure SetVertex(const index : integer; const AValue: TVector3); inline;
     procedure UpdateLength(const OverSize : boolean = True);
   public
     procedure Lock;
     procedure Unlock;
+    property CullFace : GLenum read fCullFace write SetCullFace;
 
     property Count : integer read fCount;
 
     //functions do not check range
     property Color[const index : integer] : TColor3b read GetColor write SetColor;
-    property Vertex[const index : integer] : TVector3 read GetVertex write SetVector;
+    property Vertex[const index : integer] : TVector3 read GetVertex write SetVertex;
     property Texture[const index : integer] : TTexture2d read GetTexture write SetTexture;
 
     property ColorPtr : Pointer read GetColorPtr;
@@ -118,6 +126,11 @@ type
     procedure Draw; inline;
 
     function Allocated : Integer;
+
+    procedure Rotate(const RotationMatrix : TMatrix3x3);
+    procedure Move(const Vector : TVector3);
+
+    procedure AddVertex(const AVertex : TVector3; const ALight : TRealLight; const ATexture : TTexture2d; const Tex: PTextureRect);
 
     procedure AddWall(const Position : TVector3;
       const WallCornersCoords : TRectangleCorners; TextureCorners : TTextureCorners;
@@ -140,6 +153,7 @@ type
     procedure Clear;
 
     constructor Create;
+    class constructor Create;
     destructor Destroy; override;
   end;
                               
@@ -251,13 +265,20 @@ begin
   Result := @fVertex[0];
 end;
 
+procedure TVertexModel.SetCullFace(AValue: GLenum);
+begin
+  if fCullFace=AValue then Exit;
+  Assert((fCullFace = GL_BACK) or (fCullFace = GL_FRONT) or (fCullFace = GL_FRONT_AND_BACK));
+  fCullFace:=AValue;
+end;
+
 procedure TVertexModel.SetTexture(const index: integer; const AValue: TTexture2d
   );
 begin
   fTexture[index] := AValue;
 end;
 
-procedure TVertexModel.SetVector(const index: integer; const AValue: TVector3);
+procedure TVertexModel.SetVertex(const index: integer; const AValue: TVector3);
 begin
   fVertex[Index] := AValue;
 end;
@@ -311,7 +332,12 @@ begin
     glColorPointer(3, GL_UNSIGNED_BYTE, 0, @fColor[0]);
     glTexCoordPointer(2, GL_FLOAT, 0, @fTexture[0]);
 
-    glDrawArrays(GL_QUADS, 0, fCount);
+    if PrevCullFace <> fCullFace then
+    begin                       
+        PrevCullFace:=fCullFace;
+        glCullFace(fCullFace);
+    end;
+    glDrawArrays(GL_TRIANGLES, 0, fCount);
   finally
     Editing.Unlock;
   end;
@@ -330,6 +356,45 @@ begin
     Result := 0
     else
     Result := fCount * (sizeof(fColor[0]) + sizeof(fVertex[0]) + sizeof(fTexture[0]));
+end;
+
+procedure TVertexModel.Rotate(const RotationMatrix: TMatrix3x3);
+var
+  i : Integer;
+begin
+  Lock;
+  try
+    for i := 0 to Count-1 do
+       Vertex[i] := RotationMatrix * Vertex[i];
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TVertexModel.Move(const Vector: TVector3);
+var
+  i : Integer;
+begin
+  Lock;
+  try
+    for i := 0 to Count-1 do
+       Vertex[i] := Vertex[i] + Vector;
+  finally
+    Unlock;
+  end;
+end;
+
+procedure TVertexModel.AddVertex(const AVertex: TVector3;
+  const ALight: TRealLight; const ATexture: TTexture2d; const Tex: PTextureRect);
+begin
+    Inc(fCount, 1);
+    UpdateLength; 
+    fTexture[fCount-1, axisX] := ATexture[axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
+    fTexture[fCount-1, axisY] := ATexture[axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
+    fVertex[fCount-1] :=AVertex;
+    fColor[fCount-1].r := SingleToByte(ALight[lcRed]);
+    fColor[fCount-1].g := SingleToByte(ALight[lcGreen]);
+    fColor[fCount-1].b := SingleToByte(ALight[lcBlue]);
 end;
 
 procedure TVertexModel.AddWall(const Position: TVector3; const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners; const Tex: PTextureRect; const LightLevel: TLight);
@@ -357,21 +422,23 @@ end;
 procedure TVertexModel.AddWall(const Position: TVector3;
   const WallCornersCoords: TRectangleCorners; TextureCorners: TTextureCorners;
   const Tex: PTextureRect; const LightLevel: TLightedSide);
+const
+  sides : array[0..5] of Integer = (0, 1, 2, 2, 3, 0);
 var
   i, j : integer;
 begin
     j := fCount;
-    Inc(fCount, 4);
+    Inc(fCount, 6);
     UpdateLength;
 
-    for i := 0 to 3 do
+    for i := Low(sides) to High(sides) do
     begin
-      fTexture[j, axisX] := TextureCorners[i, axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
-      fTexture[j, axisY] := TextureCorners[i, axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
-      fVertex[j] := WallCornersCoords[i] + Position;
-      fColor[j].r := SingleToByte(LightLevel[i][lcRed]);
-      fColor[j].g := SingleToByte(LightLevel[i][lcGreen]);
-      fColor[j].b := SingleToByte(LightLevel[i][lcBlue]);
+      fTexture[j, axisX] := TextureCorners[sides[i], axisX] * (Tex^.Right - Tex^.Left) + Tex^.Left;
+      fTexture[j, axisY] := TextureCorners[sides[i], axisY] * (Tex^.Bottom - Tex^.Top) + Tex^.Top;
+      fVertex[j] := WallCornersCoords[sides[i]] + Position;
+      fColor[j].r := SingleToByte(LightLevel[sides[i]][lcRed]);
+      fColor[j].g := SingleToByte(LightLevel[sides[i]][lcGreen]);
+      fColor[j].b := SingleToByte(LightLevel[sides[i]][lcBlue]);
       Inc(j);
     end;
 end;
@@ -420,7 +487,13 @@ end;
 constructor TVertexModel.Create;
 begin
   Editing := TLocker.Create;
+  fCullFace := cfNone;
   Clear;
+end;
+
+class constructor TVertexModel.Create;
+begin
+  PrevCullFace := 1;
 end;
 
 destructor TVertexModel.Destroy;

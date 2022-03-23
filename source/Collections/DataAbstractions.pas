@@ -91,6 +91,7 @@ type
         procedure EndRead;
         function BeginWrite : Boolean;
         procedure EndWrite;
+        procedure PrepareLocker;
 
         function GetFirstKey : TKey; virtual;
         function GetFirstValue : TValue; virtual;
@@ -335,6 +336,11 @@ end;
 procedure TCustomDataContainer.EndWrite;
 begin
    GetLocker.Endwrite;
+end;
+
+procedure TCustomDataContainer.PrepareLocker;
+begin
+  GetLocker;
 end;
 
 function TCustomDataContainer.GetFirstKey: TKey;

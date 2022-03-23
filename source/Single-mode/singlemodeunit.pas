@@ -67,7 +67,6 @@ begin
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_FOG);
   glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
 
   InitGame;
 
@@ -223,14 +222,14 @@ begin
   if key = 'f' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    e := (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
+    e := (Game.Environment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
     e.Velocity := 10*(e.Position - Camera.Position);
   end;
 
   if key = 'g' then
   begin
     v := Camera.Position + Camera.ForwardVector*4;
-    e := (Game.GetEnvironment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
+    e := (Game.Environment.GetCreator(Game.Environment.GetID('MovingBlock')) as TEntityCreator).CreateElement(World, v) as TEntity;
     e.Velocity := 10*(e.Position - Camera.Position);
     (e as TMovingBlock).SetPlacingBlock(Game.Environment.GetCreator(Game.Environment.GetID('glowstone')).CreateElement(v, 0) as TBlock);
   end;

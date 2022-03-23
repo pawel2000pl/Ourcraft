@@ -1,1 +1,1 @@
-MovingBlock.RegisterElementCreator(Self, @RegisterCreator); stone.RegisterElementCreator(Self, @RegisterCreator); air.RegisterElementCreator(Self, @RegisterCreator); glowstone.RegisterElementCreator(Self, @RegisterCreator); 
+MovingBlock.RegisterElementCreator(Self, @RegisterCreator); stone.RegisterElementCreator(Self, @RegisterCreator); air.RegisterElementCreator(Self, @RegisterCreator); PlayerEntity.RegisterElementCreator(Self, @RegisterCreator); glowstone.RegisterElementCreator(Self, @RegisterCreator); 

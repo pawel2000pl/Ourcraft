@@ -1,1 +1,1 @@
-MovingBlock, stone, air, glowstone
+MovingBlock, stone, air, PlayerEntity, glowstone

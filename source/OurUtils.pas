@@ -149,6 +149,7 @@ type
     function AutoComputeCollisions : Boolean; virtual;
 
     procedure OnCollisionWithBlock(Blocks : TCollisionBoxSet); virtual;
+    procedure OnOutOfCollisionWithBlock; virtual;
     procedure OnCollisionWithEntity; virtual;
     procedure OnBeInBlock(Blocks : TCollisionBoxSet; const DeltaTime : Double); virtual;
 
@@ -1107,6 +1108,7 @@ begin
       c := World.GetChunk(v[axisX] + fx, v[axisY] + fy, v[axisZ] + fz);
       if (c = nil) or (not c.Loaded) then
         Continue;
+
       for side in DrawedSides[sign(v[axisX]), sign(v[axisY]), sign(v[axisZ])] do
         c.GetVertexModel(side).JustDraw;
 
@@ -1185,6 +1187,7 @@ var
   c : TOurChunk;
   session : QWord;
   v : TIntVector3;
+  RAC : TRenderAreaCollection;
 begin
   session := Area.ReloadingID;
   UpdateRenderAreaLocker.Lock;
@@ -1196,7 +1199,15 @@ begin
           Break;
         v := GetCoordPriorityByDistance(i);
         if GetCoordPriorityByDistanceLength(i) <= Area.Ray then
-          LoadChunk(v[axisX] + Area.X, v[axisY] + Area.Y, v[axisZ] + Area.Z).RenderAreaCollection.UpdateFirst(Area)
+        begin
+          RAC := LoadChunk(v[axisX] + Area.X, v[axisY] + Area.Y, v[axisZ] + Area.Z).RenderAreaCollection;
+          RAC.BeginWrite;
+          try
+             RAC.UpdateFirst(Area);
+          finally
+            RAC.EndWrite;
+          end;
+        end
         else
           break;
       end;
@@ -1213,15 +1224,29 @@ begin
               if (Area.Ray > 0) and (Area.ReloadingID xor session > 1) then
                 exit;
               c := fChunks[x, y, z].Table[i];
-              if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) > Area.Ray + Area.BorderWidth)) and
-                c.RenderAreaCollection.RemoveFirstKey(Area) and (c.RenderAreaCollection.Count = 0) then
-              begin
-                UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
-                  fChunks[x, y, z].Table[i].Position[axisY],
-                  fChunks[x, y, z].Table[i].Position[axisZ]);
-              end
-              else
-                Inc(i);
+
+              RAC := c.RenderAreaCollection;
+              RAC.BeginWrite;
+              try
+                if ((Area.Ray <= 0) or (hypot3(c.Position - Area.GetPosition) > Area.Ray + Area.BorderWidth)) and
+                  c.RenderAreaCollection.RemoveFirstKey(Area) and (c.RenderAreaCollection.Count = 0) then
+                begin
+                  RAC.EndWrite;
+                  RAC := nil;
+                  UnloadChunk(fChunks[x, y, z].Table[i].Position[axisX],
+                    fChunks[x, y, z].Table[i].Position[axisY],
+                    fChunks[x, y, z].Table[i].Position[axisZ]);
+                end
+                else
+                begin
+                  RAC.EndWrite;
+                  RAC := nil;
+                  Inc(i);
+                end;
+              finally
+                if RAC <> nil then
+                   RAC.EndWrite;
+              end;
             end;
           finally
             fChunks[x, y, z].Locker.EndWrite;
@@ -1511,8 +1536,8 @@ begin
             fChunks[x, y, z].Locker.Beginread;
           end;
           fChunks[x, y, z].Locker.Endread;
-        end;                  
-    CheckOrphanedEntities;
+        end;
+     CheckOrphanedEntities;
   finally
     TickLocker.Unlock;
   end;
@@ -1586,7 +1611,7 @@ begin
   fRenderAreaSet := TRenderAreaCollection.Create;
   fFreeThread := TFree.Create;
   fOurGame := Game;
-  fEnvironment := Game.GetEnvironment;
+  fEnvironment := Game.Environment;
   fGenerator := WorldGenerator;
   fSaver := ASaver;
   fSaver.OnLoad := @LoadFromSaver;
@@ -1620,6 +1645,9 @@ destructor TOurWorld.Destroy;
 var
   x, y, z : integer;
 begin
+  Queues.DequeueObject(Self);
+  fMilliTimer.Clear;
+  fMicroTimer.Clear;    
   Queues.DequeueObject(Self);
 
   while RenderAreaSet.Count > 0 do
@@ -1919,53 +1947,56 @@ begin
     BeginWrite;
     try
       fb := fBlocks[x, y, z];
-      if AValue = nil then
-        fBlocks[x, y, z] := fdefaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock
-      else
-        fBlocks[x, y, z] := AValue;
-
-      RelistBlock(x, y, z);
-
-      if fBlocks[x, y, z].NeedAfterPut then
-        fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
-
-      fModifiedAfterLoading := True;
-      Coord := BlockCoord(x, y, z);
-      NeedModelSolidUpdate := AllTextureSides;
-      for side := Low(TTextureMode) to High(TTextureMode) do
-      begin
-        c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY],
-          z + TextureModeSidesI[side][axisZ]);
-        if c <> nil then
-        begin
-          CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
-          if c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NeedNearChangeUpdate then
-            c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NearChangeUpdate(c, OppositeSide[side], coord);
-          include(c.NeedModelSolidUpdate, OppositeSide[side]);
-        end;
-      end;
-
-      if fAutoLightUpdate then
-        RelightArea(x, y, z, x, y, z);
-
-      RenderAreaCollection.BeginRead;
       try
-        for RenderArea in RenderAreaCollection.GetValueEnumerator do
-          if RenderArea.OnChunkChange <> nil then
-             RenderArea.OnChunkChange(BlockCoord(x, y, z), Self);
-      finally
-          RenderAreaCollection.EndRead;
-      end;
-
-      if fb <> nil then
-      begin
-        if fb.ID <> fdefaultBlock.ID then
-          World.FreeThread.FreeObject(fb)
+        if AValue = nil then
+          fBlocks[x, y, z] := fdefaultBlock.CreateElement(Vector3(x, y, z), 0) as TBlock
         else
-          World.FreeThread.FreeObject(fb, 10);
+          fBlocks[x, y, z] := AValue;
+
+        RelistBlock(x, y, z);
+
+        if fBlocks[x, y, z].NeedAfterPut then
+          fBlocks[x, y, z].AfterPut(Self, BlockCoord(x, y, z));
+
+        fModifiedAfterLoading := True;
+        Coord := BlockCoord(x, y, z);
+        NeedModelSolidUpdate := AllTextureSides;
+        for side := Low(TTextureMode) to High(TTextureMode) do
+        begin
+          c := GetNeightborFromBlockCoord(x + TextureModeSidesI[side][axisX], y + TextureModeSidesI[side][axisY],
+            z + TextureModeSidesI[side][axisZ]);
+          if c <> nil then
+          begin
+            CheckCoord := (Coord + TextureModeSidesI[side]).Mask(ChunkSizeMask);
+            if c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NeedNearChangeUpdate then
+              c.fBlocks[CheckCoord[axisX], CheckCoord[axisY], CheckCoord[axisZ]].NearChangeUpdate(c, OppositeSide[side], coord);
+            include(c.NeedModelSolidUpdate, OppositeSide[side]);
+          end;
+        end;
+
+        if fAutoLightUpdate then
+          RelightArea(x, y, z, x, y, z);
+
+        RenderAreaCollection.BeginRead;
+        try
+          for RenderArea in RenderAreaCollection.GetValueEnumerator do
+            if RenderArea.OnChunkChange <> nil then
+               RenderArea.OnChunkChange(BlockCoord(x, y, z), Self);
+        finally
+            RenderAreaCollection.EndRead;
+        end;
+
+      finally
+        if fb <> nil then
+        begin
+          if fb.ID <> fdefaultBlock.ID then
+            World.FreeThread.FreeObject(fb)
+          else
+            World.FreeThread.FreeObject(fb, 10);
+        end;
+        if Loaded then
+          RegisterChangedBlock(BlockCoord(x, y, z));
       end;
-      if Loaded then
-        RegisterChangedBlock(BlockCoord(x, y, z));
     finally
         EndWrite;
     end;
@@ -2524,14 +2555,17 @@ begin
     EntityCopy.Free;
   end;
 
-  BeginRead;
-  try
-    for coord in BlocksForTick.GetValueEnumerator do
-      GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord, DeltaTime);
-  finally
-    EndRead;
+  if BlocksForTick.Count > 0 then
+  begin
+    BeginRead;
+    try
+      for coord in BlocksForTick.GetValueEnumerator do
+        GetBlockDirect(coord[axisX], coord[axisY], coord[axisZ]).OnTick(self, coord, DeltaTime);
+    finally
+      EndRead;
+    end;
   end;
-  if fNeedDynamicLightUpdate and (GetTickCount64 - fLastDynamicLightUpdateTime >= World.DynamicLightUpdateInterval) then
+  if fNeedDynamicLightUpdate and (fWorld.Queues.LoadLevel <= 1/3) and (GetTickCount64 - fLastDynamicLightUpdateTime >= World.DynamicLightUpdateInterval) then
     World.Queues.AddMethod(@RelightDynamicLight);
 end;
 
@@ -2915,6 +2949,7 @@ begin
   fEntities := TEntitySet.Create;
 
   fRenderAreaCollection := TRenderAreaCollection.Create;
+  RenderAreaCollection.PrepareLocker;
 
   for side := Low(TTextureMode) to High(TTextureMode) do
     fModels[side] := TVertexModel.Create;
@@ -3432,6 +3467,11 @@ begin
   StateBox.AngularVelocityMatrix := StateBox.AngularVelocityMatrix*e + (1-e)*IdentityMatrix;
 end;
 
+procedure TEntity.OnOutOfCollisionWithBlock;
+begin
+  //Do nothing
+end;
+
 procedure TEntity.OnCollisionWithEntity;
 begin
   //Do nothing
@@ -3536,7 +3576,7 @@ end;
 
 procedure TEntity.ComputeMovement(const DeltaTime: Double);
 var
-  i, Count : Integer;
+  i, Count, CollisionCount : Integer;
   x, y, z : Integer;
   NewState : TVelocityBox;
   a, b : TIntVector3;
@@ -3563,6 +3603,7 @@ begin
       CalculatedTime := 0;
       if (StateBox.Velocity <> Vector3(0, 0, 0)) or (not CompareMem(@StateBox.AngularVelocityMatrix, @IdentityMatrix, SizeOf(TMatrix3x3))) then
       begin
+        CollisionCount:=0;
         for i := 0 to Count do
         begin
           BlockCollisionBoxSet.Clear;
@@ -3584,6 +3625,8 @@ begin
                      BlockCollisionBoxSet.Add(IntVector3(x, y, z), BlockCollisionBox);
 
           if BlockCollisionBoxSet.Count > 0 then
+          begin
+            Inc(CollisionCount);
             if i = 0 then
             begin
                OnCollisionWithBlock(BlockCollisionBoxSet);
@@ -3597,11 +3640,14 @@ begin
                CalculatedTime += t;
                OnCollisionWithBlock(BlockCollisionBoxSet);
             end;
+          end;
 
           if (StateBox.Velocity = Vector3(0, 0, 0)) or (AllTime <= 0) then
             Break;
         end;
 
+        if CollisionCount = 0 then
+          OnOutOfCollisionWithBlock;
         if AllTime > 0 then
           StateBox := StateBox.TimeCalculate(AllTime);
       end;

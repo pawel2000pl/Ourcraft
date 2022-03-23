@@ -16,7 +16,7 @@
         </CompilerMessages>
       </Other>
     </CompilerOptions>
-    <Files Count="56">
+    <Files Count="57">
       <Item1>
         <Filename Value="OurUtils.pas"/>
         <UnitName Value="OurUtils"/>
@@ -248,6 +248,10 @@
         <Filename Value="threedimensionalarrayofanything.pas"/>
         <UnitName Value="ThreeDimensionalArrayOfAnything"/>
       </Item56>
+      <Item57>
+        <Filename Value="wavefrontmodels.pas"/>
+        <UnitName Value="wavefrontmodels"/>
+      </Item57>
     </Files>
     <CompatibilityMode Value="True"/>
     <LazDoc Paths="../doc/xml"/>

@@ -26,6 +26,7 @@ type
     fMethods : array[0..MicroSecondsPerMilliSecond-1] of TMicroTimerRecord;
   public
     procedure Execute;
+    procedure Clear;
     procedure AddMethod(const Method: TQueueMethod; const DelayMicroseconds: QWord);
 
     constructor Create(queueMgr : TQueueManager);
@@ -55,7 +56,7 @@ begin
            begin
              fManager.AddMethod(Methods[j].Method);
              Methods[j] := Methods[c];
-             Dec(fMethodCount);
+             InterlockedDecrement(fMethodCount);
              Dec(c);
            end
            else
@@ -75,6 +76,24 @@ begin
     fTerminating := False;
 end;
 
+procedure TMicroTimer.Clear;
+var
+  i, j : Integer;
+begin
+  for i := low(fMethods) to High(fMethods) do
+    with fMethods[i] do
+    begin
+        Locker.Lock;
+        try
+          for j := 0 to Length(Methods)-1 do
+             InterlockedDecrement(fMethodCount);
+          SetLength(Methods, 0);
+        finally
+          Locker.Unlock;
+        end;
+    end;
+end;
+
 procedure TMicroTimer.AddMethod(const Method: TQueueMethod; const DelayMicroseconds: QWord);
 var
   temp : TQueueDelayRecord;
@@ -87,7 +106,7 @@ begin
    begin
      Locker.Lock;
      Insert(temp, Methods, Length(Methods));    
-     Inc(fMethodCount);
+     InterlockedIncrement(fMethodCount);
      Locker.Unlock;
    end;
 end;

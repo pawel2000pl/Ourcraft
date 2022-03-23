@@ -83,6 +83,7 @@ type
     property Depth : Double read GetZ write SetZ;
     function Min : Double; overload;
     function Max : Double; overload;
+    function &Length : Double;
   end;
 
   { TIntVector3Helper }
@@ -798,6 +799,11 @@ end;
 function TVector3Helper.Max: Double;
 begin
   Result := Math.Max(X, Math.Max(Y, Z))
+end;
+
+function TVector3Helper.&Length: Double;
+begin
+  Exit(Hypot3(x, y, z));
 end;
 
 function BiggestDimension(const v: TVector3): TVector3;

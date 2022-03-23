@@ -11,7 +11,7 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, lazopenglcontext, SingleModeUnit, OurData, air, glowstone, MovingBlock,
-  stone, GlCamera, ChunkLight;
+  stone, PlayerEntity, GlCamera, ChunkLight;
 
 {$R *.res}
 

@@ -17,7 +17,7 @@ uses
   AsyncMicroTimer, AsyncMilliTimer, Incrementations, synacode, synafpc, 
   synaip, synautil, synsock, DataAbstractions, TinyHashData, FastLZ77, 
   ChunkLight, OurConstants, LightCubes, JenkinsHash, 
-  ThreeDimensionalArrayOfAnything, LazarusPackageIntf;
+  ThreeDimensionalArrayOfAnything, WavefrontModels, LazarusPackageIntf;
 
 implementation
 
