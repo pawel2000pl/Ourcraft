@@ -150,7 +150,7 @@ begin
     FittingToGrid;
     if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
     begin
-      PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
+      //PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
       Exit;
     end;
   end;
@@ -176,14 +176,14 @@ begin
   Model.Lock;
   try
     Model.Clear;
-      {
-    waveModel := TWaveFrontModel.Create;
-    waveModel.LoadFromFile('/home/pawel24pl/Pulpit/Programy/Ourcraft/models/exported/sheep.obj');
-    waveModel.RenderToModel('body_Cube', Model, (Creator.Environment.Game as TOurGame).Textures.GetTexture('sheep'), rl);
-    waveModel.Free;
 
-    Model.Rotate(StateBox.CollisionBox.RotationMatrix);
-    Model.Move(p);       }
+    //waveModel := TWaveFrontModel.Create;
+    //waveModel.LoadFromFile('/home/pawel24pl/Pulpit/Programy/Ourcraft/models/exported/sheep.obj');
+    //waveModel.RenderToModel('body_Cube', Model, (Creator.Environment.Game as TOurGame).Textures.GetTexture('sheep'), rl);
+    //waveModel.Free;
+    //
+    //Model.Rotate(StateBox.CollisionBox.RotationMatrix);
+    //Model.Move(p);
     halfVector := Vector3(-0.5, -0.5, -0.5);
     for i := 0 to DarkModel.AddCount-1 do
     begin

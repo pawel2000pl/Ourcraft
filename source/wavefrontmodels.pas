@@ -28,6 +28,7 @@ type
     procedure LoadFromStream(Stream : TStream);
     procedure LoadFromFile(const FileName : AnsiString);
     procedure RenderToModel(const ObjectName : AnsiString; Model : TVertexModel; const Tex: PTextureRect; const Light : TRealLight);
+    constructor Create;
   end;
 
 implementation
@@ -82,7 +83,7 @@ begin
         begin
           SetLength(VertexTextures, Length(VertexTextures)+1);
           VertexTextures[High(VertexTextures)][axisX] := StrToFloat(parts[1]);
-          VertexTextures[High(VertexTextures)][axisY] := StrToFloat(parts[2]);
+          VertexTextures[High(VertexTextures)][axisY] := 1-StrToFloat(parts[2]);
           Continue;
         end;
 
@@ -170,6 +171,11 @@ begin
   end;
   Model.CullFace:=Model.cfNone;
   subModel.Free;
+end;
+
+constructor TWaveFrontModel.Create;
+begin
+  fObjects := [];
 end;
 
 end.
