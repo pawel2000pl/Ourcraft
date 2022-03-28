@@ -1,7 +1,7 @@
 ﻿
 # Ourcraft 
 
-Better, bigger and more communist than Minecraft; Predicted official release: 08-2021
+Better, bigger and more communist than Minecraft;
 
 # Main differences between Ourcraft and Minecraft
 
@@ -24,6 +24,7 @@ It's not playable yet (but almost). But you can:
 
 Changelog:
 
+* Added working dynamic light.
 * Added (only) directive for using CORBA interfaces. TEnvironmentElementAttribute will be removed in a near future.
 * Optimalization in temporary rendering (SingleMode)
 * Update to FPC 3.2 (it is NOT compatible with 3.0)
