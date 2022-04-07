@@ -13,7 +13,7 @@ uses
   Locker, TinyHashData, OurGame,
   Incrementations, CustomSaver, SaverPaths, LightTypes, NearestVectors,
   TextureMode, CollisionBoxes, AsyncMicroTimer, AsyncMilliTimer, ProcessUtils,
-  FastLZ77, OurConstants, ChunkLight, LightCubes;
+  FastLZ77, OurConstants, ChunkLight, LightCubes, HuffmanTree;
 
 type
 
@@ -708,6 +708,9 @@ function ChunkCoordToBlockCoord(const ChunkPosition : TIntVector3) : TIntVector3
 
 procedure FreeObject(const &Object : TObject); //for collections
 
+procedure CompressStream(Source, Dest : TStream; const Size : PtrUInt);
+procedure DecompressStream(Source, Dest : TStream);
+
 implementation
 
 {$RangeChecks off}
@@ -722,6 +725,34 @@ var
 procedure FreeObject(const &Object : TObject);
 begin
   &Object.Free;
+end;
+
+procedure CompressStream(Source, Dest: TStream; const Size: PtrUInt);
+var
+  MS : TMemoryStream;
+begin
+  MS := TMemoryStream.Create;
+  try
+    FastLZ77Stream(Source, MS, fl77Compress);
+    MS.Position:=0;
+    THuffmanTree.CompressStream(MS, Dest, MS.Size);
+  finally
+    MS.Free;
+  end;
+end;
+
+procedure DecompressStream(Source, Dest: TStream);
+var
+  MS : TMemoryStream;
+begin
+  MS := TMemoryStream.Create;
+  try
+    THuffmanTree.DecompressStream(Source, MS);
+    MS.Position:=0;
+    FastLZ77Stream(MS, Dest, fl77Uncompress);
+  finally
+    MS.Free;
+  end;
 end;
 
 function RealCoord(const ChunkPosition : TIntVector3; const BlockPosition : TBlockCoord) : TVector3;
@@ -2748,7 +2779,8 @@ begin
     EndRead;
   end;
   MS.Position:=0;
-  FastLZ77Stream(MS, Stream, fl77Compress);
+  //FastLZ77Stream(MS, Stream, fl77Compress);
+  CompressStream(MS, Stream, MS.Size);
   MS.Free;
 end;
 
@@ -2778,7 +2810,8 @@ begin
       EndRead;
     end;
     MS.Position:=0;
-    FastLZ77Stream(MS, Stream, fl77Compress);
+    //FastLZ77Stream(MS, Stream, fl77Compress);
+    CompressStream(MS, Stream, MS.Size);
     MS.Free;
   end;
   c := NilBlockCoord;
@@ -2791,7 +2824,8 @@ var
   MS : TMemoryStream;
 begin                         
   MS := TMemoryStream.Create;
-  FastLZ77Stream(Stream, MS, fl77Uncompress);  //uwaga: czy nie jest wymagane dopisanie informacji o rozmiarze zapisu?
+  //FastLZ77Stream(Stream, MS, fl77Uncompress);  //uwaga: czy nie jest wymagane dopisanie informacji o rozmiarze zapisu?
+  DecompressStream(Stream, MS);
   MS.Position:=0;
   AutoLightUpdate := False;
   BeginWrite;
@@ -2828,7 +2862,8 @@ begin
     Generate;
   end;
   MS := TMemoryStream.Create;
-  FastLZ77Stream(Stream, MS, fl77Uncompress);
+  //FastLZ77Stream(Stream, MS, fl77Uncompress);
+  DecompressStream(Stream, MS);
   MS.Position:=0;
   BeginWrite;
   try

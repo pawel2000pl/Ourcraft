@@ -29,9 +29,58 @@ type
     procedure LoadFromFile(const FileName : AnsiString);
     procedure RenderToModel(const ObjectName : AnsiString; Model : TVertexModel; const Tex: PTextureRect; const Light : TRealLight);
     constructor Create;
+    constructor Create(Stream : TStream);
+    constructor Create(const FileName : AnsiString);
+  end;
+
+  { TWavefrontSequence }
+
+  TWavefrontSequence = class
+  private
+    fWavefronts : array of TWaveFrontModel;
+  public
+    procedure Add(Model : TWaveFrontModel);
+    constructor Create;
+    constructor Create(const FileName : AnsiString; FirstFrame : Integer = 0);
+    destructor Destroy; override;
   end;
 
 implementation
+
+{ TWavefrontSequence }
+
+procedure TWavefrontSequence.Add(Model: TWaveFrontModel);
+begin
+  Insert(Model, fWavefronts, Length(fWavefronts));
+end;
+
+constructor TWavefrontSequence.Create;
+begin
+  fWavefronts := [];
+end;
+
+constructor TWavefrontSequence.Create(const FileName: AnsiString; FirstFrame: Integer);
+var
+  CurrentFileName : AnsiString;
+begin
+  while True do
+  begin
+    CurrentFileName:=Format(FileName, [FirstFrame]);
+    if not FileExists(CurrentFileName) then
+       Break;
+    Add(TWaveFrontModel.Create(CurrentFileName));
+    Inc(FirstFrame);
+  end;
+end;
+
+destructor TWavefrontSequence.Destroy;
+var
+  i : Integer;
+begin
+  for i := 0 to Length(fWavefronts)-1 do
+      FreeAndNil(fWavefronts[i]);
+  inherited Destroy;
+end;
 
 { TWaveFrontModel }
 
@@ -83,7 +132,7 @@ begin
         begin
           SetLength(VertexTextures, Length(VertexTextures)+1);
           VertexTextures[High(VertexTextures)][axisX] := StrToFloat(parts[1]);
-          VertexTextures[High(VertexTextures)][axisY] := 1-StrToFloat(parts[2]);
+          VertexTextures[High(VertexTextures)][axisY] := 1.0-StrToFloat(parts[2]);
           Continue;
         end;
 
@@ -176,6 +225,18 @@ end;
 constructor TWaveFrontModel.Create;
 begin
   fObjects := [];
+end;
+
+constructor TWaveFrontModel.Create(Stream: TStream);
+begin
+  Create;
+  LoadFromStream(Stream);
+end;
+
+constructor TWaveFrontModel.Create(const FileName: AnsiString);
+begin
+  Create;
+  LoadFromFile(FileName);
 end;
 
 end.

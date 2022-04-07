@@ -150,7 +150,7 @@ begin
     FittingToGrid;
     if SquaredHypot3(Position - 0.5 - floor(Position)) < 1e-2 then
     begin
-      //PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
+      PlaceBlock;//World.Queues.AddMethod(@PlaceBlock);
       Exit;
     end;
   end;
