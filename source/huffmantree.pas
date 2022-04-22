@@ -37,6 +37,10 @@ type
     fCodes : array[Byte] of TBitStream;
     fTree : THuffmanTreeNode;
     fStream : TBitStream;
+
+    procedure SaveHistogram(Stream : TStream);
+    procedure LoadHistogram(Stream : TStream);
+
     procedure Sort;
     procedure CreateIntegral;
     procedure AssignCodes;
@@ -58,19 +62,25 @@ type
     function Efficiency : Double;
     function ToString: ansistring; override;
     procedure AfterConstruction; override;
-    constructor Create(const Buf : PByte; const Size : PtrUInt; Mode : Byte = 0);
-    constructor Create(AStream : TStream);
+    constructor Create(const Buf : PByte; const Size : PtrUInt; Mode : Byte = 0); //Create Histogram
+    constructor Create(AStream : TStream; Size : PtrUInt; Mode : Byte = 0); //Create Histogram
+    constructor Create(AStream : TStream); //Load Histogram
     destructor Destroy; override;
 
     class procedure CompressStream(Source, Dest : TStream; const Size : PtrUInt; Mode : Byte = 0);
-    class procedure DecompressStream(Source, Dest : TStream);
+    class procedure DecompressStream(Source, Dest : TStream);      
+    class procedure RecurencyCompressStream(Source, Dest : TStream; const Size : PtrUInt; Mode : Byte = 0);
+    class procedure RecurencyDecompressStream(Source, Dest : TStream);
   end;
 
 
 implementation
 
 uses
-  Math;
+  Math;         
+
+type
+  TTriByteUInt = 0..16777215;
 
 { THuffmanTree }
 
@@ -85,7 +95,7 @@ end;
 
 generic procedure Swap<T>(var a, b : T);
 var
-    c : T;
+   c : T;
 begin
    c := a;
    a := b;
@@ -129,6 +139,7 @@ end;
 
 function THuffmanTreeNode.Get(BitStream: TBitStream): Byte;
 begin
+  Assert(((ZeroValue = nil) and (OneValue = nil) and EndNode) or ((ZeroValue <> nil) and (OneValue <> nil) and (not EndNode)));
   if EndNode then
      Exit(Value);
   if BitStream.ReadBit then
@@ -152,9 +163,71 @@ begin
   inherited Destroy;
 end;
 
+procedure THuffmanTree.SaveHistogram(Stream: TStream);
+var
+   i : PtrUInt;
+   c0, c1, c2, c3 : Byte;
+begin
+  c0 := 0;
+  while (c0<High(c0)) and (fHistogram[c0] = 0) do Inc(c0);
+  c1 := c0;
+  while (c1<High(c1)) and (fHistogram[c1] <= High(Byte)) do Inc(c1);
+  c2 := c1;
+  while (c2<High(c2)) and (fHistogram[c2] <= High(Word)) do Inc(c2);
+  c3 := c2;
+  while (c3<High(c3)) and (fHistogram[c3] <= High(TTriByteUInt)) do Inc(c3);
+
+  Stream.WriteByte(c0);
+  Stream.WriteByte(c1);
+  Stream.WriteByte(c2);
+  Stream.WriteByte(c3);
+
+  if c1 > 0 then
+    for i := c0 to c1-1 do
+          Stream.WriteByte(fHistogram[i]);
+  if c2 > 0 then
+    for i := c1 to c2-1 do
+          Stream.WriteWord(fHistogram[i]);
+  if c3 > 0 then
+    for i := c2 to c3-1 do
+          Stream.WriteBuffer(fHistogram[i], 3);
+  for i := c3 to High(fHistogram) do
+        Stream.WriteDWord(fHistogram[i]);
+end;
+
+procedure THuffmanTree.LoadHistogram(Stream: TStream);
+var
+  i : PtrUInt;
+  c0, c1, c2, c3 : Byte;
+begin
+  c0 := Stream.ReadByte;
+  c1 := Stream.ReadByte;
+  c2 := Stream.ReadByte;
+  c3 := Stream.ReadByte;
+
+  if c0 > 0 then
+    for i := 0 to c0-1 do
+      fHistogram[i] := 0;
+  if c3 > 0 then
+    for i := c2 to c3-1 do
+      fHistogram[i] := 0;
+                   
+  if c1 > 0 then
+    for i := c0 to c1-1 do
+          fHistogram[i] := Stream.ReadByte;
+  if c2 > 0 then
+    for i := c1 to c2-1 do
+          fHistogram[i] := Stream.ReadWord;
+  if c3 > 0 then
+    for i := c2 to c3-1 do
+          Stream.ReadBuffer(fHistogram[i], 3);
+  for i := c3 to High(fHistogram) do
+        fHistogram[i] := Stream.ReadDWord;
+end;
+
 procedure THuffmanTree.Sort;
 const
-  n = 256;
+  n = Length(fSortedHistogram);
 var
     gap, i, j : integer;
     x : Byte;
@@ -184,7 +257,7 @@ var
   i : PtrUInt;
 begin
   fIntegral[0] := fHistogram[fSortedHistogram[0]];
-  for i := 1 to 255 do
+  for i := 1 to High(fIntegral) do
     fIntegral[i] := fIntegral[i-1] + fHistogram[fSortedHistogram[i]];
 end;
 
@@ -197,9 +270,9 @@ type
 
 var
   Index, l, h : PtrUInt;
-  Tab : array[0..512] of TAssignCodeRecord;
+  Tab : array[0..2*Length(fHistogram)] of TAssignCodeRecord;
 
-  procedure AssignCodes2(Lower, Higher: PtrUInt; CurrentCode: TBitStream);
+  procedure QuickAssignCodes(Lower, Higher: PtrUInt; CurrentCode: TBitStream);
   var
     Half : PtrUInt;
   begin
@@ -222,7 +295,7 @@ var
     while l+1 < h do
     begin
       Half := (h+l) shr 1;
-      case sign((PtrInt(fIntegral[Higher]) - PtrInt(fIntegral[Half+1])) - (PtrInt(fIntegral[Half]) - PtrInt(fIntegral[Lower]))) of
+      case sign(PtrInt(fIntegral[Higher] - fIntegral[Half+1]) - PtrInt(fIntegral[Half] - fIntegral[Lower])) of
         -1: h := Half;
         0: Break;
         1: l := Half;
@@ -250,7 +323,7 @@ var
 begin
   Index := 0;
   Tab[Index].Lower:=0;
-  Tab[Index].Higher:=255;
+  Tab[Index].Higher:=High(fHistogram);
   Tab[Index].CurrentCode := TBitStream.Create();
   Inc(Index);
 
@@ -258,47 +331,54 @@ begin
   begin                                                                       
     Dec(Index);
     element := Tab[Index];
-    AssignCodes2(element.Lower, element.Higher, element.CurrentCode);
+    QuickAssignCodes(element.Lower, element.Higher, element.CurrentCode);
   end;
 
-  for i := 255 downto 1 do
+  for i := High(fHistogram) downto 1 do
   begin
     j := i;
-    while (j<256) and (fCodes[fSortedHistogram[j-1]].Count < fCodes[fSortedHistogram[j]].Count) do
+    while (j<Length(fHistogram)) and (fCodes[fSortedHistogram[j-1]].Count < fCodes[fSortedHistogram[j]].Count) do
     begin
       specialize Swap<TBitStream>(fCodes[fSortedHistogram[j-1]], fCodes[fSortedHistogram[j]]);
       Inc(j);
     end;
   end;
 
+  {$IfDef ASSERTIONS}
+  for j := High(fHistogram) downto 1 do
+      Assert(fCodes[fSortedHistogram[j-1]].Count >= fCodes[fSortedHistogram[j]].Count);
+  {$EndIf}
 end;
 
 procedure THuffmanTree.AssignCodesMk2;
 type
   TSetOfByte = set of Byte;
   TCodeRec = record
-    Value : Double;
+    Value : QWord;
     Indexes : TSetOfByte;
-    code : Boolean;
+    code : QWordBool;
   end;
 
 var
-  Tab : array[Byte] of TCodeRec;
-  Used : array[0..513] of TCodeRec;
+  Tab : array[0..Length(fHistogram)-1] of TCodeRec;
+  Used : array[0..2*Length(Tab)+1] of TCodeRec;
   Len, UsedCount : PtrUInt;
-  i, minIndex1, minIndex2 : PtrUInt;
+  i, minIndex1, minIndex2, ShlOffset : PtrUInt;
   b : Byte;
 begin
   Len := Length(Tab);
   UsedCount := 0;
   for i := 0 to High(fCodes) do
     fCodes[i] := TBitStream.Create();
-  FillByte(Used{%H-}, SizeOf(Used), 0);
-  for i := 0 to 255 do
+  ShlOffset := Round(1+Log2(Length(Tab)));
+  for i := 0 to Len-1 do
   begin
-    Tab[i].Value:=fHistogram[i];
+    Tab[i].code := False;
+    Tab[i].Value := PtrUInt(fHistogram[i]) shl ShlOffset;
     Tab[i].Indexes := [i];
   end;
+
+  Assert(Length(Tab) = Length(fHistogram));
 
   while Len > 1 do
   begin
@@ -324,15 +404,15 @@ begin
     Used[UsedCount].code:=True;
     Used[UsedCount+1].code:=False;
     Tab[minIndex1].Indexes+=Tab[minIndex2].Indexes;
-    Tab[minIndex1].Value+=Tab[minIndex2].Value + 1/1024;
+    Tab[minIndex1].Value+=Tab[minIndex2].Value + 1;
     specialize Swap<TCodeRec>(Tab[Len-1], Tab[minIndex2]);
     Dec(Len);
     Inc(UsedCount, 2);
   end;
 
-  Used[UsedCount] := Tab[0];
+  Assert(UsedCount < Length(Used));
 
-  for i := UsedCount downto 0 do
+  for i := UsedCount-1 downto 0 do
       for b in Used[i].Indexes do
           fCodes[b].WriteBit(Used[i].code);
 end;
@@ -341,10 +421,10 @@ procedure THuffmanTree.CreateTree;
 var
   i : Integer;
 begin
-  for i := 0 to 255 do
+  for i := 0 to Length(fCodes)-1 do
      fTree.Push(i, 0, fCodes[i]);
   {$IfDef ASSERTIONS}
-  for i := 0 to 255 do
+  for i := 0 to Length(fCodes)-1 do
   begin
     fCodes[i].Position:=0;
     Assert(fTree.Get(fCodes[i]) = i);
@@ -385,7 +465,7 @@ end;
 procedure THuffmanTree.SaveToStream(AStream: TStream);
 begin
   AStream.WriteByte(fMode);
-  AStream.WriteBuffer(fHistogram, SizeOf(fHistogram));    ;
+  SaveHistogram(AStream);
 end;
 
 function THuffmanTree.Efficiency: Double;
@@ -419,13 +499,13 @@ begin
   if fMode = 0 then
     AssignCodes()
     else
-    AssignCodesMk2;
+    AssignCodesMk2();
   CreateTree;
 
   {$IfDef ASSERTIONS}
   for i := 0 to 255 do
       Assert(fCodes[i] <> nil);
-  Writeln(ToString);
+  //Writeln(ToString);
   {$EndIf}
   inherited AfterConstruction;
   Assert(BytesInHistogram = Sum(fHistogram));
@@ -441,6 +521,7 @@ begin
       fSortedHistogram[i] := i;
   for i := 0 to 255 do
       fCodes[i] := nil;
+  fMode := 0;
 end;
 
 function THuffmanTree.BytesInHistogram: PtrUInt;
@@ -453,8 +534,29 @@ var
   i : PtrUInt;
 begin
   Init;
+  FillByte(fHistogram, SizeOf(fHistogram), 0);
   for i := 0 to Size-1 do
       Inc(fHistogram[Buf[i]]);
+  fMode:=Mode;
+end;
+
+constructor THuffmanTree.Create(AStream: TStream; Size: PtrUInt; Mode: Byte);
+const
+  BufSize = 65536;
+var
+  i, CurrentSize : PtrUInt;
+  TempBuf : array[0..BufSize-1] of Byte;
+begin
+  Init;
+  FillByte(fHistogram, SizeOf(fHistogram), 0);
+  while Size > 0 do
+  begin
+    CurrentSize := Min(PtrUInt(BufSize), Size);
+    AStream.ReadBuffer(TempBuf{%H-}, CurrentSize);
+    for i := 0 to CurrentSize-1 do
+        Inc(fHistogram[TempBuf[i]]);
+    Dec(Size, CurrentSize);
+  end;
   fMode:=Mode;
 end;
 
@@ -462,7 +564,7 @@ constructor THuffmanTree.Create(AStream: TStream);
 begin
   Init;
   fMode:=AStream.ReadByte;
-  AStream.ReadBuffer(fHistogram, SizeOf(fHistogram));
+  LoadHistogram(AStream);
 end;
 
 destructor THuffmanTree.Destroy;
@@ -477,31 +579,16 @@ begin
   inherited Destroy;
 end;
 
-class procedure THuffmanTree.CompressStream(Source, Dest: TStream;
-  const Size: PtrUInt; Mode: Byte);
+class procedure THuffmanTree.CompressStream(Source, Dest: TStream; const Size: PtrUInt; Mode: Byte);
 var
-  MS : TCustomMemoryStream;
   HT : THuffmanTree;
-  InitPosition : PtrUInt;
 begin
-  if Source is TCustomMemoryStream then
-     MS := Source as TCustomMemoryStream
-     else
-     begin
-        MS := TMemoryStream.Create;  
-        InitPosition := Source.Position;
-        MS.CopyFrom(Source, Size);    
-        Source.Position := InitPosition;
-     end;
-
-  HT := THuffmanTree.Create(MS.Memory, MS.Size, Mode);
+  HT := THuffmanTree.Create(Source, Size, Mode);
+  Source.Seek(-PtrInt(Size), soFromCurrent);
   HT.WriteFromStream(Source, Size);
   HT.SaveToStream(Dest);
   HT.Stream.SaveToStream(Dest, True);
   FreeAndNil(HT);
-
-  if Source <> MS then
-     FreeAndNil(MS);
 end;
 
 class procedure THuffmanTree.DecompressStream(Source, Dest: TStream);
@@ -512,7 +599,64 @@ begin
   HT.Stream.LoadFromStream(Source, True);
   HT.Stream.Position := 0;
   HT.ReadToStream(Dest, HT.BytesInHistogram);
-  HT.Free;
+  FreeAndNil(HT);
+end;
+
+class procedure THuffmanTree.RecurencyCompressStream(Source, Dest: TStream; const Size: PtrUInt; Mode: Byte);
+var
+  i : Integer;
+  c : Integer;
+  MS1, MS2 : TMemoryStream;
+begin
+  MS1 := TMemoryStream.Create;
+  MS2 := TMemoryStream.Create;
+  CompressStream(Source, MS1, Size, Mode);
+  c := 0;
+  for i := 0 to 255 do
+  begin
+   MS1.Position:=0;
+   CompressStream(MS1, MS2, MS1.Size, Mode);
+   if MS2.Size < MS1.Size then
+   begin
+       Inc(c);
+       MS1.Free;
+       MS1 := MS2;
+       MS2 := TMemoryStream.Create;
+   end
+   else
+     Break;
+  end;
+  Dest.WriteByte(c);
+  MS1.Position:=0;
+  Dest.CopyFrom(MS1, MS1.Size);
+  MS1.Free;
+  MS2.Free;
+end;
+
+class procedure THuffmanTree.RecurencyDecompressStream(Source, Dest: TStream);
+var
+  i : Integer;
+  c : Integer;
+  MS1, MS2 : TMemoryStream;
+begin
+  c := Source.ReadByte;
+  MS1 := TMemoryStream.Create;
+  MS2 := TMemoryStream.Create;
+  DecompressStream(Source, MS1);
+
+  for i := 0 to c-1 do
+  begin
+    MS1.Position:=0;
+    DecompressStream(MS1, MS2);
+    MS1.Free;
+    MS1 := MS2;
+    MS2 := TMemoryStream.Create;
+  end;
+
+  MS1.Position:=0;
+  Dest.CopyFrom(MS1, MS1.Size);
+  MS1.Free;
+  MS2.Free;
 end;
 
 end.

@@ -82,6 +82,8 @@ procedure TBitStream.SetPosition(AValue: LongWord);
 begin
   if FPosition=AValue then Exit;
   FPosition:=AValue;
+  if fPosition > fCount then
+     fCount:=fPosition;
   Reallocate;
 end;
 
@@ -112,6 +114,8 @@ var
 begin
   if BitStream.Count = 0 then
      Exit;
+  fCount:=BitStream.Count;
+  Reallocate;
   for i := 0 to BitStream.Count-1 do
       WriteBit(BitStream.Bits[i]);
 end;
@@ -120,9 +124,10 @@ function TBitStream.WriteBit(Value: Boolean): TBitStream;
 begin          
   if fPosition >= fCount then
   begin
-     Inc(fCount);
+     fCount:=fPosition+1;
      Reallocate;
   end;
+  Assert(fPosition<fCount);
   Bits[fPosition] := Value;
   Inc(fPosition);
   Exit(Self);
@@ -132,9 +137,10 @@ function TBitStream.ReadBit: Boolean;
 begin           
   if fPosition >= fCount then
   begin
-     Inc(fCount);
+     fCount:=fPosition+1;
      Reallocate;
-  end;
+  end;             
+  Assert(fPosition<fCount);
   Result := Bits[fPosition];
   Inc(fPosition);
 end;

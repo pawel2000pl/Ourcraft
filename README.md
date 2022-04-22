@@ -2,6 +2,7 @@
 # Ourcraft 
 
 Better, bigger and more communist than Minecraft;
+(The project is humorou and it is being created for memes)
 
 # Main differences between Ourcraft and Minecraft
 

@@ -733,9 +733,9 @@ var
 begin
   MS := TMemoryStream.Create;
   try
-    FastLZ77Stream(Source, MS, fl77Compress);
+    FastRecurencyLZ77Stream(Source, MS, fl77Compress);
     MS.Position:=0;
-    THuffmanTree.CompressStream(MS, Dest, MS.Size);
+    THuffmanTree.CompressStream(MS, Dest, MS.Size, 1);  //TODO: Remove?
   finally
     MS.Free;
   end;
@@ -747,9 +747,9 @@ var
 begin
   MS := TMemoryStream.Create;
   try
-    THuffmanTree.DecompressStream(Source, MS);
+    THuffmanTree.DecompressStream(Source, MS); //TODO: Remove?
     MS.Position:=0;
-    FastLZ77Stream(MS, Dest, fl77Uncompress);
+    FastRecurencyLZ77Stream(MS, Dest, fl77Uncompress);
   finally
     MS.Free;
   end;

@@ -37,6 +37,7 @@ type
 function FastLZ77CompressBuf(const Buf : PByte; const Size : PtrUInt; const DestBuf : PByte) : PtrUInt;
 function FastLZ77UnCompressBuf(const Buf : PByte; const Size : PtrUInt; const DestBuf : PByte) : PtrUInt;
 
+function FastRecurencyLZ77Stream(Source, Dest : TStream; const Direction : TFastLZ77Direction) : PtrUInt; overload;
 function FastLZ77Stream(Source, Dest : TStream; const Direction : TFastLZ77Direction) : PtrUInt; overload;
 function FastLZ77Stream(Source, Dest : TStream; const Size : PtrUInt; const Direction : TFastLZ77Direction) : PtrUInt; overload;
 
@@ -182,6 +183,61 @@ begin
     end;
 
     FastLZ77.Free;
+end;
+
+function FastRecurencyLZ77Stream(Source, Dest: TStream; const Direction: TFastLZ77Direction): PtrUInt;
+var
+    i : Integer;
+    c : Integer;
+    MS1, MS2 : TMemoryStream;
+begin
+    if Direction = fl77Uncompress then
+    begin
+        c := Source.ReadByte;
+        MS1 := TMemoryStream.Create;
+        MS2 := TMemoryStream.Create;
+        FastLZ77Stream(Source, MS1, fl77Uncompress);
+
+        for i := 0 to c-1 do
+        begin
+          MS1.Position:=0;
+          FastLZ77Stream(MS1, MS2, fl77Uncompress);
+          MS1.Free;
+          MS1 := MS2;
+          MS2 := TMemoryStream.Create;
+        end;
+                     
+        MS1.Position:=0;
+        Dest.CopyFrom(MS1, MS1.Size);
+        MS1.Free;
+        MS2.Free;
+    end
+    else
+    begin
+       MS1 := TMemoryStream.Create;      
+       MS2 := TMemoryStream.Create;
+       FastLZ77Stream(Source, MS1, fl77Compress);
+       c := 0;
+       for i := 0 to 255 do
+       begin       
+         MS1.Position:=0;
+         FastLZ77Stream(MS1, MS2, fl77Compress);
+         if MS2.Size < MS1.Size then
+         begin
+             Inc(c);
+             MS1.Free;
+             MS1 := MS2;
+             MS2 := TMemoryStream.Create;
+         end
+         else
+           Break;
+       end;
+       Dest.WriteByte(c);   
+       MS1.Position:=0;
+       Dest.CopyFrom(MS1, MS1.Size);
+       MS1.Free;
+       MS2.Free;
+    end;
 end;
 
 function FastLZ77Stream(Source, Dest : TStream; const Direction : TFastLZ77Direction) : PtrUInt; overload;
