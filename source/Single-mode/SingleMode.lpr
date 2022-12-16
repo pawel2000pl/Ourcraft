@@ -10,8 +10,8 @@ uses
   {$ENDIF}
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, lazopenglcontext, SingleModeUnit, OurData, air, glowstone, MovingBlock,
-  stone, PlayerEntity, GlCamera, ChunkLight;
+  Forms, lazopenglcontext, SingleModeUnit, GlCamera, OurData, air, glowstone,
+  MovingBlock, stone, PlayerEntity, ChunkLight;
 
 {$R *.res}
 

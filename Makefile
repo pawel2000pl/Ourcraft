@@ -17,6 +17,7 @@ compile: init texture_compiler bin/SingleMode
 
 bin/SingleMode:
 	bash -i ./source/Preprocesor/preprocesor.sh	
+	lazbuild ./source/ourcraftmain.lpk
 	lazbuild --build-mode=Release ./source/Single-mode/SingleMode.lpr 
 	
 rebuild: init
