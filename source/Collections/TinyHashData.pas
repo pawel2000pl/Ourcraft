@@ -29,8 +29,8 @@ type
 
   generic TTinyHashData<TKey, TValue, TBoxType> = class abstract(specialize TCustomDataContainer<TKey, TValue>)
   const
-    MinHashSize = 13;
-    MaxHashSize = High(LongWord);
+    MinHashSize = 16;
+    MaxHashSize = 1 shl 31;
   type
 
     { TTinyValueEnumerator }
@@ -65,7 +65,6 @@ type
     procedure AddBox(Box : TBoxType);
     procedure OnSetComparator; override;
   public
-    property HashRange : PtrUInt read FHashRange write SetHashRange;
     property AutoOptimizing : Boolean read FAutoOptimizing write FAutoOptimizing;
     function CreateHashInRange(const Key : TKey) : PtrUInt; inline;
     function CreateHash(const Key : TKey) : PtrUInt; virtual;
@@ -228,6 +227,7 @@ end;
 procedure TTinyHashData.SetHashRange(const AValue: PtrUInt);
 begin
   if FHashRange=AValue then Exit;
+  Assert(abs(log2(FHashRange) - round(log2(FHashRange))) < 1e-9);
   FHashRange:=AValue;
   Reorder;
 end;
@@ -251,7 +251,7 @@ end;
 
 function TTinyHashData.CreateHashInRange(const Key: TKey): PtrUInt;
 begin
-  Exit(CreateHash(Key) mod FHashRange);
+  Exit(CreateHash(Key) and Pred(FHashRange));
 end;
 
 procedure TTinyHashData.FindFirstIndex(const Key: TKey; out HashCode: PtrUInt; out Index: PtrInt);
@@ -309,9 +309,9 @@ var
 begin
   NewHashRange := FHashRange;
   If FCount > FHashRange shl 2 then
-     NewHashRange := Min(FHashRange shl 2 -1, MaxHashSize)
-  else if (FHashRange > MinHashSize) and (FCount shl 2 +4 < FHashRange) then
-     NewHashRange := max(MinHashSize, ((FHashRange+1) shr 2));
+     NewHashRange := Min(QWord(FHashRange) shl 2, QWord(MaxHashSize))
+  else if (FHashRange > MinHashSize) and (QWord(FCount) shl 2 +4 < FHashRange) then
+     NewHashRange := max(MinHashSize, (FHashRange shr 2));
   SetHashRange(NewHashRange);
 end;
 

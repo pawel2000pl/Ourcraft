@@ -200,7 +200,7 @@ begin
   newY := round(v.data[1]);
   if (0 <= newX) and (Width < newX) and (0 <= newY) and (Height < newY) then
      Exit(@FData[newX, newY]);
-  Exit(@def);
+  Exit(def);
 end;
 
 function TUniversalTransformationImage.GetInternalColor(x, y: integer): TFPColor;

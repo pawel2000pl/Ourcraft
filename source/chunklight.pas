@@ -279,7 +279,7 @@ var
 
     if Colors <> [] then
       for side := Low(TTextureMode) to High(TTextureMode) do
-        RemoveLight(Coord + TextureModeSidesI[side], OldLight-1, Colors);
+          RemoveLight(Coord + TextureModeSidesI[side], OldLight-1, Colors);
   end;
 
   procedure AddLight(const Coord : TIntVector3; LightLevel: TLongLight; const maxDepth: integer; const Force: boolean);

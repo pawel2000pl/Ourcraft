@@ -61,7 +61,7 @@ type
 
   { TQueueManager }
 
-  TQueueManager = class
+  TQueueManager = class sealed
   private
     fList: array[word] of TQueueRecord;
     fAddIndex, fExecuteIndex: word;
@@ -89,11 +89,11 @@ type
     property Terminagting : Boolean read FTerminating;
     function QueueSize: integer;
 
-    procedure Clear; virtual;
+    procedure Clear;
     property Suspend: boolean read fSuspend write fSuspend;
     function ExecuteMethod: boolean;
-    procedure DequeueObject(obj: TObject); virtual;
-    procedure AddMethod(const Method: TQueueMethod); virtual;
+    procedure DequeueObject(obj: TObject);
+    procedure AddMethod(const Method: TQueueMethod);
     function LoadLevel : Double;
     procedure AddOrExecuteIfOveloaded(const Method: TQueueMethod);
     constructor Create(const ThreadsPerCore: integer = 1; const AdditionalThreads: integer = 0; const StackSizePerThread : PtrUInt = DefaultStackSize);
@@ -155,6 +155,7 @@ type
         
 operator = (const a, b: TQueueRecord): boolean; inline;
 function StaticProcedureToObjectMethod(const Proc : TProcedure) : TQueueMethod;
+function GetCoreCount : PtrUInt;
 
 implementation
 

@@ -1676,6 +1676,7 @@ destructor TOurWorld.Destroy;
 var
   x, y, z : integer;
 begin
+  Queues.Suspend := True;
   Queues.DequeueObject(Self);
   fMilliTimer.Clear;
   fMicroTimer.Clear;    
@@ -1692,10 +1693,12 @@ begin
     Entities.GetFirstValue.Free;
   fEntities.EndWrite;
   fEntities.Free;
-                               
+
+  fMicroTimer.Clear;
+  fMilliTimer.Clear;
+  Queues.Suspend := False;
   fMicroTimer.Free;
   fMilliTimer.Free;
-  fQueues.Clear;
   fFreeThread.Free;
   TickLocker.Free;
   fQueues.Free;
