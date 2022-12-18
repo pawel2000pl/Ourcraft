@@ -5,7 +5,7 @@ unit DeterminedRandomGenerator;
 interface
 
 uses
-  Classes, SysUtils, Math, SimpleCache, Incrementations;
+  Classes, SysUtils, Math, SimpleCache, PostPreOperations;
 
 const
   ExampleSeedOffset : array[0..7] of QWord = (3392232331, 2697266237, 2106098177, 2139937253, 3402672613, 2000438761, 1622329061, 3220468841);

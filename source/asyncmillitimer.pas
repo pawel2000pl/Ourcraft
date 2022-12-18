@@ -5,7 +5,7 @@ unit AsyncMilliTimer;
 interface
 
 uses
-  Classes, SysUtils, Queues, Locker, Incrementations;
+  Classes, SysUtils, Queues, Locker, PostPreOperations;
 
 type
 

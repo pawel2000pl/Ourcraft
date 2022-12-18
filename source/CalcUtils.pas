@@ -25,7 +25,7 @@ unit CalcUtils;
 interface
 
 uses
-  Classes, Math, Incrementations;
+  Classes, Math, PostPreOperations;
 
 type
   TAxis = (AxisX = 0, AxisY = 1, AxisZ = 2);
@@ -834,16 +834,16 @@ end;
 
 procedure UpdateIfLesser(var Vector: TIntVector3; const Test: TIntVector3);
 begin
-  Incrementations.UpdateIfLesser(Vector[AxisX], Test[AxisX]);
-  Incrementations.UpdateIfLesser(Vector[AxisY], Test[AxisY]);
-  Incrementations.UpdateIfLesser(Vector[AxisZ], Test[AxisZ]);
+  PostPreOperations.UpdateIfLesser(Vector[AxisX], Test[AxisX]);
+  PostPreOperations.UpdateIfLesser(Vector[AxisY], Test[AxisY]);
+  PostPreOperations.UpdateIfLesser(Vector[AxisZ], Test[AxisZ]);
 end;
 
 procedure UpdateIfGreater(var Vector: TIntVector3; const Test: TIntVector3);
 begin
-  Incrementations.UpdateIfGreater(Vector[AxisX], Test[AxisX]);
-  Incrementations.UpdateIfGreater(Vector[AxisY], Test[AxisY]);
-  Incrementations.UpdateIfGreater(Vector[AxisZ], Test[AxisZ]);
+  PostPreOperations.UpdateIfGreater(Vector[AxisX], Test[AxisX]);
+  PostPreOperations.UpdateIfGreater(Vector[AxisY], Test[AxisY]);
+  PostPreOperations.UpdateIfGreater(Vector[AxisZ], Test[AxisZ]);
 end;
 
 function CycledShr(const i : Integer; const value : PtrUInt) : Integer; inline;

@@ -6,7 +6,7 @@ unit Freerer;
 interface
 
 uses
-  cThreads, Classes, SysUtils, Locker, Incrementations;
+  cThreads, Classes, SysUtils, Locker, PostPreOperations;
 
 const
   SimpleFreeInterfaceGUID = '{AA6DF291-4739-469A-9A88-EA09DAE0670E}';

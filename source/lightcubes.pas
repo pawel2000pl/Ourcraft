@@ -5,7 +5,7 @@ unit LightCubes;
 interface
 
 uses
-  Classes, SysUtils, LightTypes, OurConstants, TinyHashData, CalcUtils, Incrementations, JenkinsHash;
+  Classes, SysUtils, LightTypes, OurConstants, TinyHashData, CalcUtils, PostPreOperations, JenkinsHash;
 
 type
     { TLightCube }

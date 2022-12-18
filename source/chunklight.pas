@@ -5,7 +5,7 @@ unit ChunkLight;
 interface
 
 uses
-  Classes, SysUtils, math, LightTypes, OurConstants, TinyHashData, CalcUtils, TextureMode, Incrementations, LightCubes, ThreeDimensionalArrayOfAnything;
+  Classes, SysUtils, math, LightTypes, OurConstants, TinyHashData, CalcUtils, TextureMode, PostPreOperations, LightCubes, ThreeDimensionalArrayOfAnything;
 
 type
 

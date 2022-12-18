@@ -15,7 +15,7 @@ function GetInverseCoordPriorityByDistance(const x, y, z: integer): integer; inl
 implementation
 
 uses
-  Sorts, Incrementations, Math;
+  Sorts, PostPreOperations, Math;
 
 type
 

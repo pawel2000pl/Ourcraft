@@ -6,7 +6,7 @@ unit ThreeDimensionalArrayOfAnything;
 interface
 
 uses
-  Classes, SysUtils, CalcUtils, Incrementations, math;
+  Classes, SysUtils, CalcUtils, PostPreOperations, math;
 
 type
 
